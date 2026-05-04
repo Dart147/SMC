@@ -107,7 +107,7 @@ All logic in one component:
 
 In the Docker path, that same SPA is built statically and served by nginx — no Node process at runtime. The `docker-compose.yaml` in this folder is the **same file** that will eventually contain `api`, `postgres`, `nats`, `minio`, and `traefik` per the repo-level. Folding the editor into the full stack later means *adding services*, not rewriting infra.
 
-### Tech inventory
+### Tech Stack
 
 | Layer | Choice | Notes |
 |---|---|---|
