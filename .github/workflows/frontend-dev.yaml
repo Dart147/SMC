@@ -51,7 +51,7 @@ jobs:
       matrix:
         include:
           - name: editor
-            image: smc/frontend-editor
+            image: cn18smc/frontend-editor
             dockerContext: frontend/Editor/app
             dockerfile: frontend/Editor/app/Dockerfile
     steps:
