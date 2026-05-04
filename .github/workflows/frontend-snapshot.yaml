@@ -10,6 +10,7 @@ on:
       - main
     paths:
       - "frontend/**"
+      - ".github/workflows/frontend-snapshot.yaml"
 
 jobs:
   Frontend:
@@ -19,7 +20,7 @@ jobs:
       matrix:
         include:
           - name: editor
-            image: nycusdc/core-system-frontend-editor
+            image: smc/frontend-editor
             dockerContext: frontend/Editor/app
             dockerfile: frontend/Editor/app/Dockerfile
     steps:
@@ -56,7 +57,7 @@ jobs:
       matrix:
         include:
           - name: editor
-            image: nycusdc/core-system-frontend-editor
+            image: smc/frontend-editor
             dockerContext: frontend/Editor/app
             dockerfile: frontend/Editor/app/Dockerfile
     steps:
@@ -79,7 +80,7 @@ jobs:
 
       - name: Run /healthz check
         run: |
-          docker run -d --rm -p 8080:80 --name frontend-healthz ${IMAGE}:ci
+          docker run -d --rm -p 8080:80 --name frontend-healthz "${IMAGE}:ci"
           curl -fsS --retry 5 --retry-delay 1 --retry-connrefused http://localhost:8080/healthz
           docker stop frontend-healthz
         env:
