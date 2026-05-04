@@ -1,0 +1,7 @@
+services:
+  editor:
+    build: ./app
+    image: code-test-editor:dev
+    ports:
+      - "8080:80"
+    restart: unless-stopped

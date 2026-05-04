@@ -1,0 +1,22 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #1e1e1e;
+  color: #ddd;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+button, select {
+  font: inherit;
+  background: #2d2d2d;
+  color: #ddd;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+button:hover, select:hover {
+  background: #3a3a3a;
+}
