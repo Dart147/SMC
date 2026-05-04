@@ -81,7 +81,13 @@ jobs:
       - name: Run /healthz check
         run: |
           docker run -d --rm -p 8080:80 --name frontend-healthz "${IMAGE}:ci"
-          curl -fsS --retry 5 --retry-delay 1 --retry-connrefused http://localhost:8080/healthz
+          if ! curl -fsS --retry 10 --retry-delay 1 --retry-all-errors http://localhost:8080/healthz; then
+            echo "::group::nginx container logs"
+            docker logs frontend-healthz || true
+            echo "::endgroup::"
+            docker stop frontend-healthz || true
+            exit 1
+          fi
           docker stop frontend-healthz
         env:
           IMAGE: ${{ matrix.image }}
