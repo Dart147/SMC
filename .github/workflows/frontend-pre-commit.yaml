@@ -1,0 +1,69 @@
+name: Frontend Pre-Commit
+
+permissions:
+  contents: read
+  pull-requests: read
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-pre-commit.yaml"
+
+jobs:
+  check-if-in-pr:
+    runs-on: ubuntu-latest
+    outputs:
+      in_pr: ${{ steps.check.outputs.result }}
+    steps:
+      - name: Check if branch is part of an open PR
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.ref.replace('refs/heads/', '');
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${branch}`,
+              state: 'open'
+            });
+            return prs.data.length > 0;
+
+  Frontend:
+    name: Frontend checks (${{ matrix.name }})
+    needs: check-if-in-pr
+    if: needs.check-if-in-pr.outputs.in_pr == 'false'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: editor
+            dockerContext: frontend/Editor/app
+            dockerfile: frontend/Editor/app/Dockerfile
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Lint
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.dockerContext }}
+          file: ${{ matrix.dockerfile }}
+          target: lint
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+      - name: Test
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.dockerContext }}
+          file: ${{ matrix.dockerfile }}
+          target: test
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}

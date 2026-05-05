@@ -13,7 +13,7 @@ A standalone localhost POC of the in-browser code editor for **SMC**'s Online Co
 - Language switching across **JavaScript, Python, Go, C, C++** (Monaco language IDs lowercase: `javascript`, `python`, `go`, `c`, `cpp`).
 - Dark / light theme toggle.
 - Per-language skeleton seeded into a Monaco model keyed by `path={solution.<lang>}` so switching languages swaps buffers cleanly and each language keeps its own undo stack.
-- **Docker path is wired:** multi-stage `Dockerfile` (`node:20-alpine` build → `nginx:1.27-alpine` serve) at `app/Dockerfile`, `app/nginx.conf` (SPA fallback + long immutable cache for `/assets/` + `/healthz`), `app/.dockerignore`, and `docker-compose.yaml` at the `Editor/` root exposing the editor on `http://localhost:8080`.
+- **Docker path is wired:** multi-stage `Dockerfile` with explicit `lint`, `test`, `build`, and `runtime` targets at `app/Dockerfile`, `app/nginx.conf` (SPA fallback + long immutable cache for `/assets/` + `/healthz`), `app/.dockerignore`, and `docker-compose.yaml` at the `Editor/` root exposing the editor on `http://localhost:8080`.
 
 **Not done yet**
 
@@ -65,8 +65,10 @@ docker images code-test-editor:dev     # built image (~50 MB)
 What `docker compose up --build` does, end to end:
 
 1. Reads `docker-compose.yaml` → service `editor`, build context `./app`.
-2. Stage 1 of `app/Dockerfile`: `node:20-alpine`, `npm ci`, `npm run build` → `/app/dist`.
-3. Stage 2: copies `dist/` into `nginx:1.27-alpine` and copies `app/nginx.conf` to `/etc/nginx/conf.d/default.conf`.
+2. Stage `depends`: install dependencies once (`npm ci`).
+3. Stage `source`: copy the app source on top of the dependency layer.
+4. Stage `build`: `npm run build` → `/app/dist` (lint/test targets are available for CI and are no-ops if scripts are missing).
+5. Stage `runtime`: copies `dist/` into `nginx:1.27-alpine` and copies `app/nginx.conf` to `/etc/nginx/conf.d/default.conf`.
 4. Tags the image `code-test-editor:dev` and runs it with port `8080:80`.
 
 If you change source files and want a fresh image, re-run with `--build`. The `.dockerignore` keeps `node_modules`, `dist`, `.git`, etc. out of the build context so rebuilds stay fast.
@@ -78,7 +80,7 @@ SMC/frontend/Editor/
 ├── README.md              # this file (handover)
 ├── docker-compose.yaml    # one service: `editor`, builds ./app, exposes :8080
 └── app/
-    ├── Dockerfile         # multi-stage: node:20-alpine build → nginx:1.27-alpine serve
+    ├── Dockerfile         # multi-stage: depends → source → lint/test/build → runtime
     ├── nginx.conf         # SPA fallback, /assets cache, /healthz
     ├── .dockerignore      # keeps node_modules / dist / .git out of the build context
     ├── package.json

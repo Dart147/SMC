@@ -1,0 +1,83 @@
+name: Frontend Dev
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-dev.yaml"
+
+jobs:
+  Frontend:
+    name: Frontend checks (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: editor
+            dockerContext: frontend/Editor/app
+            dockerfile: frontend/Editor/app/Dockerfile
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Lint
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.dockerContext }}
+          file: ${{ matrix.dockerfile }}
+          target: lint
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+      - name: Test
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.dockerContext }}
+          file: ${{ matrix.dockerfile }}
+          target: test
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  Build-and-Push:
+    name: Build and Push Dev Image (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    needs: [Frontend]
+    strategy:
+      matrix:
+        include:
+          - name: editor
+            image: cn18smc/frontend-editor
+            dockerContext: frontend/Editor/app
+            dockerfile: frontend/Editor/app/Dockerfile
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
+
+      - name: Build and Push runtime image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.dockerContext }}
+          file: ${{ matrix.dockerfile }}
+          target: runtime
+          push: true
+          tags: |
+            ${{ matrix.image }}:dev
+            ${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  #Deploy: WIP
