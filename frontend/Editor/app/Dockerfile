@@ -9,10 +9,9 @@ RUN npm ci
 FROM depends AS source
 COPY . .
 
-# lint: optional lint + format checks (no-op if scripts missing)
+# lint: ESLint (no-op until a `lint` script is added to package.json)
 FROM source AS lint
-RUN npm run lint --if-present \
- && npm run format:check --if-present
+RUN npm run lint --if-present
 
 # test: optional tests (no-op if no test script)
 FROM source AS test
@@ -27,3 +26,7 @@ FROM nginx:1.27-alpine AS runtime
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
+
+# format check
+FROM source AS format
+RUN npm run format:check --if-present

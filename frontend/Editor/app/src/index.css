@@ -1,13 +1,21 @@
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   margin: 0;
   padding: 0;
   background: #1e1e1e;
   color: #ddd;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
 }
 
-button, select {
+button,
+select {
   font: inherit;
   background: #2d2d2d;
   color: #ddd;
@@ -17,6 +25,7 @@ button, select {
   cursor: pointer;
 }
 
-button:hover, select:hover {
+button:hover,
+select:hover {
   background: #3a3a3a;
 }

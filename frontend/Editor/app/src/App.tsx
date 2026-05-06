@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import Editor from '@monaco-editor/react';
+import { useState } from "react";
+import Editor from "@monaco-editor/react";
 
-type Language = 'javascript' | 'python' | 'go' | 'c' | 'cpp';
-type Theme = 'vs-dark' | 'vs-light';
+type Language = "javascript" | "python" | "go" | "c" | "cpp";
+type Theme = "vs-dark" | "vs-light";
 
 const SKELETONS: Record<Language, string> = {
   javascript: `// write JavaScript here
@@ -40,28 +40,25 @@ int main() {
 };
 
 export default function App() {
-  const [language, setLanguage] = useState<Language>('javascript');
-  const [theme, setTheme] = useState<Theme>('vs-dark');
+  const [language, setLanguage] = useState<Language>("javascript");
+  const [theme, setTheme] = useState<Theme>("vs-dark");
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
       <header
         style={{
-          padding: '10px 16px',
-          display: 'flex',
+          padding: "10px 16px",
+          display: "flex",
           gap: 12,
-          alignItems: 'center',
-          borderBottom: '1px solid #333',
-          background: '#252526',
+          alignItems: "center",
+          borderBottom: "1px solid #333",
+          background: "#252526",
         }}
       >
-        <strong style={{ marginRight: 'auto' }}>Online Code Test — editor POC</strong>
+        <strong style={{ marginRight: "auto" }}>Online Code Test — editor POC</strong>
         <label>
           Language:&nbsp;
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as Language)}
-          >
+          <select value={language} onChange={(e) => setLanguage(e.target.value as Language)}>
             <option value="javascript">JavaScript</option>
             <option value="python">Python</option>
             <option value="go">Go</option>
@@ -69,8 +66,8 @@ export default function App() {
             <option value="cpp">C++</option>
           </select>
         </label>
-        <button onClick={() => setTheme((t) => (t === 'vs-dark' ? 'vs-light' : 'vs-dark'))}>
-          Toggle theme ({theme === 'vs-dark' ? 'dark' : 'light'})
+        <button onClick={() => setTheme((t) => (t === "vs-dark" ? "vs-light" : "vs-dark"))}>
+          Toggle theme ({theme === "vs-dark" ? "dark" : "light"})
         </button>
       </header>
       <div style={{ flex: 1, minHeight: 0 }}>
@@ -85,7 +82,7 @@ export default function App() {
             minimap: { enabled: false },
             automaticLayout: true,
             scrollBeyondLastLine: false,
-            wordWrap: 'on',
+            wordWrap: "on",
             tabSize: 4,
           }}
         />
