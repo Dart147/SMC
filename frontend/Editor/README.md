@@ -133,6 +133,24 @@ All logic in one component:
 
 In the Docker path, that same SPA is built statically and served by nginx — no Node process at runtime. The `docker-compose.yaml` in this folder is the **same file** that will eventually contain `api`, `postgres`, `nats`, `minio`, and `traefik` per the repo-level. Folding the editor into the full stack later means *adding services*, not rewriting infra.
 
+### Build pipeline (multi-stage Dockerfile)
+
+The Dockerfile splits cleanly into a **build-time** image and a **runtime** image. The build image has Node, npm, and the full source tree; the runtime image has only nginx and the compiled static bundle.
+
+```
+  node:20-alpine  →  depends → source → lint / test / build   (BUILD-TIME ONLY)
+                                                ↓
+                                            /app/dist  (just static HTML/JS/CSS)
+                                                ↓
+  nginx:1.30-alpine-slim  →  runtime   ← COPY --from=build /app/dist
+```
+
+Why this matters:
+
+- **Only `/app/dist` crosses into the runtime image.** No `node`, no `npm`, no `node_modules`, no build-time Alpine packages. The published image is ~8 MB and contains 32 packages.
+- **CVEs flagged on `node:20-alpine` by IDE linters do not ship.** That stage is thrown away after `npm run build` finishes. Docker Scout scans the final image and reports 0 Critical / 0 High.
+- **Lint and test are separate stages off `source`.** CI calls them by name (`docker buildx build --target lint`), so the toolchain lives in one place and the workflow YAML stays thin.
+
 ### Tech Stack
 
 | Layer | Choice | Notes |
