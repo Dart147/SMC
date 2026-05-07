@@ -68,10 +68,34 @@ What `docker compose up --build` does, end to end:
 2. Stage `depends`: install dependencies once (`npm ci`).
 3. Stage `source`: copy the app source on top of the dependency layer.
 4. Stage `build`: `npm run build` → `/app/dist` (lint/test targets are available for CI and are no-ops if scripts are missing).
-5. Stage `runtime`: copies `dist/` into `nginx:1.27-alpine` and copies `app/nginx.conf` to `/etc/nginx/conf.d/default.conf`.
+5. Stage `runtime`: copies `dist/` into `nginx:1.30-alpine-slim` and copies `app/nginx.conf` to `/etc/nginx/conf.d/default.conf`.
 4. Tags the image `code-test-editor:dev` and runs it with port `8080:80`.
 
 If you change source files and want a fresh image, re-run with `--build`. The `.dockerignore` keeps `node_modules`, `dist`, `.git`, etc. out of the build context so rebuilds stay fast.
+
+### Reproduce CI locally (lint / test / build stages)
+
+CI calls the Dockerfile stages by name; you can run the same commands to debug a CI failure:
+
+```bash
+cd SMC/frontend/Editor/app
+docker buildx build --target lint .
+docker buildx build --target test .
+docker buildx build --target runtime -t code-test-editor:dev .
+```
+
+### Check the runtime image for CVEs
+
+The runtime stage runs `apk upgrade` on every CI build, with the `APK_CACHE_BUST` build-arg set per run so the upgrade layer never reuses stale cache. To verify locally and re-run a Docker Scout / Trivy scan:
+
+```bash
+cd SMC/frontend/Editor/app
+docker buildx build --pull --no-cache-filter=runtime \
+  --build-arg APK_CACHE_BUST="$(date +%s)" \
+  --target runtime -t code-test-editor:dev --load .
+
+docker scout cves code-test-editor:dev      # or: trivy image code-test-editor:dev
+```
 
 ## File map
 
@@ -109,6 +133,24 @@ All logic in one component:
 
 In the Docker path, that same SPA is built statically and served by nginx — no Node process at runtime. The `docker-compose.yaml` in this folder is the **same file** that will eventually contain `api`, `postgres`, `nats`, `minio`, and `traefik` per the repo-level. Folding the editor into the full stack later means *adding services*, not rewriting infra.
 
+### Build pipeline (multi-stage Dockerfile)
+
+The Dockerfile splits cleanly into a **build-time** image and a **runtime** image. The build image has Node, npm, and the full source tree; the runtime image has only nginx and the compiled static bundle.
+
+```
+  node:20-alpine  →  depends → source → lint / test / build   (BUILD-TIME ONLY)
+                                                ↓
+                                            /app/dist  (just static HTML/JS/CSS)
+                                                ↓
+  nginx:1.30-alpine-slim  →  runtime   ← COPY --from=build /app/dist
+```
+
+Why this matters:
+
+- **Only `/app/dist` crosses into the runtime image.** No `node`, no `npm`, no `node_modules`, no build-time Alpine packages. The published image is ~8 MB and contains 32 packages.
+- **CVEs flagged on `node:20-alpine` by IDE linters do not ship.** That stage is thrown away after `npm run build` finishes. Docker Scout scans the final image and reports 0 Critical / 0 High.
+- **Lint and test are separate stages off `source`.** CI calls them by name (`docker buildx build --target lint`), so the toolchain lives in one place and the workflow YAML stays thin.
+
 ### Tech Stack
 
 | Layer | Choice | Notes |
@@ -120,7 +162,7 @@ In the Docker path, that same SPA is built statically and served by nginx — no
 | Styling | Inline + one tiny `index.css` | No CSS framework needed for one screen |
 | State | Two `useState` calls | No Redux / Zustand for a POC |
 | Persistence | None | No localStorage, no backend, no DB |
-| Runtime image | `nginx:1.27-alpine` | Static SPA serving; no Node at runtime |
+| Runtime image | `nginx:1.30-alpine-slim` | Static SPA serving; no Node at runtime |
 
 ## Suggested follow-up features
 

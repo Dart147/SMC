@@ -39,6 +39,15 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
+      - name: Format
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.dockerContext }}
+          file: ${{ matrix.dockerfile }}
+          target: format
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
       - name: Test
         uses: docker/build-push-action@v6
         with:
@@ -74,6 +83,10 @@ jobs:
           file: ${{ matrix.dockerfile }}
           target: runtime
           load: true
+          pull: true
+          no-cache-filters: runtime
+          build-args: |
+            APK_CACHE_BUST=${{ github.run_id }}-${{ github.run_attempt }}
           tags: ${{ matrix.image }}:ci
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
@@ -105,6 +118,10 @@ jobs:
           file: ${{ matrix.dockerfile }}
           target: runtime
           push: true
+          pull: true
+          no-cache-filters: runtime
+          build-args: |
+            APK_CACHE_BUST=${{ github.run_id }}-${{ github.run_attempt }}
           tags: |
             ${{ matrix.image }}:pr-${{ github.event.number }}
             ${{ matrix.image }}:${{ github.sha }}

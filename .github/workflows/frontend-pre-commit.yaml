@@ -59,6 +59,15 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
+      - name: Format
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.dockerContext }}
+          file: ${{ matrix.dockerfile }}
+          target: format
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
       - name: Test
         uses: docker/build-push-action@v6
         with:
