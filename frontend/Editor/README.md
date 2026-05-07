@@ -68,10 +68,34 @@ What `docker compose up --build` does, end to end:
 2. Stage `depends`: install dependencies once (`npm ci`).
 3. Stage `source`: copy the app source on top of the dependency layer.
 4. Stage `build`: `npm run build` → `/app/dist` (lint/test targets are available for CI and are no-ops if scripts are missing).
-5. Stage `runtime`: copies `dist/` into `nginx:1.27-alpine` and copies `app/nginx.conf` to `/etc/nginx/conf.d/default.conf`.
+5. Stage `runtime`: copies `dist/` into `nginx:1.30-alpine-slim` and copies `app/nginx.conf` to `/etc/nginx/conf.d/default.conf`.
 4. Tags the image `code-test-editor:dev` and runs it with port `8080:80`.
 
 If you change source files and want a fresh image, re-run with `--build`. The `.dockerignore` keeps `node_modules`, `dist`, `.git`, etc. out of the build context so rebuilds stay fast.
+
+### Reproduce CI locally (lint / test / build stages)
+
+CI calls the Dockerfile stages by name; you can run the same commands to debug a CI failure:
+
+```bash
+cd SMC/frontend/Editor/app
+docker buildx build --target lint .
+docker buildx build --target test .
+docker buildx build --target runtime -t code-test-editor:dev .
+```
+
+### Check the runtime image for CVEs
+
+The runtime stage runs `apk upgrade` on every CI build, with the `APK_CACHE_BUST` build-arg set per run so the upgrade layer never reuses stale cache. To verify locally and re-run a Docker Scout / Trivy scan:
+
+```bash
+cd SMC/frontend/Editor/app
+docker buildx build --pull --no-cache-filter=runtime \
+  --build-arg APK_CACHE_BUST="$(date +%s)" \
+  --target runtime -t code-test-editor:dev --load .
+
+docker scout cves code-test-editor:dev      # or: trivy image code-test-editor:dev
+```
 
 ## File map
 
@@ -120,7 +144,7 @@ In the Docker path, that same SPA is built statically and served by nginx — no
 | Styling | Inline + one tiny `index.css` | No CSS framework needed for one screen |
 | State | Two `useState` calls | No Redux / Zustand for a POC |
 | Persistence | None | No localStorage, no backend, no DB |
-| Runtime image | `nginx:1.27-alpine` | Static SPA serving; no Node at runtime |
+| Runtime image | `nginx:1.30-alpine-slim` | Static SPA serving; no Node at runtime |
 
 ## Suggested follow-up features
 
