@@ -1,5 +1,5 @@
 # deps: install Node dependencies once and reuse them across later stages
-FROM node:20-alpine AS depends
+FROM node:22-alpine AS depends
 WORKDIR /app
 # Copy package metadata for better cache reuse when source changes
 COPY package.json package-lock.json ./
@@ -21,6 +21,10 @@ RUN npm test --if-present
 FROM source AS build
 RUN npm run build
 
+# format check
+FROM source AS format
+RUN npm run format:check --if-present
+
 # runtime: serve the static bundle via nginx
 FROM nginx:1.30-alpine-slim AS runtime
 # APK_CACHE_BUST changes per build so this layer never caches; ensures `apk upgrade` gets latest fixes.
@@ -39,7 +43,3 @@ RUN echo "apk-cache-bust=${APK_CACHE_BUST}" \
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
-
-# format check
-FROM source AS format
-RUN npm run format:check --if-present
