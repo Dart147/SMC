@@ -24,7 +24,7 @@ export default function EditorToolbar({
         background: "#252526",
       }}
     >
-      <strong style={{ marginRight: "auto" }}>ACE Judge — Workspace</strong>
+      <strong style={{ marginRight: "auto" }}>SMC — Workspace</strong>
 
       <label>
         Language:&nbsp;
