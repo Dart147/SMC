@@ -33,16 +33,10 @@ jobs:
             return prs.data.length > 0;
 
   Frontend:
-    name: Frontend checks (${{ matrix.name }})
+    name: Frontend checks
     needs: check-if-in-pr
     if: needs.check-if-in-pr.outputs.in_pr == 'false'
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - name: editor
-            dockerContext: frontend/Editor/app
-            dockerfile: frontend/Editor/app/Dockerfile
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -53,26 +47,26 @@ jobs:
       - name: Lint
         uses: docker/build-push-action@v7
         with:
-          context: ${{ matrix.dockerContext }}
-          file: ${{ matrix.dockerfile }}
+          context: frontend/
+          file: frontend/Dockerfile
           target: lint
-          cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
 
       - name: Format
         uses: docker/build-push-action@v7
         with:
-          context: ${{ matrix.dockerContext }}
-          file: ${{ matrix.dockerfile }}
+          context: frontend/
+          file: frontend/Dockerfile
           target: format
-          cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
 
       - name: Test
         uses: docker/build-push-action@v7
         with:
-          context: ${{ matrix.dockerContext }}
-          file: ${{ matrix.dockerfile }}
+          context: frontend/
+          file: frontend/Dockerfile
           target: test
-          cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend

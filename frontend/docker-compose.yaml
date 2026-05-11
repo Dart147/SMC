@@ -1,7 +1,7 @@
 services:
-  editor:
-    build: ./app
-    image: code-test-editor:dev
+  frontend:
+    build: .
+    image: smc-frontend:dev
     ports:
       - "8080:80"
     restart: unless-stopped
