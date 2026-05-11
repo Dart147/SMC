@@ -16,7 +16,7 @@ export const THEME_CONFIG = {
     text: "#d4d4d4",
     border: "#333",
     secondaryBg: "#2d2d2d",
-    accent: "#007acc"
+    accent: "#007acc",
   },
   "vs-light": {
     bg: "#ffffff",
@@ -24,6 +24,6 @@ export const THEME_CONFIG = {
     text: "#333333",
     border: "#cccccc",
     secondaryBg: "#f0f0f0",
-    accent: "#005fb8"
-  }
+    accent: "#005fb8",
+  },
 };

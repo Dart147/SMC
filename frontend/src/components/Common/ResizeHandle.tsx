@@ -1,7 +1,11 @@
 // 引入 V4 的 Separator
 import { Separator } from "react-resizable-panels";
 
-export function ResizeHandle({ direction = "horizontal" }: { direction?: "horizontal" | "vertical" }) {
+export function ResizeHandle({
+  direction = "horizontal",
+}: {
+  direction?: "horizontal" | "vertical";
+}) {
   return (
     <Separator
       style={{

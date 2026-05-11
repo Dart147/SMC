@@ -26,20 +26,54 @@ export function Workspace() {
   const colors = THEME_CONFIG[theme];
 
   return (
-    <div style={{ 
-      height: "100vh", 
-      display: "flex", 
-      flexDirection: "column", 
-      background: colors.bg, // 全域背景色
-      color: colors.text,    // 全域文字顏色
-      transition: "all 0.2s ease" // 讓切換更滑順
-    }}>
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        background: colors.bg, // 全域背景色
+        color: colors.text, // 全域文字顏色
+        transition: "all 0.2s ease", // 讓切換更滑順
+      }}
+    >
       {/* 頂部全域導覽列 */}
-      <header style={{ height: "50px", background: "#252526", borderBottom: "1px solid #333", display: "flex", alignItems: "center", padding: "0 20px" }}>
+      <header
+        style={{
+          height: "50px",
+          background: "#252526",
+          borderBottom: "1px solid #333",
+          display: "flex",
+          alignItems: "center",
+          padding: "0 20px",
+        }}
+      >
         <strong style={{ color: "#fff", fontSize: "18px" }}>SMC Judge</strong>
         <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
-          <button style={{ background: "#2d2d2d", color: "#fff", padding: "6px 16px", borderRadius: "4px", border: "1px solid #444", cursor: "pointer" }}>Run</button>
-          <button style={{ background: "#22c55e", color: "#fff", padding: "6px 16px", borderRadius: "4px", border: "none", fontWeight: "bold", cursor: "pointer" }}>Submit</button>
+          <button
+            style={{
+              background: "#2d2d2d",
+              color: "#fff",
+              padding: "6px 16px",
+              borderRadius: "4px",
+              border: "1px solid #444",
+              cursor: "pointer",
+            }}
+          >
+            Run
+          </button>
+          <button
+            style={{
+              background: "#22c55e",
+              color: "#fff",
+              padding: "6px 16px",
+              borderRadius: "4px",
+              border: "none",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
+          >
+            Submit
+          </button>
         </div>
       </header>
 
@@ -47,7 +81,6 @@ export function Workspace() {
       <div style={{ flex: 1, minHeight: 0 }}>
         {/* 外層左右分割：注意這裡改成了 Group 以及 orientation="horizontal" */}
         <Group orientation="horizontal">
-          
           {/* 左半邊：題目描述 */}
           <Panel defaultSize={50} minSize={20}>
             <ProblemDescription theme={theme} />
@@ -60,17 +93,20 @@ export function Workspace() {
           <Panel defaultSize={50} minSize={30}>
             {/* 內層上下分割：注意這裡改成了 orientation="vertical" */}
             <Group orientation="vertical">
-              
               {/* 右上：程式碼編輯器 */}
-              <Panel defaultSize={70} minSize={20} style={{ display: "flex", flexDirection: "column" }}>
-                <EditorToolbar 
+              <Panel
+                defaultSize={70}
+                minSize={20}
+                style={{ display: "flex", flexDirection: "column" }}
+              >
+                <EditorToolbar
                   language={language}
                   theme={theme}
                   onLanguageChange={handleLanguageChange}
                   onThemeToggle={handleThemeToggle}
                 />
                 <div style={{ flex: 1, minHeight: 0 }}>
-                  <CodeEditor 
+                  <CodeEditor
                     language={language}
                     theme={theme}
                     value={code}
@@ -86,10 +122,8 @@ export function Workspace() {
               <Panel defaultSize={30} minSize={10}>
                 <ConsolePanel theme={theme} />
               </Panel>
-
             </Group>
           </Panel>
-
         </Group>
       </div>
     </div>
