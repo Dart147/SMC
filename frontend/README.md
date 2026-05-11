@@ -8,12 +8,12 @@ A standalone localhost POC of the in-browser code editor for **SMC**'s Online Co
 
 **Done**
 
-- Vite + React 18 + TypeScript (strict) scaffold under `app/`.
-- `@monaco-editor/react` mounted full-viewport with header chrome.
-- Language switching across **JavaScript, Python, Go, C, C++** (Monaco language IDs lowercase: `javascript`, `python`, `go`, `c`, `cpp`).
-- Dark / light theme toggle.
-- Per-language skeleton seeded into a Monaco model keyed by `path={solution.<lang>}` so switching languages swaps buffers cleanly and each language keeps its own undo stack.
-- **Docker path is wired:** multi-stage `Dockerfile` with explicit `lint`, `test`, `build`, and `runtime` targets at `app/Dockerfile`, `app/nginx.conf` (SPA fallback + long immutable cache for `/assets/` + `/healthz`), `app/.dockerignore`, and `docker-compose.yaml` at the `Editor/` root exposing the editor on `http://localhost:8080`.
+* **Modern Architecture**: Fully migrated to a 2025 "Feature-based" structure, separating logic into `/features`, `/pages`, and `/components`.
+* **Decoupled Editor**: `@monaco-editor/react` encapsulated as a standalone feature in `features/workspace/` with header chrome.
+* **Language Support**: Switching across **JavaScript, Python, Go, C, C++** with specific skeletons for each.
+* **Theme Toggle**: Support for dark and light modes.
+* **Model Management**: Per-language skeletons seeded into Monaco models keyed by `path={solution.<lang>}` for clean buffer swapping and independent undo stacks.
+* **Docker Ready**: Multi-stage `Dockerfile` with explicit `lint`, `test`, `build`, and `runtime` targets. The final image uses `nginx:1.30-alpine-slim` for a tiny footprint (~8 MB).
 
 **Not done yet**
 
@@ -98,40 +98,42 @@ docker scout cves code-test-editor:dev      # or: trivy image code-test-editor:d
 ```
 
 ## File map
-
 ```
-SMC/frontend/Editor/
+SMC/frontend/
 ├── README.md              # this file (handover)
 ├── docker-compose.yaml    # one service: `editor`, builds ./app, exposes :8080
-└── app/
-    ├── Dockerfile         # multi-stage: depends → source → lint/test/build → runtime
-    ├── nginx.conf         # SPA fallback, /assets cache, /healthz
-    ├── .dockerignore      # keeps node_modules / dist / .git out of the build context
-    ├── package.json
-    ├── package-lock.json
-    ├── index.html
-    ├── vite.config.ts
-    ├── tsconfig.json
-    ├── tsconfig.node.json
-    └── src/
-        ├── main.tsx       # React root, <StrictMode>
-        ├── index.css      # page chrome around the editor
-        ├── App.tsx        # the entire demo (header + editor)
-        └── vite-env.d.ts
+├── Dockerfile             # multi-stage: depends → source → lint/test/build → runtime
+├── nginx.conf             # SPA fallback, /assets cache, /healthz
+├── .dockerignore          # excludes node_modules / dist / .git
+├── package.json
+├── vite.config.ts
+├── tsconfig.json
+└── src/
+    ├── api/               # Global API clients (Axios instance)
+    ├── components/        # Common UI atoms (Buttons, Modals)
+    ├── features/          # Functional modules (The heart of SMC)
+    │   ├── auth/          # Login/Register logic
+    │   ├── problems/      # Problem list & rendering
+    │   └── workspace/     # Monaco editor, Toolbar, Console output
+    ├── hooks/             # Shared hooks (useWebSocket, useDebounce)
+    ├── pages/             # Route-level components (Home, Workspace)
+    ├── store/             # Global state (Zustand)
+    ├── styles/            # Global CSS & Tailwind directives
+    ├── types/             # TS interfaces (Mapped to Go structs)
+    ├── main.tsx           # React root, <StrictMode>
+    └── App.tsx            # Root component with React Router
+
 ```
 
 ## Architecture
 
-All logic in one component:
+The system has moved from a monolithic component to a modular, decoupled architecture:
 
-- `main.tsx` mounts `<App />` into `#root` inside `<StrictMode>`.
-- `App.tsx` owns two pieces of state:
-  - `language: 'javascript' | 'python' | 'go' | 'c' | 'cpp'`
-  - `theme: 'vs-dark' | 'vs-light'`
-- `SKELETONS` is a `Record<Language, string>` literal, in-memory only.
-- `<Editor>` is **uncontrolled** (`defaultValue`, no `value` prop). The `path={solution.${language}}` prop tells Monaco to manage one model per language; switching languages swaps models without a remount, so each language keeps its own buffer + undo stack while the user explores.
+* **Component Decoupling**: The UI is split into **Dumb Components** (UI-only in `src/components`) and **Smart Components** (logic-heavy in `src/features`).
+* **State Management**: Uses **Zustand** for lightweight and robust state management instead of complex Prop drilling.
+* **Uncontrolled Editor**: The editor uses `defaultValue` and a `path` prop to allow Monaco to manage its own models natively.
+* **Backend Ready**: Interfaces in `src/types/` are designed to match the **Go backend** structs to ensure type safety across the stack.
 
-In the Docker path, that same SPA is built statically and served by nginx — no Node process at runtime. The `docker-compose.yaml` in this folder is the **same file** that will eventually contain `api`, `postgres`, `nats`, `minio`, and `traefik` per the repo-level. Folding the editor into the full stack later means *adding services*, not rewriting infra.
 
 ### Build pipeline (multi-stage Dockerfile)
 
