@@ -9,9 +9,10 @@ The frontend for **SMC**'s Online Code Test system. Vite + React 18 + TypeScript
 **Done**
 
 - **Modern Architecture**: Fully migrated to a 2025 "Feature-based" structure, separating logic into `/features`, `/pages`, and `/components`.
+- **Resizable Workspace Layout**: Implemented a LeetCode-style 3-pane split view (Problem, Editor, Console) using `react-resizable-panels` (V4) for smooth, draggable layouts.
+- **Global Theme Integration**: Synchronized Dark/Light mode across the entire workspace (Editor, Problem Description, Console, and Toolbar) using a centralized `THEME_CONFIG`.
 - **Decoupled Editor**: `@monaco-editor/react` encapsulated as a standalone feature in `features/workspace/` with header chrome.
 - **Language Support**: Switching across **JavaScript, Python, Go, C, C++** with specific skeletons for each.
-- **Theme Toggle**: Support for dark and light modes.
 - **Model Management**: Per-language skeletons seeded into Monaco models keyed by `path={solution.<lang>}` for clean buffer swapping and independent undo stacks.
 - **Docker Ready**: Multi-stage `Dockerfile` with explicit `lint`, `test`, `build`, and `runtime` targets. The final image uses `nginx:1.30-alpine-slim` for a tiny footprint (~8 MB).
 
@@ -30,6 +31,7 @@ There are two ways to run the editor: a fast dev loop (Vite HMR) and a productio
 cd SMC/frontend
 npm install
 npm run dev          # http://localhost:5173
+
 ```
 
 Useful checks while editing:
@@ -39,6 +41,7 @@ npx tsc --noEmit     # type-check the project (must pass clean)
 npm run build        # produce a production bundle in dist/
 npm run preview      # serve dist/ locally
 npm run format:check # prettier check
+
 ```
 
 ### 2. Docker
@@ -49,6 +52,7 @@ Run from `SMC/frontend/` (the folder that contains `docker-compose.yaml`):
 cd SMC/frontend
 docker compose up --build      # builds the image, starts nginx on :8080
 # open http://localhost:8080
+
 ```
 
 Other handy commands:
@@ -60,6 +64,7 @@ curl -sI http://localhost:8080         # 200 OK, Server: nginx
 curl -s  http://localhost:8080/healthz # "ok"
 docker compose down                    # stop + remove the container
 docker images smc-frontend:dev         # built image (~50 MB)
+
 ```
 
 What `docker compose up --build` does, end to end:
@@ -83,16 +88,18 @@ docker buildx build --progress=plain --target lint .
 docker buildx build --progress=plain --target test .
 docker buildx build --progress=plain --target format .
 docker buildx build --progress=plain --target runtime -t smc-frontend:dev .
+
 ```
 
 ### If the Format police screams
 
-Run the docker command below to fix the issues from the Prettier police
+Run the docker command below to fix the issues from the Prettier police:
 
 ```bash
 cd SMC/frontend
 docker run --rm -v "$PWD":/frontend -w /frontend node:22-alpine \
   sh -c "npm ci && npm run format:write"
+
 ```
 
 ### Check the runtime image for CVEs
@@ -106,6 +113,7 @@ docker buildx build --pull --no-cache-filter=runtime \
   --target runtime -t smc-frontend:dev --load .
 
 docker scout cves smc-frontend:dev      # or: trivy image smc-frontend:dev
+
 ```
 
 ## File map
@@ -123,11 +131,11 @@ SMC/frontend/
 └── src/
     ├── main.tsx           # React root, <StrictMode>
     ├── App.tsx            # Router root (React Router v7)
-    ├── components/Common/ # Dumb UI atoms (Button, Modal, …)
+    ├── components/Common/ # Dumb UI atoms (Button, Modal, ResizeHandle, …)
     ├── features/          # Vertical slices — the heart of SMC
     │   ├── auth/          # api.ts + LoginForm + useAuth
-    │   ├── problems/      # api.ts + ProblemRenderer
-    │   └── workspace/     # api.ts + store.ts + CodeEditor/EditorToolbar/ConsoleOutput + useRunCode
+    │   ├── problems/      # api.ts + ProblemDescription
+    │   └── workspace/     # api.ts + store.ts + CodeEditor/EditorToolbar/ConsolePanel + useRunCode
     ├── pages/             # Route-level shells: Home, ProblemList, Workspace
     ├── layouts/           # Shared chrome (MainLayout with <Outlet/>)
     ├── services/          # apiClient.ts — single shared Axios instance
@@ -139,16 +147,17 @@ SMC/frontend/
     ├── styles/globals.css # Global CSS
     └── assets/            # Static assets (images, …)
 
+
 ```
 
 ## Architecture
 
 The system has moved from a monolithic component to a modular, decoupled architecture:
 
-- **Component Decoupling**: The UI is split into **Dumb Components** (UI-only in `src/components`) and **Smart Components** (logic-heavy in `src/features`).
-- **State Management**: Uses **Zustand** for lightweight and robust state management instead of complex Prop drilling.
-- **Uncontrolled Editor**: The editor uses `defaultValue` and a `path` prop to allow Monaco to manage its own models natively.
-- **Backend Ready**: Interfaces in `src/types/` are designed to match the **Go backend** structs to ensure type safety across the stack.
+* **Component Decoupling**: The UI is split into **Dumb Components** (UI-only in `src/components`) and **Smart Components** (logic-heavy in `src/features`).
+* **State Management**: Uses **Zustand** for lightweight and robust state management instead of complex Prop drilling.
+* **Uncontrolled Editor**: The editor uses `defaultValue` and a `path` prop to allow Monaco to manage its own models natively.
+* **Backend Ready**: Interfaces in `src/types/` are designed to match the **Go backend** structs to ensure type safety across the stack.
 
 ### Build pipeline (multi-stage Dockerfile)
 
@@ -160,26 +169,28 @@ The Dockerfile splits cleanly into a **build-time** image and a **runtime** imag
                                          /frontend/dist  (just static HTML/JS/CSS)
                                                 ↓
   nginx:1.30-alpine-slim  →  runtime   ← COPY --from=build /frontend/dist
+
 ```
 
 Why this matters:
 
-- **Only `/frontend/dist` crosses into the runtime image.** No `node`, no `npm`, no `node_modules`, no build-time Alpine packages. The published image is ~8 MB and contains 32 packages.
-- **Lint and test are separate stages off `source`.** CI calls them by name (`docker buildx build --target lint`), so the toolchain lives in one place and the workflow YAML stays thin.
+* **Only `/frontend/dist` crosses into the runtime image.** No `node`, no `npm`, no `node_modules`, no build-time Alpine packages. The published image is ~8 MB and contains 32 packages.
+* **Lint and test are separate stages off `source`.** CI calls them by name (`docker buildx build --target lint`), so the toolchain lives in one place and the workflow YAML stays thin.
 
 ### Tech Stack
 
-| Layer         | Choice                            | Notes                                                                          |
-| ------------- | --------------------------------- | ------------------------------------------------------------------------------ |
-| Build tool    | Vite 5                            | Fast HMR, no SSR (Monaco hates SSR)                                            |
-| Framework     | React 18                          | Wider compatibility with `@monaco-editor/react` than 19 today                  |
-| Language      | TypeScript 5 (strict)             | `noUnusedLocals`, `noUnusedParameters` on                                      |
-| Editor        | `@monaco-editor/react` 4.x        | Wraps `monaco-editor`; handles loader/AMD config                               |
-| Styling       | `src/styles/globals.css` + inline | No CSS framework yet                                                           |
-| State         | **Zustand** 5                     | Global store in `src/store/`, per-feature stores in `src/features/*/store.ts`  |
-| Routing       | **React Router** v7               | Configured in `src/App.tsx` with `MainLayout` shell                            |
-| HTTP          | **Axios**                         | Single instance in `src/services/apiClient.ts`; feature `api.ts` files wrap it |
-| Runtime image | `nginx:1.30-alpine-slim`          | Static SPA serving; no Node at runtime                                         |
+| Layer | Choice | Notes |
+| --- | --- | --- |
+| Build tool | Vite 5 | Fast HMR, no SSR (Monaco hates SSR) |
+| Framework | React 18 | Wider compatibility with `@monaco-editor/react` than 19 today |
+| Language | TypeScript 5 (strict) | `noUnusedLocals`, `noUnusedParameters` on |
+| Layout | `react-resizable-panels` | V4 implementation for LeetCode-style draggable panes |
+| Editor | `@monaco-editor/react` 4.x | Wraps `monaco-editor`; handles loader/AMD config |
+| Styling | `src/styles/globals.css` + inline | No CSS framework yet |
+| State | **Zustand** 5 | Global store in `src/store/`, per-feature stores in `src/features/*/store.ts` |
+| Routing | **React Router** v7 | Configured in `src/App.tsx` with `MainLayout` shell |
+| HTTP | **Axios** | Single instance in `src/services/apiClient.ts`; feature `api.ts` files wrap it |
+| Runtime image | `nginx:1.30-alpine-slim` | Static SPA serving; no Node at runtime |
 
 ## Suggested follow-up features
 
@@ -193,7 +204,7 @@ Why this matters:
 
 ### Tier B — slightly more, but still no backend
 
-6. **Draft autosave to `localStorage`** keyed by `language`. Survives accidental refreshes. Use `draft/<language>` so it doesn't collide with future `submissions/<id>` entries.
+6. **Draft autosave to `localStorage**` keyed by `language`. Survives accidental refreshes. Use `draft/<language>` so it doesn't collide with future `submissions/<id>` entries.
 7. **Read-only "header" region inside the editor.** Lock the function signature so the candidate can't change the entry point the grader will call. Implementation: `monaco.editor.IModelDeltaDecoration` + an `onDidChangeModelContent` guard that reverts edits intersecting lines 1..N of the skeleton. This most influences the eventual grader contract; worth de-risking now.
 8. **Run-button stub with disabled tooltip.** Visible Run button that's `disabled` with tooltip "Grading runs server-side; results are reviewed by your interviewer." Trains the candidate flow correctly and surfaces the domain rule that candidates never see scores.
 9. **In-browser JS execution** (only for `javascript`) using a sandboxed `iframe srcdoc` or a Web Worker. **Demo aid only, not a grader.** Lets us show "code → output" round-trips on day one. Only build it if explicitly labelled "demo only, not a grader" — Python / Go / C / C++ stay disabled.
@@ -208,15 +219,15 @@ Why this matters:
 
 ## Conventions to keep
 
-- **Feature-based layout.** New code goes next to the feature it belongs to (`features/<feature>/components/Foo.tsx`), not into a global `components/`. Reserve `src/components/Common/` for reusable dumb atoms.
-- **Features don't cross-import internals.** Compose features at the page level or lift to `src/store/globalStore.ts`.
-- **One Axios instance.** All HTTP goes through `src/services/apiClient.ts`; feature `api.ts` files wrap it. No `fetch` scattered through components.
-- **Types mirror the Go backend.** Keep `src/types/` aligned with backend structs as the API lands.
-- **Uncontrolled Monaco editor.** Use `defaultValue` + `path`-keyed models. Do not switch to a controlled `value` prop — it forces re-renders on every keystroke and breaks Monaco's native undo.
-- **Language IDs are lowercase Monaco IDs** (`javascript`, `python`, `go`, `c`, `cpp`). The `Language` type, `SKELETONS` keys, and toolbar `<option value>` strings must all match.
-- **No secrets** in this folder. API base URL goes through `src/config/`.
-- **No `console.log`** in committed code.
-- **TypeScript strict.** `npx tsc --noEmit` should pass clean before any edit is considered done.
-- **Mobile is not supported.** Don't add mobile-specific styling that suggests otherwise.
-- **Docker runtime stays static-built + nginx.** Do not switch the runtime image to `node` or run `vite dev` inside the container — that's not how the MVP will deploy.
-- **Dockerfile is the toolchain.** Lint / test / build are stages off `source`. CI calls them via `docker buildx build --target <stage>`. Adding a new check = a new Dockerfile stage, not a new YAML step.
+* **Feature-based layout.** New code goes next to the feature it belongs to (`features/<feature>/components/Foo.tsx`), not into a global `components/`. Reserve `src/components/Common/` for reusable dumb atoms.
+* **Features don't cross-import internals.** Compose features at the page level or lift to `src/store/globalStore.ts`.
+* **One Axios instance.** All HTTP goes through `src/services/apiClient.ts`; feature `api.ts` files wrap it. No `fetch` scattered through components.
+* **Types mirror the Go backend.** Keep `src/types/` aligned with backend structs as the API lands.
+* **Uncontrolled Monaco editor.** Use `defaultValue` + `path`-keyed models. Do not switch to a controlled `value` prop — it forces re-renders on every keystroke and breaks Monaco's native undo.
+* **Language IDs are lowercase Monaco IDs** (`javascript`, `python`, `go`, `c`, `cpp`). The `Language` type, `SKELETONS` keys, and toolbar `<option value>` strings must all match.
+* **No secrets** in this folder. API base URL goes through `src/config/`.
+* **No `console.log**` in committed code.
+* **TypeScript strict.** `npx tsc --noEmit` should pass clean before any edit is considered done.
+* **Mobile is not supported.** Don't add mobile-specific styling that suggests otherwise.
+* **Docker runtime stays static-built + nginx.** Do not switch the runtime image to `node` or run `vite dev` inside the container — that's not how the MVP will deploy.
+* **Dockerfile is the toolchain.** Lint / test / build are stages off `source`. CI calls them via `docker buildx build --target <stage>`. Adding a new check = a new Dockerfile stage, not a new YAML step.
