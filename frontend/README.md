@@ -8,12 +8,12 @@ The frontend for **SMC**'s Online Code Test system. Vite + React 18 + TypeScript
 
 **Done**
 
-* **Modern Architecture**: Fully migrated to a 2025 "Feature-based" structure, separating logic into `/features`, `/pages`, and `/components`.
-* **Decoupled Editor**: `@monaco-editor/react` encapsulated as a standalone feature in `features/workspace/` with header chrome.
-* **Language Support**: Switching across **JavaScript, Python, Go, C, C++** with specific skeletons for each.
-* **Theme Toggle**: Support for dark and light modes.
-* **Model Management**: Per-language skeletons seeded into Monaco models keyed by `path={solution.<lang>}` for clean buffer swapping and independent undo stacks.
-* **Docker Ready**: Multi-stage `Dockerfile` with explicit `lint`, `test`, `build`, and `runtime` targets. The final image uses `nginx:1.30-alpine-slim` for a tiny footprint (~8 MB).
+- **Modern Architecture**: Fully migrated to a 2025 "Feature-based" structure, separating logic into `/features`, `/pages`, and `/components`.
+- **Decoupled Editor**: `@monaco-editor/react` encapsulated as a standalone feature in `features/workspace/` with header chrome.
+- **Language Support**: Switching across **JavaScript, Python, Go, C, C++** with specific skeletons for each.
+- **Theme Toggle**: Support for dark and light modes.
+- **Model Management**: Per-language skeletons seeded into Monaco models keyed by `path={solution.<lang>}` for clean buffer swapping and independent undo stacks.
+- **Docker Ready**: Multi-stage `Dockerfile` with explicit `lint`, `test`, `build`, and `runtime` targets. The final image uses `nginx:1.30-alpine-slim` for a tiny footprint (~8 MB).
 
 **Not done yet**
 
@@ -78,10 +78,21 @@ If you change source files and want a fresh image, re-run with `--build`. The `.
 CI calls the Dockerfile stages by name; you can run the same commands to debug a CI failure:
 
 ```bash
+cd /frontend
+docker buildx build --progress=plain --target lint .
+docker buildx build --progress=plain --target test .
+docker buildx build --progress=plain --target format .
+docker buildx build --progress=plain --target runtime -t smc-frontend:dev .
+```
+
+### If the Format police screams
+
+Run the docker command below to fix the issues from the Prettier police
+
+```bash
 cd SMC/frontend
-docker buildx build --target lint .
-docker buildx build --target test .
-docker buildx build --target runtime -t smc-frontend:dev .
+docker run --rm -v "$PWD":/frontend -w /frontend node:22-alpine \
+  sh -c "npm ci && npm run format:write"
 ```
 
 ### Check the runtime image for CVEs
@@ -98,6 +109,7 @@ docker scout cves smc-frontend:dev      # or: trivy image smc-frontend:dev
 ```
 
 ## File map
+
 ```
 SMC/frontend/
 ├── README.md              # this file (handover)
@@ -133,11 +145,10 @@ SMC/frontend/
 
 The system has moved from a monolithic component to a modular, decoupled architecture:
 
-* **Component Decoupling**: The UI is split into **Dumb Components** (UI-only in `src/components`) and **Smart Components** (logic-heavy in `src/features`).
-* **State Management**: Uses **Zustand** for lightweight and robust state management instead of complex Prop drilling.
-* **Uncontrolled Editor**: The editor uses `defaultValue` and a `path` prop to allow Monaco to manage its own models natively.
-* **Backend Ready**: Interfaces in `src/types/` are designed to match the **Go backend** structs to ensure type safety across the stack.
-
+- **Component Decoupling**: The UI is split into **Dumb Components** (UI-only in `src/components`) and **Smart Components** (logic-heavy in `src/features`).
+- **State Management**: Uses **Zustand** for lightweight and robust state management instead of complex Prop drilling.
+- **Uncontrolled Editor**: The editor uses `defaultValue` and a `path` prop to allow Monaco to manage its own models natively.
+- **Backend Ready**: Interfaces in `src/types/` are designed to match the **Go backend** structs to ensure type safety across the stack.
 
 ### Build pipeline (multi-stage Dockerfile)
 
@@ -158,17 +169,17 @@ Why this matters:
 
 ### Tech Stack
 
-| Layer | Choice | Notes |
-|---|---|---|
-| Build tool | Vite 5 | Fast HMR, no SSR (Monaco hates SSR) |
-| Framework | React 18 | Wider compatibility with `@monaco-editor/react` than 19 today |
-| Language | TypeScript 5 (strict) | `noUnusedLocals`, `noUnusedParameters` on |
-| Editor | `@monaco-editor/react` 4.x | Wraps `monaco-editor`; handles loader/AMD config |
-| Styling | `src/styles/globals.css` + inline | No CSS framework yet |
-| State | **Zustand** 5 | Global store in `src/store/`, per-feature stores in `src/features/*/store.ts` |
-| Routing | **React Router** v7 | Configured in `src/App.tsx` with `MainLayout` shell |
-| HTTP | **Axios** | Single instance in `src/services/apiClient.ts`; feature `api.ts` files wrap it |
-| Runtime image | `nginx:1.30-alpine-slim` | Static SPA serving; no Node at runtime |
+| Layer         | Choice                            | Notes                                                                          |
+| ------------- | --------------------------------- | ------------------------------------------------------------------------------ |
+| Build tool    | Vite 5                            | Fast HMR, no SSR (Monaco hates SSR)                                            |
+| Framework     | React 18                          | Wider compatibility with `@monaco-editor/react` than 19 today                  |
+| Language      | TypeScript 5 (strict)             | `noUnusedLocals`, `noUnusedParameters` on                                      |
+| Editor        | `@monaco-editor/react` 4.x        | Wraps `monaco-editor`; handles loader/AMD config                               |
+| Styling       | `src/styles/globals.css` + inline | No CSS framework yet                                                           |
+| State         | **Zustand** 5                     | Global store in `src/store/`, per-feature stores in `src/features/*/store.ts`  |
+| Routing       | **React Router** v7               | Configured in `src/App.tsx` with `MainLayout` shell                            |
+| HTTP          | **Axios**                         | Single instance in `src/services/apiClient.ts`; feature `api.ts` files wrap it |
+| Runtime image | `nginx:1.30-alpine-slim`          | Static SPA serving; no Node at runtime                                         |
 
 ## Suggested follow-up features
 
@@ -194,7 +205,6 @@ Why this matters:
 12. Custom theme matching the eventual product brand.
 13. Live collaboration (Yjs + monaco-yjs) — high wow-factor but irrelevant for a solo test-taker.
 14. Linting / type-checking for non-built-in languages. Monaco only ships TS/JS/CSS/HTML/JSON language services; Python or Go diagnostics need a Language Server (LSP), which by definition needs a backend.
-
 
 ## Conventions to keep
 
