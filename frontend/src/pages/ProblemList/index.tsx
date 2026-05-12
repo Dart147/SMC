@@ -1,39 +1,54 @@
-import React, { useEffect, useState } from "react";
-import { fetchProblems } from "../../features/problems/api";
+import { useNavigate } from "react-router-dom";
+import { MOCK_PROBLEMS } from "../../features/problems/mockData";
 
-export const ProblemList: React.FC = () => {
-  const [problems, setProblems] = useState<any[]>([]);
-
-  useEffect(() => {
-    fetchProblems().then((data: any) => setProblems(data));
-  }, []);
+export function ProblemList() {
+  const navigate = useNavigate();
 
   return (
-    <div className="max-w-4xl mx-auto p-8">
-      <h1 className="text-3xl font-bold mb-6">Problem List</h1>
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <ul className="divide-y divide-gray-200">
-          {problems.map((p) => (
-            <li
-              key={p.id}
-              className="p-4 hover:bg-gray-50 flex justify-between items-center transition-colors"
+    <div style={{ padding: "40px", maxWidth: "800px", margin: "0 auto", color: "#d4d4d4" }}>
+      <h1 style={{ fontSize: "28px", marginBottom: "24px", color: "#fff" }}>Problem List</h1>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        {MOCK_PROBLEMS.map((problem) => (
+          <div
+            key={problem.id}
+            onClick={() => navigate(`/workspace/${problem.id}`)}
+            style={{
+              padding: "16px",
+              background: "#252526",
+              border: "1px solid #333",
+              borderRadius: "8px",
+              cursor: "pointer",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              transition: "border-color 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#007acc")}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#333")}
+          >
+            <div>
+              <h3 style={{ fontSize: "18px", margin: "0 0 8px 0", color: "#fff" }}>
+                {problem.title}
+              </h3>
+            </div>
+
+            <span
+              style={{
+                fontWeight: "bold",
+                color:
+                  problem.difficulty === "Easy"
+                    ? "#4ade80"
+                    : problem.difficulty === "Medium"
+                      ? "#fbbf24"
+                      : "#f87171",
+              }}
             >
-              <span className="font-medium text-lg">
-                {p.id}. {p.title}
-              </span>
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                  p.difficulty === "Easy"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-yellow-100 text-yellow-800"
-                }`}
-              >
-                {p.difficulty}
-              </span>
-            </li>
-          ))}
-        </ul>
+              {problem.difficulty}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
-};
+}
