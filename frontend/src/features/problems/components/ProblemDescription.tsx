@@ -1,17 +1,32 @@
 import { Theme, THEME_CONFIG } from "../../workspace/constants";
+import { Problem } from "../../../types/problem";
+// 引入 Markdown 相關套件
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+// 必須引入 KaTeX 的 CSS，數學公式才會排版正確！
+import "katex/dist/katex.min.css";
 
 interface ProblemDescriptionProps {
   theme: Theme;
+  problem: Problem;
 }
 
-export function ProblemDescription({ theme }: ProblemDescriptionProps) {
-  // 取得全域主題顏色
+export function ProblemDescription({ theme, problem }: ProblemDescriptionProps) {
   const colors = THEME_CONFIG[theme];
 
-  // 針對深淺色模式，微調「難易度標籤」與「行內程式碼」的底色，確保文字對比度清晰
   const tagBg = theme === "vs-dark" ? "#166534" : "#dcfce7";
-  const tagText = theme === "vs-dark" ? "#4ade80" : "#166534";
+  const difficultyColor =
+    problem.difficulty === "Easy"
+      ? "#4ade80"
+      : problem.difficulty === "Medium"
+        ? "#fbbf24"
+        : "#f87171";
+
+  // 決定行內程式碼與區塊的底色
   const codeBg = theme === "vs-dark" ? "#333333" : "#e5e5e5";
+  const preBg = colors.secondaryBg;
 
   return (
     <div
@@ -21,19 +36,17 @@ export function ProblemDescription({ theme }: ProblemDescriptionProps) {
         overflowY: "auto",
         background: colors.bg,
         color: colors.text,
-        transition: "all 0.2s ease", // 讓深淺色切換有滑順的漸變效果
+        transition: "all 0.2s ease",
       }}
     >
-      {/* 標題 */}
+      {/* 標題與標籤 */}
       <h1 style={{ fontSize: "24px", fontWeight: "600", marginBottom: "12px", color: colors.text }}>
-        1. Two Sum
+        {problem.title}
       </h1>
-
-      {/* 標籤區塊 (難易度、分類) */}
       <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
         <span
           style={{
-            color: tagText,
+            color: difficultyColor,
             background: tagBg,
             padding: "4px 10px",
             borderRadius: "12px",
@@ -41,145 +54,87 @@ export function ProblemDescription({ theme }: ProblemDescriptionProps) {
             fontWeight: "bold",
           }}
         >
-          Easy
+          {problem.difficulty}
         </span>
-        <span
-          style={{
-            color: colors.text,
-            background: colors.secondaryBg,
-            padding: "4px 10px",
-            borderRadius: "12px",
-            fontSize: "12px",
+      </div>
+
+      {/* Markdown 渲染區塊 */}
+      <div
+        className="markdown-body"
+        style={{
+          lineHeight: "1.6",
+          fontSize: "15px",
+        }}
+      >
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, remarkMath]}
+          rehypePlugins={[rehypeKatex]}
+          components={{
+            // 自定義 <h3> 標題樣式 (對應 ### Example)
+            h3: ({ node, ...props }) => (
+              <h3
+                style={{
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  marginTop: "24px",
+                  marginBottom: "12px",
+                }}
+                {...props}
+              />
+            ),
+            // 自定義 <ul> 列表樣式 (對應 Constraints)
+            ul: ({ node, ...props }) => (
+              <ul style={{ margin: "0 0 20px 20px", padding: 0, lineHeight: "1.8" }} {...props} />
+            ),
+            // 🌟 最關鍵：自定義 <code> 標籤，讓它能跟著主題變換底色
+            code: ({ className, children, ...props }) => {
+              // 檢查是不是被 <pre> 包起來的多行程式碼
+              const match = /language-(\w+)/.exec(className || "");
+              return !match ? (
+                // 行內程式碼 (如 `nums`)
+                <code
+                  style={{
+                    background: codeBg,
+                    padding: "2px 6px",
+                    borderRadius: "4px",
+                    fontFamily: "monospace",
+                    fontSize: "0.9em",
+                  }}
+                  {...props}
+                >
+                  {children}
+                </code>
+              ) : (
+                // 多行程式碼區塊
+                <code
+                  className={className}
+                  style={{ fontFamily: "monospace", fontSize: "14px" }}
+                  {...props}
+                >
+                  {children}
+                </code>
+              );
+            },
+            // 自定義 <pre> 標籤 (對應多行程式碼區塊的外框)
+            pre: ({ node, ...props }) => (
+              <pre
+                style={{
+                  background: preBg,
+                  padding: "16px",
+                  borderRadius: "8px",
+                  border: `1px solid ${colors.border}`,
+                  overflowX: "auto",
+                  marginTop: "8px",
+                  marginBottom: "16px",
+                }}
+                {...props}
+              />
+            ),
           }}
         >
-          Array
-        </span>
-        <span
-          style={{
-            color: colors.text,
-            background: colors.secondaryBg,
-            padding: "4px 10px",
-            borderRadius: "12px",
-            fontSize: "12px",
-          }}
-        >
-          Hash Table
-        </span>
+          {problem.description}
+        </ReactMarkdown>
       </div>
-
-      {/* 題目敘述本體 */}
-      <div style={{ lineHeight: "1.6", fontSize: "15px", marginBottom: "24px" }}>
-        <p style={{ marginBottom: "12px" }}>
-          Given an array of integers{" "}
-          <code
-            style={{
-              background: codeBg,
-              padding: "2px 6px",
-              borderRadius: "4px",
-              fontFamily: "monospace",
-            }}
-          >
-            nums
-          </code>{" "}
-          and an integer{" "}
-          <code
-            style={{
-              background: codeBg,
-              padding: "2px 6px",
-              borderRadius: "4px",
-              fontFamily: "monospace",
-            }}
-          >
-            target
-          </code>
-          , return indices of the two numbers such that they add up to{" "}
-          <code
-            style={{
-              background: codeBg,
-              padding: "2px 6px",
-              borderRadius: "4px",
-              fontFamily: "monospace",
-            }}
-          >
-            target
-          </code>
-          .
-        </p>
-        <p style={{ marginBottom: "12px" }}>
-          You may assume that each input would have <strong>exactly one solution</strong>, and you
-          may not use the same element twice.
-        </p>
-        <p>You can return the answer in any order.</p>
-      </div>
-
-      {/* 測試範例 (Example) */}
-      <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px" }}>Example 1:</h3>
-      <div
-        style={{
-          background: colors.secondaryBg,
-          padding: "16px",
-          borderRadius: "8px",
-          marginBottom: "20px",
-          border: `1px solid ${colors.border}`,
-          fontFamily: "monospace",
-          fontSize: "14px",
-          lineHeight: "1.5",
-        }}
-      >
-        <strong style={{ color: colors.text }}>Input:</strong> nums = [2,7,11,15], target = 9<br />
-        <strong style={{ color: colors.text }}>Output:</strong> [0,1]
-        <br />
-        <strong style={{ color: colors.text }}>Explanation:</strong> Because nums[0] + nums[1] == 9,
-        we return [0, 1].
-      </div>
-
-      <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px" }}>Example 2:</h3>
-      <div
-        style={{
-          background: colors.secondaryBg,
-          padding: "16px",
-          borderRadius: "8px",
-          marginBottom: "24px",
-          border: `1px solid ${colors.border}`,
-          fontFamily: "monospace",
-          fontSize: "14px",
-          lineHeight: "1.5",
-        }}
-      >
-        <strong style={{ color: colors.text }}>Input:</strong> nums = [3,2,4], target = 6<br />
-        <strong style={{ color: colors.text }}>Output:</strong> [1,2]
-      </div>
-
-      {/* 限制條件 (Constraints) */}
-      <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px" }}>Constraints:</h3>
-      <ul
-        style={{
-          margin: "0 0 20px 20px",
-          padding: 0,
-          lineHeight: "1.8",
-          fontSize: "14px",
-        }}
-      >
-        {/* 使用 <sup> 標籤來渲染數學次方 */}
-        <li>
-          <code style={{ background: codeBg, padding: "2px 6px", borderRadius: "4px" }}>
-            2 &lt;= nums.length &lt;= 10<sup>4</sup>
-          </code>
-        </li>
-        <li>
-          <code style={{ background: codeBg, padding: "2px 6px", borderRadius: "4px" }}>
-            -10<sup>9</sup> &lt;= nums[i] &lt;= 10<sup>9</sup>
-          </code>
-        </li>
-        <li>
-          <code style={{ background: codeBg, padding: "2px 6px", borderRadius: "4px" }}>
-            -10<sup>9</sup> &lt;= target &lt;= 10<sup>9</sup>
-          </code>
-        </li>
-        <li>
-          <strong>Only one valid answer exists.</strong>
-        </li>
-      </ul>
     </div>
   );
 }
