@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 // 引入 V4 最新 API：Group, Panel
 import { Panel, Group } from "react-resizable-panels";
 
@@ -8,23 +8,41 @@ import { ConsolePanel } from "../../features/workspace/components/ConsolePanel";
 import { ProblemDescription } from "../../features/problems/components/ProblemDescription";
 import { ResizeHandle } from "../../components/Common/ResizeHandle";
 import { Language, Theme, SKELETONS, THEME_CONFIG } from "../../features/workspace/constants";
+import { useRunCode } from "../../features/workspace/hooks/useRunCode";
+import { fetchProblemById } from "../../features/problems/api";
+import { Problem } from "../../types/problem";
 
 import { useParams, Navigate } from "react-router-dom";
-import { MOCK_PROBLEMS } from "../../features/problems/mockData";
 
 export function Workspace() {
   // 1. 取得網址列上的 problemId
   const { problemId } = useParams<{ problemId: string }>();
-  // 2. 尋找對應的題目
-  const currentProblem = MOCK_PROBLEMS.find((p) => p.id === problemId);
+
   // 省略 useState ... (language, theme, code)
-  // 3. 錯誤處理：如果題目不存在，跳回列表頁
-  if (!currentProblem) {
-    return <Navigate to="/problems" replace />;
-  }
   const [language, setLanguage] = useState<Language>("javascript");
   const [theme, setTheme] = useState<Theme>("vs-dark");
   const [code, setCode] = useState<string>(SKELETONS["javascript"]);
+
+  // 2. 從後端取得對應的題目
+  const [currentProblem, setCurrentProblem] = useState<Problem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  const { runCode, isRunning } = useRunCode(problemId ?? "");
+
+  useEffect(() => {
+    if (!problemId) return;
+    fetchProblemById(problemId)
+      .then(setCurrentProblem)
+      .catch(() => setNotFound(true))
+      .finally(() => setLoading(false));
+  }, [problemId]);
+
+  // 3. 錯誤處理：如果題目不存在，跳回列表頁
+  if (loading) return <div style={{ padding: "40px", color: "#d4d4d4" }}>Loading...</div>;
+  if (notFound || !currentProblem) {
+    return <Navigate to="/problems" replace />;
+  }
 
   const handleLanguageChange = (newLang: Language) => {
     setLanguage(newLang);
@@ -73,6 +91,8 @@ export function Workspace() {
             Run
           </button>
           <button
+            onClick={runCode}
+            disabled={isRunning}
             style={{
               background: "#22c55e",
               color: "#fff",
@@ -80,10 +100,11 @@ export function Workspace() {
               borderRadius: "4px",
               border: "none",
               fontWeight: "bold",
-              cursor: "pointer",
+              cursor: isRunning ? "not-allowed" : "pointer",
+              opacity: isRunning ? 0.6 : 1,
             }}
           >
-            Submit
+            {isRunning ? "Submitting..." : "Submit"}
           </button>
         </div>
       </header>

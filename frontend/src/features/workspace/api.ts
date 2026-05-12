@@ -1,11 +1,20 @@
-export const submitCode = async (data: { code: string; language: string }) => {
-  return new Promise<{ output: string }>((resolve) =>
-    setTimeout(
-      () =>
-        resolve({
-          output: `Compiled and executed ${data.language} code successfully!\nOutput:\nHello World\n`,
-        }),
-      1000,
-    ),
-  );
+import { apiClient } from "../../services/apiClient";
+
+interface SubmitRequest {
+  problemId: string;
+  code: string;
+  language: string;
+}
+
+interface Submission {
+  id: string;
+  problemId: string;
+  code: string;
+  language: string;
+  status: string;
+}
+
+export const submitCode = async (data: SubmitRequest): Promise<{ output: string }> => {
+  const res = await apiClient.post<Submission>("/submissions", data);
+  return { output: `Submission received.\nStatus: ${res.data.status}\nID: ${res.data.id}` };
 };
