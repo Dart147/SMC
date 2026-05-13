@@ -12,6 +12,10 @@ on:
       - "frontend/**"
       - ".github/workflows/frontend-snapshot.yaml"
 
+concurrency: # 
+  group: smc-preview-${{ github.event.number }}-frontend # Groups these jobs by the PR number
+  cancel-in-progress: true # if an older build is running for this PR, kill it
+
 jobs:
   Frontend:
     name: Frontend checks
