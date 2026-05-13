@@ -1,20 +1,22 @@
 package main
 
 import (
-	"github.com/Dart147/SMC/infra/deploy/internal/config"
-	"github.com/Dart147/SMC/infra/deploy/internal/handler"
-	"github.com/Dart147/SMC/infra/deploy/internal/logger"
-	"github.com/Dart147/SMC/infra/deploy/internal/middleware"
+	"github.com/Dart147/SMC/deploy/internal/activity"
+	"github.com/Dart147/SMC/deploy/internal/adapter/cloudflare"
+	"github.com/Dart147/SMC/deploy/internal/adapter/discord"
+	"github.com/Dart147/SMC/deploy/internal/adapter/infisical"
+	"github.com/Dart147/SMC/deploy/internal/adapter/ssh"
+	"github.com/Dart147/SMC/deploy/internal/config"
+	"github.com/Dart147/SMC/deploy/internal/logger"
+	"github.com/Dart147/SMC/deploy/internal/workflow"
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -23,13 +25,14 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
-	AppName    = "deployment-service"
+	AppName    = "deployment-service-worker"
 	Version    = "dev"
 	BuildTime  = "unknown"
 	CommitHash = "unknown"
@@ -42,10 +45,6 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	if err := cfg.Validate(); err != nil {
-		log.Fatalf("Config validation failed: %v", err)
-	}
-
 	// Initialize logger
 	zapLogger, err := initLogger(cfg)
 	if err != nil {
@@ -53,7 +52,7 @@ func main() {
 	}
 	defer zapLogger.Sync()
 
-	zapLogger.Info("Starting deployment service API",
+	zapLogger.Info("Starting deployment service worker",
 		zap.String("version", Version),
 		zap.String("build_time", BuildTime),
 		zap.String("commit_hash", CommitHash),
@@ -84,66 +83,44 @@ func main() {
 	}
 	defer temporalClient.Close()
 
-	// Create validator
-	validator := validator.New()
+	// Create adapters
+	infisicalClient := infisical.NewClient(cfg.Infisical.BaseURL, cfg.Infisical.ServiceToken, zapLogger)
+	sshClient := ssh.NewClient(cfg.SSH, zapLogger)
+	cloudflareClient := cloudflare.NewClient(cfg.Cloudflare.APIToken, cfg.Cloudflare.ZoneID, zapLogger)
+	discordClient := discord.NewClient(cfg.Discord.BotToken, cfg.Discord.DefaultChannelID, zapLogger)
 
-	// Create handlers
-	webhookHandler := handler.NewWebhookHandler(temporalClient, validator, zapLogger)
+	// Create activities
+	secretActivity := activity.NewSecretActivity(infisicalClient, zapLogger)
+	sshActivity := activity.NewSSHActivity(sshClient, cfg.SSH, zapLogger)
+	dnsActivity := activity.NewDNSActivity(cloudflareClient, zapLogger)
+	notifyActivity := activity.NewNotifyActivity(discordClient, zapLogger)
 
-	// Create middlewares
-	authMiddleware := middleware.NewAuthMiddleware(cfg.Auth.DeployToken, zapLogger)
-	traceMiddleware := middleware.NewTraceMiddleware(zapLogger)
+	// Create worker
+	w := worker.New(temporalClient, "cd-task-queue", worker.Options{})
 
-	// Setup routes
-	mux := http.NewServeMux()
+	// Register workflows
+	w.RegisterWorkflow(workflow.CDWorkflow)
 
-	// Health check
-	mux.HandleFunc("GET /api/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
-	})
+	// Register activities
+	w.RegisterActivity(secretActivity.FetchInfisicalSecrets)
+	w.RegisterActivity(sshActivity.RunSSHDeploy)
+	w.RegisterActivity(dnsActivity.EnsureDNSRecord)
+	w.RegisterActivity(dnsActivity.RemoveDNSRecord)
+	w.RegisterActivity(notifyActivity.SendDiscordNotification)
 
-	// Webhook endpoint
-	mux.HandleFunc("POST /api/webhook/deploy",
-		traceMiddleware.Middleware(
-			authMiddleware.Middleware(
-				webhookHandler.HandleDeploy,
-			),
-		),
-	)
+	zapLogger.Info("Worker registered, starting...")
 
-	// Create HTTP server
-	srv := &http.Server{
-		Addr:    cfg.Server.Host + ":" + cfg.Server.Port,
-		Handler: mux,
-	}
-
-	// Start server in goroutine
-	go func() {
-		zapLogger.Info("Starting HTTP server",
-			zap.String("host", cfg.Server.Host),
-			zap.String("port", cfg.Server.Port),
-		)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			zapLogger.Fatal("Failed to start server", zap.Error(err))
-		}
-	}()
-
-	// Wait for interrupt signal
+	// Start worker
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	<-ctx.Done()
+	defer stop()
 
-	zapLogger.Info("Shutting down gracefully...")
-
-	// Shutdown server
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(shutdownCtx); err != nil {
-		zapLogger.Error("Server forced to shutdown", zap.Error(err))
+	err = w.Run(worker.InterruptCh())
+	if err != nil {
+		zapLogger.Fatal("Worker failed", zap.Error(err))
 	}
 
-	stop()
-	zapLogger.Info("Server stopped")
+	<-ctx.Done()
+	zapLogger.Info("Worker stopped")
 }
 
 func initLogger(cfg *config.Config) (*zap.Logger, error) {

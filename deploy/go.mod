@@ -1,4 +1,4 @@
-module github.com/Dart147/SMC/infra/deploy
+module github.com/Dart147/SMC/deploy
 
 go 1.24.2
 

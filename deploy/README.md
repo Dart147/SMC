@@ -28,7 +28,7 @@ Kept:
 ## Project Structure
 
 ```
-infra/deploy/
+deploy/
 ├── cmd/
 │   ├── api/          # API server entry point
 │   └── worker/       # Temporal worker entry point
@@ -591,4 +591,4 @@ Open <http://localhost:7080> in your browser to:
 
 ## Where decisions live
 
-- Root port table (frontend + temporal family): `../../README.md` §Ports.
+- Root port table (frontend + temporal family): `../README.md` §Ports.

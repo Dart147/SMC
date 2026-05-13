@@ -1,7 +1,7 @@
 package discord
 
 import (
-	"github.com/Dart147/SMC/infra/deploy/internal/domain"
+	"github.com/Dart147/SMC/deploy/internal/domain"
 	// "bytes"
 	"context"
 	// "encoding/json"

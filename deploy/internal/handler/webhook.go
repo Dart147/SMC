@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/Dart147/SMC/infra/deploy/internal/domain"
+	"github.com/Dart147/SMC/deploy/internal/domain"
 	"encoding/json"
 	"fmt"
 	"net/http"
