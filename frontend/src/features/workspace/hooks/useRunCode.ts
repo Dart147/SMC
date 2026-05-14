@@ -4,16 +4,25 @@ import { useWorkspaceStore } from "../store";
 
 export const useRunCode = (problemId: string) => {
   const [isRunning, setIsRunning] = useState(false);
-  const { code, language, setOutput } = useWorkspaceStore();
+  const { code, language, setResult } = useWorkspaceStore();
 
   const runCode = async () => {
     setIsRunning(true);
-    setOutput("Submitting...");
+    setResult(null);
     try {
-      const res = await submitCode({ problemId, code, language });
-      setOutput(res.output);
+      const submission = await submitCode({ problemId, code, language });
+      setResult(submission);
     } catch {
-      setOutput("Error: Could not reach the backend. Is it running on port 8081?");
+      setResult({
+        id: "",
+        problemId,
+        code,
+        language,
+        status: "Runtime Error",
+        error: "Could not reach the backend. Is it running on port 8081?",
+        passedTestCases: 0,
+        totalTestCases: 0,
+      });
     } finally {
       setIsRunning(false);
     }

@@ -9,6 +9,7 @@ import { ProblemDescription } from "../../features/problems/components/ProblemDe
 import { ResizeHandle } from "../../components/Common/ResizeHandle";
 import { Language, Theme, SKELETONS, THEME_CONFIG } from "../../features/workspace/constants";
 import { useRunCode } from "../../features/workspace/hooks/useRunCode";
+import { useWorkspaceStore } from "../../features/workspace/store";
 import { fetchProblemById } from "../../features/problems/api";
 import { Problem } from "../../types/problem";
 
@@ -18,10 +19,8 @@ export function Workspace() {
   // 1. 取得網址列上的 problemId
   const { problemId } = useParams<{ problemId: string }>();
 
-  // 省略 useState ... (language, theme, code)
-  const [language, setLanguage] = useState<Language>("javascript");
+  const { code, language, setCode, setLanguage } = useWorkspaceStore();
   const [theme, setTheme] = useState<Theme>("vs-dark");
-  const [code, setCode] = useState<string>(SKELETONS["javascript"]);
 
   // 2. 從後端取得對應的題目
   const [currentProblem, setCurrentProblem] = useState<Problem | null>(null);
@@ -46,7 +45,7 @@ export function Workspace() {
 
   const handleLanguageChange = (newLang: Language) => {
     setLanguage(newLang);
-    setCode(SKELETONS[newLang]);
+    setCode(SKELETONS[newLang] ?? "");
   };
 
   const handleThemeToggle = () => {

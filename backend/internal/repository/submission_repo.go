@@ -32,3 +32,16 @@ func (r *SubmissionRepo) GetByID(id string) (domain.Submission, bool) {
 	s, ok := r.data[id]
 	return s, ok
 }
+
+func (r *SubmissionRepo) Update(s domain.Submission) error {
+	if s.ID == "" {
+		return fmt.Errorf("submission ID must not be empty")
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, ok := r.data[s.ID]; !ok {
+		return fmt.Errorf("submission %q not found", s.ID)
+	}
+	r.data[s.ID] = s
+	return nil
+}

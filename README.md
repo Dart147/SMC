@@ -4,6 +4,15 @@
 
 Show Me your Code (SMC) is an Online Code Test platform: interviewees take coding tests in the browser, and hiring managers create tests, manage candidates, and review results.
 
+## Quick start
+
+```bash
+# Run the full stack (frontend on :8080, backend on :8081)
+docker compose up --build
+```
+
+The root `docker-compose.yaml` builds and starts both services. The frontend waits for the backend healthcheck to pass before coming up.
+
 ## Repository layout
 
 ```
@@ -39,16 +48,19 @@ config.
 - `7082` — CD-service webhook API (`http://localhost:7082/api/webhook/deploy`)
 - `7233` — Temporal gRPC (for SDK clients)
 - `8080` — SMC frontend nginx (`http://localhost:8080`)
+- `8081` — SMC backend API (`http://localhost:8081/api`)
 
 ## Frontend
 
-A standalone localhost POC of the in-browser code editor: a single-page **Vite + React 18 + TypeScript** app built around `@monaco-editor/react`. Currently supports five languages (JavaScript, Python, Go, C, C++), a dark / light theme toggle, and per-language Monaco models so each language keeps its own buffer and undo stack. In production-shape it is built statically and served by `nginx:1.27-alpine` from a multi-stage Docker build, runnable via `docker compose up --build` from `frontend/Editor/` on `http://localhost:8080`. For fast iteration there is also a Vite dev server on `http://localhost:5173`.
+A single-page **Vite + React 18 + TypeScript** app built around `@monaco-editor/react`. Supports Python, JavaScript, and Go; dark / light theme toggle; per-language Monaco models so each language keeps its own buffer and undo stack. Connects to the backend API to submit code and display judge results. Served by `nginx:1.27-alpine` from a multi-stage Docker build on port `8080`. For fast local iteration run `npm run dev` (Vite dev server on `http://localhost:5173`).
 
-For setup, dev commands, Docker workflow, file map, and conventions, see **[`frontend/Editor/README.md`](frontend/Editor/README.md)**
+See **[`frontend/README.md`](frontend/README.md)** for setup, dev commands, and file layout.
 
 ## Backend
 
-**TBD.** Will host the HTTP API and the async grader workers that accept submissions and run them in sandboxed containers.
+A Go 1.24 REST API (`backend/`) that serves problems and judges code submissions. Submissions are executed in a subprocess per language (Python, JavaScript, Node.js, Go), stdout is compared against test cases seeded from YAML, and the result (AC / WA / TLE / MLE / RE / CE) is written back asynchronously. The frontend polls `GET /api/submissions/{id}` until a terminal status appears.
+
+Port: **8081**. See [`backend/README.md`](backend/README.md) for the full API reference, judge design, and run instructions.
 
 ## Infra
 

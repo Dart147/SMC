@@ -13,6 +13,7 @@ import (
 
 	"github.com/Dart147/SMC/backend/internal/config"
 	"github.com/Dart147/SMC/backend/internal/handler"
+	"github.com/Dart147/SMC/backend/internal/judge"
 	"github.com/Dart147/SMC/backend/internal/middleware"
 	"github.com/Dart147/SMC/backend/internal/repository"
 	"github.com/Dart147/SMC/backend/internal/service"
@@ -41,7 +42,8 @@ func main() {
 
 	// Services
 	problemSvc := service.NewProblemService(problemRepo)
-	submissionSvc := service.NewSubmissionService(submissionRepo)
+	j := judge.NewJudge(logger)
+	submissionSvc := service.NewSubmissionService(submissionRepo, problemRepo, j, logger)
 
 	// Handlers
 	problemH := handler.NewProblemHandler(problemSvc)

@@ -2,15 +2,30 @@
   title: "Two Sum"
   difficulty: "Easy"
   description: |
-    Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.
+    Given a list of integers and a target, print the two indices (0-based, in ascending order) that add up to the target. Each input has exactly one solution.
 
-    You may assume that each input would have exactly one solution, and you may not use the same element twice.
+    **Input format:**
+    - Line 1: space-separated integers (the array)
+    - Line 2: target integer
+
+    **Output format:**
+    - Two space-separated indices
 
     **Example:**
     ```
-    Input: nums = [2,7,11,15], target = 9
-    Output: [0,1]
+    Input:
+      2 7 11 15
+      9
+    Output:
+      0 1
     ```
+  test_cases:
+    - input: "2 7 11 15\n9\n"
+      expected_output: "0 1\n"
+    - input: "3 2 4\n6\n"
+      expected_output: "1 2\n"
+    - input: "3 3\n6\n"
+      expected_output: "0 1\n"
 
 - id: "2"
   title: "Add Two Numbers"
@@ -42,17 +57,30 @@
   title: "Valid Parentheses"
   difficulty: "Easy"
   description: |
-    Given a string `s` containing just the characters `'('`, `')'`, `'{'`, `'}'`, `'['` and `']'`, determine if the input string is valid.
+    Given a string containing only `'('`, `')'`, `'{'`, `'}'`, `'['` and `']'`, determine if it is valid.
 
-    An input string is valid if:
-    - Open brackets must be closed by the same type of brackets.
-    - Open brackets must be closed in the correct order.
+    A string is valid if open brackets are closed by the same type and in the correct order.
+
+    **Input format:**
+    - Line 1: the bracket string
+
+    **Output format:**
+    - Print `true` or `false`
 
     **Example:**
     ```
-    Input: s = "()[]{}"
+    Input: ()[]{}
     Output: true
     ```
+  test_cases:
+    - input: "()[]{}\n"
+      expected_output: "true\n"
+    - input: "(]\n"
+      expected_output: "false\n"
+    - input: "([)]\n"
+      expected_output: "false\n"
+    - input: "{[]}\n"
+      expected_output: "true\n"
 
 - id: "5"
   title: "Maximum Depth of Binary Tree"
