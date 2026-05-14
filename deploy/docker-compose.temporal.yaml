@@ -2,6 +2,7 @@ services:
   postgresql:
     image: postgres:${POSTGRESQL_VERSION}
     container_name: temporal-postgresql
+    restart: unless-stopped
     # No host port published: Temporal server reaches Postgres by service name on
     # `temporal-network`.
     environment:
@@ -21,6 +22,7 @@ services:
   elasticsearch:
     image: elasticsearch:${ELASTICSEARCH_VERSION}
     container_name: temporal-elasticsearch
+    restart: unless-stopped
     # No host port published: Temporal server reaches ES by service name on
     # `temporal-network`.
     environment:
@@ -71,6 +73,7 @@ services:
   temporal:
     image: temporalio/server:${TEMPORAL_VERSION}
     container_name: temporal
+    restart: unless-stopped
     depends_on:
       temporal-admin-tools:
         condition: service_completed_successfully
@@ -117,6 +120,7 @@ services:
 
   temporal-ui:
     container_name: temporal-ui
+    restart: unless-stopped
     depends_on:
       temporal:
         condition: service_healthy

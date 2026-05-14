@@ -1,8 +1,8 @@
 package ssh
 
 import (
-	"github.com/Dart147/SMC/infra/deploy/internal/config"
-	"github.com/Dart147/SMC/infra/deploy/internal/domain"
+	"github.com/Dart147/SMC/deploy/internal/config"
+	"github.com/Dart147/SMC/deploy/internal/domain"
 	"context"
 	"fmt"
 	"os"

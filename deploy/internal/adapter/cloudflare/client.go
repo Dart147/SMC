@@ -1,7 +1,7 @@
 package cloudflare
 
 import (
-	"github.com/Dart147/SMC/infra/deploy/internal/domain"
+	"github.com/Dart147/SMC/deploy/internal/domain"
 	"context"
 	"encoding/json"
 	"fmt"
