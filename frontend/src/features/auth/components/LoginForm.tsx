@@ -24,7 +24,7 @@ const LoginForm = () => {
 
     if (username === savedAcc && password === savedPw) {
       console.log("登入成功，正在跳轉...");
-      navigate("/workspace"); // 登入後導向面試工作區
+      navigate("/problems"); // 登入後導向面試工作區
     } else {
       // 為了方便你除錯，我把正確的帳密印在 console
       //console.log("輸入帳密：", username, password);
