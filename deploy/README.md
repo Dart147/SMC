@@ -28,7 +28,7 @@ Kept:
 ## Project Structure
 
 ```
-infra/deploy/
+deploy/
 ├── cmd/
 │   ├── api/          # API server entry point
 │   └── worker/       # Temporal worker entry point
@@ -210,20 +210,66 @@ complete examples.
 
 Health check endpoint.
 
-## Testing Webhooks
+## Operator workflow — updating the CD-service on the host
 
-Use the provided Makefile targets:
+When the code or compose files under `deploy/` change, the operator
+(whoever holds the host SSH key) updates the running CD-service by hand.
+This pipeline does **not** auto-deploy itself, by design — the deployer
+cannot orchestrate its own upgrade safely (see
+`../infra/ref/deploy_pipeline.md §2`).
+
+```bash
+ssh <smc-host>
+cd /opt/smc/deploy
+git pull --ff-only
+make deploy        # = deploy-temporal + deploy-cd-service + healthz
+```
+
+Targets are idempotent — re-running is safe. Component-scoped variants
+exist when you only need to restart one binary:
+
+```bash
+make deploy-api       # rebuild + restart api only, --no-deps
+make deploy-worker    # rebuild + restart worker only, --no-deps
+make deploy-temporal  # apply the Temporal stack (rare — only when its compose changes)
+```
+
+Diagnostics:
+
+```bash
+make ps                  # list CD-service + Temporal containers
+make logs                # tail api + worker
+make logs SERVICE=api    # tail just one
+make healthz             # probe http://localhost:7082/api/healthz with retries
+```
+
+### Rollback
+
+Intentionally not a Makefile target — the operator picks the SHA:
+
+```bash
+cd /opt/smc/deploy
+git checkout <previous-sha>
+make deploy-cd-service
+make healthz
+```
+
+## Testing Webhooks against a running CD-service
+
+Distinct from the `deploy*` targets above (which update the CD-service
+itself), these send a real webhook to a running CD-service to exercise
+the workflow end-to-end:
 
 ```bash
 # Send deploy webhook (defaults to http://localhost:7082)
-make deploy
+make send-deploy
 
 # Send cleanup webhook
-make cleanup
+make send-cleanup
 
 # Custom API URL and token
-make deploy   API_URL=http://your-api:7082 DEPLOY_TOKEN=your-token
-make cleanup  API_URL=http://your-api:7082 DEPLOY_TOKEN=your-token
+make send-deploy   API_URL=http://your-api:7082 DEPLOY_TOKEN=your-token
+make send-cleanup  API_URL=http://your-api:7082 DEPLOY_TOKEN=your-token
 ```
 
 Webhook payload examples:
@@ -256,14 +302,30 @@ make run-worker
 
 ### Makefile Targets
 
-- `make build`         — build API and Worker binaries
-- `make build-api`     — build API binary only
-- `make build-worker`  — build Worker binary only
-- `make run-api`       — run API server locally
-- `make run-worker`    — run Worker locally
-- `make deploy`        — send deploy webhook request
-- `make cleanup`       — send cleanup webhook request
-- `make clean`         — remove built binaries
+Build / local-run (Go binaries, no Docker):
+
+- `make build`             — build API and Worker binaries
+- `make build-api`         — build API binary only
+- `make build-worker`      — build Worker binary only
+- `make run-api`           — run API server locally
+- `make run-worker`        — run Worker locally
+- `make clean`             — remove built binaries
+
+Operator targets (run on the SMC host):
+
+- `make deploy`            — `deploy-temporal` + `deploy-cd-service` + `healthz`
+- `make deploy-temporal`   — `docker compose up -d` for the Temporal stack
+- `make deploy-cd-service` — rebuild + restart `api` and `worker` (`--no-deps`)
+- `make deploy-api`        — same, scoped to `api`
+- `make deploy-worker`     — same, scoped to `worker`
+- `make logs [SERVICE=…]`  — tail container logs
+- `make ps`                — list containers across both compose files
+- `make healthz`           — probe `/api/healthz` with retries
+
+Webhook test targets (exercise a running CD-service):
+
+- `make send-deploy`       — POST `webhook-payload.deploy.json`
+- `make send-cleanup`      — POST `webhook-payload.cleanup.json`
 
 ---
 
@@ -591,4 +653,4 @@ Open <http://localhost:7080> in your browser to:
 
 ## Where decisions live
 
-- Root port table (frontend + temporal family): `../../README.md` §Ports.
+- Root port table (frontend + temporal family): `../README.md` §Ports.

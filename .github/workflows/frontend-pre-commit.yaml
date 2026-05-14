@@ -12,6 +12,10 @@ on:
       - "frontend/**"
       - ".github/workflows/frontend-pre-commit.yaml"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }} # Groups these jobs by the workflow name and branch name
+  cancel-in-progress: true # if a newer build is triggered for the same branch, kill the older one
+
 jobs:
   check-if-in-pr:
     runs-on: ubuntu-latest

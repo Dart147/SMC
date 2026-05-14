@@ -8,6 +8,10 @@ on:
       - "frontend/**"
       - ".github/workflows/frontend-dev.yaml"
 
+concurrency: # ensures that only one deployment job runs at a time
+  group: smc-deploy-dev-frontend
+  cancel-in-progress: false # if a deployment is currently running, dont kill it
+
 jobs:
   Frontend:
     name: Frontend checks
