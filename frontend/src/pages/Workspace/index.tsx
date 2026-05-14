@@ -9,7 +9,19 @@ import { ProblemDescription } from "../../features/problems/components/ProblemDe
 import { ResizeHandle } from "../../components/Common/ResizeHandle";
 import { Language, Theme, SKELETONS, THEME_CONFIG } from "../../features/workspace/constants";
 
+import { useParams, Navigate } from "react-router-dom";
+import { MOCK_PROBLEMS } from "../../features/problems/mockData";
+
 export function Workspace() {
+  // 1. 取得網址列上的 problemId
+  const { problemId } = useParams<{ problemId: string }>();
+  // 2. 尋找對應的題目
+  const currentProblem = MOCK_PROBLEMS.find((p) => p.id === problemId);
+  // 省略 useState ... (language, theme, code)
+  // 3. 錯誤處理：如果題目不存在，跳回列表頁
+  if (!currentProblem) {
+    return <Navigate to="/problems" replace />;
+  }
   const [language, setLanguage] = useState<Language>("javascript");
   const [theme, setTheme] = useState<Theme>("vs-dark");
   const [code, setCode] = useState<string>(SKELETONS["javascript"]);
@@ -24,7 +36,6 @@ export function Workspace() {
   };
 
   const colors = THEME_CONFIG[theme];
-
   return (
     <div
       style={{
@@ -83,7 +94,7 @@ export function Workspace() {
         <Group orientation="horizontal">
           {/* 左半邊：題目描述 */}
           <Panel defaultSize={50} minSize={20}>
-            <ProblemDescription theme={theme} />
+            <ProblemDescription theme={theme} problem={currentProblem} />
           </Panel>
 
           {/* 左右拖拉把手 */}
