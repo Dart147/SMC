@@ -1,35 +1,35 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const LoginForm = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     // 1. 從瀏覽器快取 (localStorage) 抓出面試官剛剛生成的帳密
-    const savedAcc = localStorage.getItem('temp_interview_acc');
-    const savedPw = localStorage.getItem('temp_interview_pw');
+    const savedAcc = localStorage.getItem("temp_interview_acc");
+    const savedPw = localStorage.getItem("temp_interview_pw");
 
     // 2. 比對使用者輸入的資料與快取資料
     // 加入一個邏輯：如果快取是空的，就提醒先去生成
     if (!savedAcc || !savedPw) {
-      setError('系統尚未生成帳密，請聯繫面試官。');
+      setError("系統尚未生成帳密，請聯繫面試官。");
       return;
     }
 
     if (username === savedAcc && password === savedPw) {
       console.log("登入成功，正在跳轉...");
-      navigate('/workspace'); // 登入後導向面試工作區
+      navigate("/workspace"); // 登入後導向面試工作區
     } else {
       // 為了方便你除錯，我把正確的帳密印在 console
       //console.log("輸入帳密：", username, password);
       //console.log("正確帳密：", savedAcc, savedPw);
-      setError('帳號或密碼錯誤，請重新輸入。');
+      setError("帳號或密碼錯誤，請重新輸入。");
     }
   };
 
@@ -73,4 +73,4 @@ const LoginForm = () => {
   );
 };
 
-export { LoginForm }; 
+export { LoginForm };
