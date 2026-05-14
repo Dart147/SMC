@@ -55,7 +55,8 @@ export function ConsolePanel({ theme }: ConsolePanelProps) {
           style={{
             color: activeTab === "testcases" ? colors.text : "#888",
             cursor: "pointer",
-            borderBottom: activeTab === "testcases" ? `2px solid ${colors.text}` : "2px solid transparent",
+            borderBottom:
+              activeTab === "testcases" ? `2px solid ${colors.text}` : "2px solid transparent",
             paddingBottom: "2px",
           }}
         >
@@ -66,7 +67,8 @@ export function ConsolePanel({ theme }: ConsolePanelProps) {
           style={{
             color: activeTab === "result" ? colors.text : "#888",
             cursor: "pointer",
-            borderBottom: activeTab === "result" ? `2px solid ${colors.text}` : "2px solid transparent",
+            borderBottom:
+              activeTab === "result" ? `2px solid ${colors.text}` : "2px solid transparent",
             paddingBottom: "2px",
           }}
         >
@@ -93,13 +95,27 @@ export function ConsolePanel({ theme }: ConsolePanelProps) {
           <>
             <div style={{ marginBottom: "12px" }}>
               <div style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>nums =</div>
-              <div style={{ background: colors.secondaryBg, padding: "8px", borderRadius: "4px", fontFamily: "monospace" }}>
+              <div
+                style={{
+                  background: colors.secondaryBg,
+                  padding: "8px",
+                  borderRadius: "4px",
+                  fontFamily: "monospace",
+                }}
+              >
                 [2,7,11,15]
               </div>
             </div>
             <div>
               <div style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>target =</div>
-              <div style={{ background: colors.secondaryBg, padding: "8px", borderRadius: "4px", fontFamily: "monospace" }}>
+              <div
+                style={{
+                  background: colors.secondaryBg,
+                  padding: "8px",
+                  borderRadius: "4px",
+                  fontFamily: "monospace",
+                }}
+              >
                 9
               </div>
             </div>
@@ -107,9 +123,7 @@ export function ConsolePanel({ theme }: ConsolePanelProps) {
         )}
 
         {activeTab === "result" && !result && (
-          <div style={{ color: "#888", fontSize: "13px" }}>
-            Submit your code to see results.
-          </div>
+          <div style={{ color: "#888", fontSize: "13px" }}>Submit your code to see results.</div>
         )}
 
         {activeTab === "result" && result && (
@@ -129,7 +143,9 @@ export function ConsolePanel({ theme }: ConsolePanelProps) {
             {/* Actual vs Expected output */}
             {result.output !== undefined && (
               <div>
-                <div style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>Your output</div>
+                <div style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>
+                  Your output
+                </div>
                 <pre
                   style={{
                     background: colors.secondaryBg,
@@ -147,7 +163,9 @@ export function ConsolePanel({ theme }: ConsolePanelProps) {
             )}
             {result.expectedOutput && (
               <div>
-                <div style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>Expected output</div>
+                <div style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>
+                  Expected output
+                </div>
                 <pre
                   style={{
                     background: colors.secondaryBg,
