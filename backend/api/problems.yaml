@@ -1,0 +1,97 @@
+- id: "1"
+  title: "Two Sum"
+  difficulty: "Easy"
+  description: |
+    Given a list of integers and a target, print the two indices (0-based, in ascending order) that add up to the target. Each input has exactly one solution.
+
+    **Input format:**
+    - Line 1: space-separated integers (the array)
+    - Line 2: target integer
+
+    **Output format:**
+    - Two space-separated indices
+
+    **Example:**
+    ```
+    Input:
+      2 7 11 15
+      9
+    Output:
+      0 1
+    ```
+  test_cases:
+    - input: "2 7 11 15\n9\n"
+      expected_output: "0 1\n"
+    - input: "3 2 4\n6\n"
+      expected_output: "1 2\n"
+    - input: "3 3\n6\n"
+      expected_output: "0 1\n"
+
+- id: "2"
+  title: "Add Two Numbers"
+  difficulty: "Medium"
+  description: |
+    You are given two non-empty linked lists representing two non-negative integers. The digits are stored in reverse order, and each of their nodes contains a single digit. Add the two numbers and return the sum as a linked list.
+
+    **Example:**
+    ```
+    Input: l1 = [2,4,3], l2 = [5,6,4]
+    Output: [7,0,8]
+    Explanation: 342 + 465 = 807.
+    ```
+
+- id: "3"
+  title: "Longest Substring Without Repeating Characters"
+  difficulty: "Medium"
+  description: |
+    Given a string `s`, find the length of the longest substring without repeating characters.
+
+    **Example:**
+    ```
+    Input: s = "abcabcbb"
+    Output: 3
+    Explanation: The answer is "abc", with the length of 3.
+    ```
+
+- id: "4"
+  title: "Valid Parentheses"
+  difficulty: "Easy"
+  description: |
+    Given a string containing only `'('`, `')'`, `'{'`, `'}'`, `'['` and `']'`, determine if it is valid.
+
+    A string is valid if open brackets are closed by the same type and in the correct order.
+
+    **Input format:**
+    - Line 1: the bracket string
+
+    **Output format:**
+    - Print `true` or `false`
+
+    **Example:**
+    ```
+    Input: ()[]{}
+    Output: true
+    ```
+  test_cases:
+    - input: "()[]{}\n"
+      expected_output: "true\n"
+    - input: "(]\n"
+      expected_output: "false\n"
+    - input: "([)]\n"
+      expected_output: "false\n"
+    - input: "{[]}\n"
+      expected_output: "true\n"
+
+- id: "5"
+  title: "Maximum Depth of Binary Tree"
+  difficulty: "Easy"
+  description: |
+    Given the root of a binary tree, return its maximum depth.
+
+    A binary tree's maximum depth is the number of nodes along the longest path from the root node down to the farthest leaf node.
+
+    **Example:**
+    ```
+    Input: root = [3,9,20,null,null,15,7]
+    Output: 3
+    ```

@@ -1,15 +1,30 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MOCK_PROBLEMS } from "../../features/problems/mockData";
+import { fetchProblems } from "../../features/problems/api";
+import { Problem } from "../../types/problem";
 
 export function ProblemList() {
   const navigate = useNavigate();
+  const [problems, setProblems] = useState<Problem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchProblems()
+      .then(setProblems)
+      .catch(() => setError("Failed to load problems. Is the backend running?"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div style={{ padding: "40px", color: "#d4d4d4" }}>Loading...</div>;
+  if (error) return <div style={{ padding: "40px", color: "#f87171" }}>{error}</div>;
 
   return (
     <div style={{ padding: "40px", maxWidth: "800px", margin: "0 auto", color: "#d4d4d4" }}>
       <h1 style={{ fontSize: "28px", marginBottom: "24px", color: "#fff" }}>Problem List</h1>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-        {MOCK_PROBLEMS.map((problem) => (
+        {problems.map((problem) => (
           <div
             key={problem.id}
             onClick={() => navigate(`/workspace/${problem.id}`)}
