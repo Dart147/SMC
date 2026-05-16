@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 const InterviewerPage = () => {
   const [info, setInfo] = useState({ acc: "", pw: "" });
