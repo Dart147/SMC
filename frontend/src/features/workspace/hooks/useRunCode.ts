@@ -14,11 +14,10 @@ export const useRunCode = (problemId: string) => {
     try {
       const submission = await submitCode({ problemId, code, language });
       setResult(submission);
-      
+
       // 3. 送出成功且拿到結果後，跳轉到 submissions 頁面
       // (選擇性) 可以透過 state 傳遞問題 ID，讓下一頁知道剛才是從哪題送出的
-      navigate("/submissions", { state: { problemId } }); 
-      
+      navigate("/submissions", { state: { problemId } });
     } catch {
       setResult({
         id: "",
