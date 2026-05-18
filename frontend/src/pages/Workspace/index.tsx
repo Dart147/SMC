@@ -114,7 +114,7 @@ export function Workspace() {
         <Group orientation="horizontal">
           {/* 左半邊：題目描述 */}
           <Panel defaultSize={50} minSize={20}>
-            <ProblemDescription theme={theme} problem={currentProblem} />
+            <ProblemDescription problem={currentProblem} />
           </Panel>
 
           {/* 左右拖拉把手 */}
