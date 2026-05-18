@@ -1,0 +1,28 @@
+# Stateful / runtime data — never goes in the image
+db/postgres_data/
+
+# Build outputs
+bin/
+*.exe
+
+# Local dev artifacts
+.env
+.env.local
+*.log
+
+# Git / editor
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Test outputs
+coverage.out
+*.test
+
+# Docker meta — not needed inside the image
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+.DS_Store
