@@ -62,18 +62,26 @@ func (s *SubmissionService) GetByID(id string) (domain.Submission, bool) {
 	return s.repo.GetByID(id)
 }
 
+// internal/service/submission_service.go
+
+// internal/service/submission_service.go
+
 func (s *SubmissionService) judgeAsync(sub domain.Submission, prob domain.Problem) {
+	// 1. 執行 Sandbox 評測
 	result := s.judge.Run(context.Background(), prob, sub.Code, sub.Language)
+	
+	// 2. 寫入結果
 	sub.Status = result.Status
 	sub.Output = result.Output
 	sub.ExpectedOutput = result.ExpectedOutput
 	sub.Error = result.Error
 	sub.PassedTestCases = result.PassedTestCases
-	sub.TotalTestCases = result.TotalTestCases
+
+	// ⚠️ 關鍵點：評測完了，必須通知 Repo 對資料庫下 UPDATE 指令！
 	if err := s.repo.Update(sub); err != nil {
-		s.logger.Error("failed to update submission after judging",
-			zap.String("id", sub.ID),
-			zap.Error(err),
+		s.logger.Error("Failed to update final submission status to database", 
+			zap.Error(err), 
+			zap.String("submission_id", sub.ID),
 		)
 	}
 }
@@ -84,4 +92,8 @@ func randomID() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
+}
+
+func (s *SubmissionService) List() []domain.Submission {
+	return s.repo.List()
 }

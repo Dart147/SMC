@@ -1,23 +1,25 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // 1. 引入 useNavigate
+import { useNavigate } from "react-router-dom";
 import { submitCode } from "../api";
 import { useWorkspaceStore } from "../store";
 
 export const useRunCode = (problemId: string) => {
   const [isRunning, setIsRunning] = useState(false);
   const { code, language, setResult } = useWorkspaceStore();
-  const navigate = useNavigate(); // 2. 宣告 navigate
+  const navigate = useNavigate();
 
   const runCode = async () => {
     setIsRunning(true);
     setResult(null);
     try {
+      // 1. 呼叫後端 POST /api/submissions
       const submission = await submitCode({ problemId, code, language });
       setResult(submission);
 
-      // 3. 送出成功且拿到結果後，跳轉到 submissions 頁面
-      // (選擇性) 可以透過 state 傳遞問題 ID，讓下一頁知道剛才是從哪題送出的
-      navigate("/submissions", { state: { problemId } });
+      // 2. 【關鍵修改】帶著熱騰騰的 submission.id 跳轉到結果頁！
+      if (submission && submission.id) {
+        navigate("/submissions", { state: { submissionId: submission.id } });
+      }
     } catch {
       setResult({
         id: "",
@@ -29,7 +31,6 @@ export const useRunCode = (problemId: string) => {
         passedTestCases: 0,
         totalTestCases: 0,
       });
-      // 注意：如果是網路錯誤 (catch)，我們就不跳轉，讓使用者留在原畫面看 Console 錯誤
     } finally {
       setIsRunning(false);
     }

@@ -1,117 +1,187 @@
-import { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Submission } from "../../../types/submission";
 
-const MOCK_SUBMISSIONS: Submission[] = [
-  {
-    id: "sub-1a2b3c",
-    problemId: "two-sum",
-    code: "def twoSum(nums, target):\n    return []",
-    language: "python",
-    status: "Accepted",
-    passedTestCases: 15,
-    totalTestCases: 15,
-  },
-  {
-    id: "sub-4d5e6f",
-    problemId: "valid-parentheses",
-    code: "class Solution {\npublic:\n    bool isValid(string s) {\n        return false;\n    }\n};",
-    language: "cpp",
-    status: "Wrong Answer",
-    output: "false",
-    expectedOutput: "true",
-    passedTestCases: 3,
-    totalTestCases: 10,
-  },
-  {
-    id: "sub-7g8h9i",
-    problemId: "merge-intervals",
-    code: "function merge(intervals) {\n  return intervals;\n}",
-    language: "javascript",
-    status: "Runtime Error",
-    error: "TypeError: Cannot read properties of undefined",
-    passedTestCases: 0,
-    totalTestCases: 8,
-  },
-];
+interface Props {
+  submissions: Submission[];
+  isLoading?: boolean;
+}
 
-// 🎨 建立一個小幫手函數，用來決定狀態標籤的顏色
-const getStatusBadge = (status: string) => {
-  if (status === "Accepted") {
-    return "bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20";
+export const SubmissionList: React.FC<Props> = ({ submissions, isLoading }) => {
+  // 💡 新增狀態：記錄目前哪一筆 Submission 的 ID 被展開了 (null 代表全收合)
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // 💡 切換展開/收合的函式
+  const toggleExpand = (id: string) => {
+    // 如果點擊的是已經展開的行，就收合 (設為 null)；否則展開該行
+    setExpandedId(expandedId === id ? null : id);
+  };
+
+  // 載入中畫面
+  if (isLoading && submissions.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-32 text-gray-500 animate-pulse">
+        <svg className="w-6 h-6 mr-3 animate-spin" viewBox="0 0 24 24">
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+            fill="none"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
+        </svg>
+        Loading submissions...
+      </div>
+    );
   }
-  if (status.includes("Wrong") || status.includes("Error")) {
-    return "bg-red-100 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20";
+
+  // 空資料畫面
+  if (!submissions || submissions.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-32 text-gray-500">
+        No submissions yet. Write some code and submit!
+      </div>
+    );
   }
-  return "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20";
-};
-
-export function SubmissionList() {
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
-
-  useEffect(() => {
-    setSubmissions(MOCK_SUBMISSIONS);
-  }, []);
 
   return (
-    // 1. 外層加上圓角卡片與陰影
-    <div className="w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm whitespace-nowrap">
-          {/* 2. 表頭加上微弱的背景色，文字改為全大寫與加粗，增加專業感 */}
-          <thead className="bg-gray-50 uppercase tracking-wider text-gray-500 dark:bg-gray-800/50 dark:text-gray-400 text-xs font-semibold">
-            <tr>
-              <th className="px-6 py-4">Submission ID</th>
-              <th className="px-6 py-4">Problem</th>
-              <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4">Test Cases</th>
-              <th className="px-6 py-4">Language</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-            {submissions.map((sub) => (
-              // 3. 每一列加上 Hover 變色特效，讓使用者知道可以點擊
-              <tr
-                key={sub.id}
-                className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 group cursor-pointer"
-              >
-                <td className="px-6 py-4 font-mono text-gray-500 dark:text-gray-400">
-                  {sub.id.substring(0, 8)}
-                </td>
-                <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                  {sub.problemId}
-                </td>
-                <td className="px-6 py-4">
-                  {/* 4. 將狀態變成帶有邊框的精緻 Pill (膠囊) 標籤 */}
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadge(sub.status)}`}
-                  >
-                    {sub.status === "Accepted" && (
-                      <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-green-500"></span>
-                    )}
-                    {sub.status.includes("Error") || sub.status.includes("Wrong") ? (
-                      <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-red-500"></span>
-                    ) : null}
-                    {sub.status}
+    <div className="space-y-3">
+      {submissions.map((submission) => {
+        const isAccepted = submission.status === "Accepted";
+        const isPending = submission.status === "Pending";
+        const isError = ["Runtime Error", "Compile Error"].includes(submission.status);
+
+        // 💡 判斷當前這筆是否處於「展開狀態」
+        const isExpanded = expandedId === submission.id;
+
+        const statusColor = isAccepted
+          ? "text-green-500"
+          : isPending
+            ? "text-gray-500"
+            : "text-red-500";
+
+        return (
+          <div
+            key={submission.id}
+            className="bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700 overflow-hidden transition-all duration-200"
+          >
+            {/* ========================================== */}
+            {/* 1. 摘要行 (點擊這裡可以切換展開/收合) */}
+            {/* ========================================== */}
+            <div
+              onClick={() => toggleExpand(submission.id)}
+              className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+            >
+              <div className="flex items-center space-x-6">
+                {/* 狀態大字 */}
+                <div className={`font-bold w-32 ${statusColor} flex items-center gap-2`}>
+                  {isPending && <span className="w-2 h-2 bg-gray-400 rounded-full animate-ping" />}
+                  {submission.status}
+                </div>
+
+                {/* 題目與語言資訊 */}
+                <div className="flex flex-col">
+                  {/* 💡 注意：目前後端只回傳 ProblemID，所以這裡先顯示 ID。如果你之後後端有 Join 題目名稱，可以換成 submission.problemTitle */}
+                  <span className="text-gray-800 dark:text-gray-200 font-medium">
+                    Problem {submission.problemId}
                   </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    {submission.language} • {new Date().toLocaleTimeString()}{" "}
+                    {/* 這裡可換成真實的 created_at */}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-6">
+                {/* 測資通過比例 */}
+                {!isPending && !isError && (
+                  <div className="text-sm font-mono bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
                     <span
-                      className={`font-medium ${sub.passedTestCases === sub.totalTestCases ? "text-green-600 dark:text-green-400" : "text-gray-700 dark:text-gray-300"}`}
+                      className={isAccepted ? "text-green-500 font-bold" : "text-red-500 font-bold"}
                     >
-                      {sub.passedTestCases}{" "}
-                      <span className="text-gray-400 font-normal">/ {sub.totalTestCases}</span>
+                      {submission.passedTestCases}
+                    </span>
+                    <span className="text-gray-400 mx-1">/</span>
+                    <span className="text-gray-600 dark:text-gray-300">
+                      {submission.totalTestCases}
                     </span>
                   </div>
-                </td>
-                <td className="px-6 py-4 text-gray-600 dark:text-gray-400 capitalize">
-                  {sub.language}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                )}
+
+                {/* 展開/收合的小箭頭 Icon */}
+                <svg
+                  className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            {/* ========================================== */}
+            {/* 2. 詳細內容 (只有 isExpanded 為 true 才會渲染) */}
+            {/* ========================================== */}
+            {isExpanded && (
+              <div className="p-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/30">
+                {/* Runtime Error / Compile Error 區塊 */}
+                {isError && submission.error && (
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-red-500">Error Log</h3>
+                    <pre className="p-4 overflow-x-auto text-sm text-red-400 bg-red-50 rounded-md dark:bg-red-900/20 whitespace-pre-wrap font-mono border border-red-100 dark:border-red-900/30">
+                      {submission.error}
+                    </pre>
+                  </div>
+                )}
+
+                {/* Wrong Answer 區塊 (你的與預期的 Output 對比) */}
+                {submission.status === "Wrong Answer" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold text-red-500">Your Output</h3>
+                      <pre className="p-3 overflow-x-auto text-sm bg-white rounded-md dark:bg-gray-900 font-mono text-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-inner">
+                        {submission.output || "No output"}
+                      </pre>
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold text-green-500">Expected Output</h3>
+                      <pre className="p-3 overflow-x-auto text-sm bg-white rounded-md dark:bg-gray-900 font-mono text-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-inner">
+                        {submission.expectedOutput}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+
+                {/* Accepted 區塊 */}
+                {isAccepted && (
+                  <div className="text-sm text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/20 p-4 rounded-md border border-green-200 dark:border-green-800 flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    All test cases passed successfully! You are awesome!
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
-}
+};
