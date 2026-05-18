@@ -13,7 +13,6 @@ export function SubmissionsPage() {
     const fetchSubmissions = async () => {
       try {
         setLoading(true);
-        // ⚠️ 根據你的前端設定，這裡的 URL 可能是 'http://localhost:8081/api/submissions' 或單純 '/api/submissions'
         const response = await fetch("http://localhost:8081/api/submissions");
 
         if (!response.ok) {
@@ -38,7 +37,7 @@ export function SubmissionsPage() {
     <div className="max-w-6xl mx-auto p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">All Submissions</h1>
-        <p className="text-gray-500">View recent code executions and their results.</p>
+        <p className="text-gray-500">View recent code executions and results.</p>
       </div>
 
       {/* 3. 把我們剛拿到的狀態傳給子元件 */}
