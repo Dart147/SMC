@@ -1,4 +1,4 @@
-name: Frontend Dev
+name: Backend Dev
 
 on:
   push:
@@ -6,12 +6,12 @@ on:
       - main
 
 concurrency: # ensures that only one deployment job runs at a time
-  group: smc-deploy-dev-frontend
+  group: smc-deploy-dev-backend
   cancel-in-progress: false # if a deployment is currently running, dont kill it
 
 jobs:
-  Frontend:
-    name: Frontend checks
+  Backend:
+    name: Backend checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -23,34 +23,34 @@ jobs:
       - name: Lint
         uses: docker/build-push-action@v7
         with:
-          context: frontend/
-          file: frontend/Dockerfile
+          context: backend/
+          file: backend/Dockerfile
           target: lint
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,mode=max,scope=frontend
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
 
       - name: Format
         uses: docker/build-push-action@v7
         with:
-          context: frontend/
-          file: frontend/Dockerfile
+          context: backend/
+          file: backend/Dockerfile
           target: format
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,mode=max,scope=frontend
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
 
       - name: Test
         uses: docker/build-push-action@v7
         with:
-          context: frontend/
-          file: frontend/Dockerfile
+          context: backend/
+          file: backend/Dockerfile
           target: test
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,mode=max,scope=frontend
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
 
   Build-and-Push:
     name: Build and Push Dev Image
     runs-on: ubuntu-latest
-    needs: [Frontend]
+    needs: [Backend]
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -67,18 +67,19 @@ jobs:
       - name: Build and Push runtime image
         uses: docker/build-push-action@v7
         with:
-          context: frontend/
-          file: frontend/Dockerfile
+          context: backend/
+          file: backend/Dockerfile
           target: runtime
           push: true
           pull: true
           no-cache-filters: runtime
           build-args: |
-            APK_CACHE_BUST=${{ github.run_id }}-${{ github.run_attempt }}
+            GIT_SHA=${{ github.sha }}
+            BUILD_VERSION=dev
           tags: |
-            cn18smc/frontend:dev
-            cn18smc/frontend:${{ github.sha }}
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,mode=max,scope=frontend
+            cn18smc/backend:dev
+            cn18smc/backend:${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
 
-  #Deploy: WIP
+  #Deploy: WIP (handled by SMC-CD)

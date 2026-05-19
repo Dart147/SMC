@@ -1,13 +1,13 @@
 package domain
 
 const (
-	StatusPending              = "Pending"
-	StatusAccepted             = "Accepted"
-	StatusWrongAnswer          = "Wrong Answer"
-	StatusTimeLimitExceeded    = "Time Limit Exceeded"
-	StatusMemoryLimitExceeded  = "Memory Limit Exceeded"
-	StatusRuntimeError         = "Runtime Error"
-	StatusCompileError         = "Compile Error"
+	StatusPending             = "Pending"
+	StatusAccepted            = "Accepted"
+	StatusWrongAnswer         = "Wrong Answer"
+	StatusTimeLimitExceeded   = "Time Limit Exceeded"
+	StatusMemoryLimitExceeded = "Memory Limit Exceeded"
+	StatusRuntimeError        = "Runtime Error"
+	StatusCompileError        = "Compile Error"
 )
 
 type Submission struct {

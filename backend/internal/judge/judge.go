@@ -83,17 +83,31 @@ func (j *Judge) Run(ctx context.Context, prob domain.Problem, code, language str
 			TotalTestCases: len(prob.TestCases),
 		}
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() {
+		if err := os.Remove(tmpFile.Name()); err != nil {
+			j.logger.Warn("temp file cleanup",
+				zap.String("path", tmpFile.Name()),
+				zap.Error(err))
+		}
+	}()
 
 	if _, err := tmpFile.WriteString(code); err != nil {
-		tmpFile.Close()
+		if cerr := tmpFile.Close(); cerr != nil {
+			j.logger.Warn("temp file close after write error", zap.Error(cerr))
+		}
 		return Result{
 			Status:         domain.StatusRuntimeError,
 			Error:          "failed to write code",
 			TotalTestCases: len(prob.TestCases),
 		}
 	}
-	tmpFile.Close()
+	if err := tmpFile.Close(); err != nil {
+		return Result{
+			Status:         domain.StatusRuntimeError,
+			Error:          "failed to close temp file",
+			TotalTestCases: len(prob.TestCases),
+		}
+	}
 
 	total := len(prob.TestCases)
 

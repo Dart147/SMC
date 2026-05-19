@@ -24,7 +24,11 @@ func (r *ProblemRepo) List() []domain.Problem {
 		fmt.Printf("failed to query problems from db: %v\n", err)
 		return []domain.Problem{}
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Printf("failed to close problem rows: %v\n", err)
+		}
+	}()
 
 	var problems []domain.Problem
 	for rows.Next() {
@@ -48,7 +52,7 @@ func (r *ProblemRepo) List() []domain.Problem {
 func (r *ProblemRepo) GetByID(id string) (domain.Problem, bool) {
 	var p domain.Problem
 	query := `SELECT id, title, difficulty, description FROM problems WHERE id = $1`
-	
+
 	err := r.db.QueryRow(query, id).Scan(&p.ID, &p.Title, &p.Difficulty, &p.Description)
 	if err != nil {
 		if err == sql.ErrNoRows {

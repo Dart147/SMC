@@ -8,9 +8,6 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - "frontend/**"
-      - ".github/workflows/frontend-snapshot.yaml"
 
 concurrency: # 
   group: smc-preview-${{ github.event.number }}-frontend # Groups these jobs by the PR number

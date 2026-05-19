@@ -31,7 +31,7 @@ func (r *SubmissionRepo) Save(s domain.Submission) error {
 // 2. 當前端 Polling 輪詢發送 GET 時，從 PostgreSQL 撈出最新狀態
 func (r *SubmissionRepo) GetByID(id string) (domain.Submission, bool) {
 	var s domain.Submission
-	
+
 	// 使用 COALESCE 處理可能為 NULL 的欄位，防止 Go 發生 Scan 錯誤
 	query := `
 		SELECT id, problem_id, code, language, status, 
@@ -40,20 +40,20 @@ func (r *SubmissionRepo) GetByID(id string) (domain.Submission, bool) {
 		FROM submissions
 		WHERE id = $1
 	`
-	
+
 	err := r.db.QueryRow(query, id).Scan(
 		&s.ID, &s.ProblemID, &s.Code, &s.Language, &s.Status,
 		&s.PassedTestCases, &s.TotalTestCases,
 		&s.Output, &s.ExpectedOutput, &s.Error,
 	)
-	
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return s, false
 		}
-		return s, false 
+		return s, false
 	}
-	
+
 	return s, true
 }
 
@@ -68,7 +68,7 @@ func (r *SubmissionRepo) Update(s domain.Submission) error {
 		    error = $5
 		WHERE id = $6
 	`
-	
+
 	result, err := r.db.Exec(query, s.Status, s.PassedTestCases, s.Output, s.ExpectedOutput, s.Error, s.ID)
 	if err != nil {
 		return fmt.Errorf("failed to update submission in postgres: %w", err)
@@ -94,13 +94,17 @@ func (r *SubmissionRepo) List() []domain.Submission {
 		FROM submissions
 		ORDER BY created_at DESC
 	`
-	
+
 	rows, err := r.db.Query(query)
 	if err != nil {
 		fmt.Printf("failed to query submissions: %v\n", err)
 		return []domain.Submission{} // 發生錯誤時回傳空陣列，避免前端炸掉
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Printf("failed to close submission rows: %v\n", err)
+		}
+	}()
 
 	var submissions []domain.Submission
 	for rows.Next() {
@@ -116,7 +120,7 @@ func (r *SubmissionRepo) List() []domain.Submission {
 			fmt.Printf("failed to scan submission row: %v\n", err)
 		}
 	}
-	
+
 	if submissions == nil {
 		return []domain.Submission{}
 	}
