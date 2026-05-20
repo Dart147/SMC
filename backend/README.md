@@ -44,6 +44,7 @@ Base URL: `http://localhost:8081/api`
 | Method | Path | Description |
 | --- | --- | --- |
 | `GET` | `/healthz` | Health check |
+| `GET` | `/version` | Returns the commit ID and build version |
 | `GET` | `/problems` | List all problems from PostgreSQL |
 | `GET` | `/problems/{id}` | Get a problem by ID from PostgreSQL |
 | `GET` | `/submissions` | List all submissions history |
@@ -145,6 +146,71 @@ docker-compose up --build
 
 ```
 
+## Testing the API
+
+Quick end-to-end check after `docker compose up -d --build`. Run from any shell on the host. `jq` is optional pretty-printing — drop it if you don't have it.
+
+### 1. Health
+
+```bash
+curl -s http://localhost:8081/api/healthz
+# → {"status":"ok"}
+```
+
+### 2. Version
+
+```bash
+curl -s http://localhost:8081/api/version
+# → {"commit":"dev","version":"dev"}   (locally built)
+# → {"commit":"<sha>","version":"pr-N"}  (CI-built image)
+```
+
+A 404 here means the running container is an older image — rebuild with `docker compose up -d --build backend`.
+
+### 3. Problems
+
+```bash
+curl -s http://localhost:8081/api/problems | jq .
+curl -s http://localhost:8081/api/problems/1 | jq .
+```
+
+The list should contain the seeded problems from `db/init.sql`. An empty array means the DB volume was preserved from a previous run and `init.sql` did not re-seed.
+
+### 4. Submit code and watch it judge
+
+Two steps because judging runs asynchronously: POST returns immediately with `"status":"Pending"`, then poll the GET endpoint until it settles.
+
+**Step 4a — submit.**
+
+```bash
+cat > /tmp/sub.json <<'EOF'
+{
+  "problemId": "1",
+  "language": "python",
+  "code": "nums=list(map(int,input().split()))\nt=int(input())\nfor i,a in enumerate(nums):\n  for j in range(i+1,len(nums)):\n    if a+nums[j]==t:\n      print(i,j); exit()"
+}
+EOF
+
+curl -s -X POST http://localhost:8081/api/submissions \
+  -H 'Content-Type: application/json' \
+  -d @/tmp/sub.json | jq .
+```
+
+The response includes an `id`. Copy it.
+
+**Step 4b — poll.** Replace `<ID>` with the id from step 4a:
+
+```bash
+ID=<ID>
+while :; do
+  out=$(curl -s http://localhost:8081/api/submissions/$ID)
+  status=$(echo "$out" | jq -r .status)
+  echo "$status"
+  [ "$status" != "Pending" ] && echo "$out" | jq . && break
+  sleep 0.5
+done
+```
+
 ## Port Map
 
 | Service | Port |
@@ -153,6 +219,58 @@ docker-compose up --build
 | PostgreSQL Database | 5432 |
 | Frontend (dev) | 5173 |
 | Frontend (prod) | 8080 |
+
+## Running CI checks locally
+
+The Dockerfile is the toolchain. Every check CI runs is a named stage in `backend/Dockerfile`
+
+
+```bash
+cd /backend
+docker buildx build --progress=plain --target lint .   # golangci-lint
+docker buildx build --progress=plain --target format . # gofmt -l . (fails if any file needs formatting)
+docker buildx build --progress=plain --target test .   # go test ./...
+docker buildx build --progress=plain --target runtime -t smc-backend:local .  # final image
+```
+### Auto-fix Golang formatting
+
+```bash
+docker run --rm -v "$PWD":/app -w /app golang:1.26-alpine gofmt -l .
+```
+
+### Running the GitHub Actions workflows locally
+
+The `docker buildx` commands above only run the individual Dockerfile stages. To test `backend-pre-commit.yaml`, `backend-snapshot.yaml`, or `backend-dev.yaml`, run the workflow end-to-end with [`act`](https://github.com/nektos/act)
+
+**Run a workflow**
+
+```bash
+# Pre-commit (push to a non-main branch)
+act push -W .github/workflows/backend-pre-commit.yaml
+
+# Snapshot (PR to main)
+act pull_request -W .github/workflows/backend-snapshot.yaml
+
+# Dev (merge to main)
+act push -W .github/workflows/backend-dev.yaml
+```
+
+The first run downloads a ~1 GB runner image.
+
+**For steps that need secrets** (the Docker Hub login in snapshot/dev), put them in a gitignored `.secrets` file at the repo root:
+
+```
+DOCKER_REGISTRY_USERNAME=your-dockerhub-username
+DOCKER_REGISTRY_TOKEN=your-dockerhub-access-token
+```
+
+then add `--secret-file .secrets` to the `act` command.
+
+**Skip pushing locally:**
+
+```bash
+act pull_request -W .github/workflows/backend-snapshot.yaml --env ACT=true
+```
 
 ## CORS
 

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Dart147/SMC/backend/internal/service"
 	"github.com/Dart147/SMC/backend/internal/domain"
+	"github.com/Dart147/SMC/backend/internal/service"
 )
 
 type SubmissionHandler struct {
@@ -51,14 +51,13 @@ func (h *SubmissionHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, sub)
 }
 
-
 func (h *SubmissionHandler) List(w http.ResponseWriter, r *http.Request) {
 	submissions := h.svc.List()
-	
+
 	// 如果回傳是 nil，確保給前端一個空的 JSON 陣列 []，而不是 null
 	if submissions == nil {
 		submissions = []domain.Submission{}
 	}
-	
+
 	writeJSON(w, http.StatusOK, submissions)
 }

@@ -1,0 +1,90 @@
+name: Backend Snapshot
+
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: smc-preview-${{ github.event.number }}-backend # Groups these jobs by the PR number
+  cancel-in-progress: true # if an older build is running for this PR, kill it
+
+jobs:
+  Backend:
+    name: Backend checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Lint
+        uses: docker/build-push-action@v7
+        with:
+          context: backend/
+          file: backend/Dockerfile
+          target: lint
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Format
+        uses: docker/build-push-action@v7
+        with:
+          context: backend/
+          file: backend/Dockerfile
+          target: format
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Test
+        uses: docker/build-push-action@v7
+        with:
+          context: backend/
+          file: backend/Dockerfile
+          target: test
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+  Push-Image:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    needs: [Backend]
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
+
+      - name: Push runtime image
+        uses: docker/build-push-action@v7
+        with:
+          context: backend/
+          file: backend/Dockerfile
+          target: runtime
+          push: true
+          pull: true
+          no-cache-filters: runtime
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+            BUILD_VERSION=pr-${{ github.event.pull_request.number }}
+          tags: |
+            cn18smc/backend:pr-${{ github.event.pull_request.number }}
+            cn18smc/backend:${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+  #Deploy: WIP (handled by SMC-CD)

@@ -69,7 +69,7 @@ func (s *SubmissionService) GetByID(id string) (domain.Submission, bool) {
 func (s *SubmissionService) judgeAsync(sub domain.Submission, prob domain.Problem) {
 	// 1. 執行 Sandbox 評測
 	result := s.judge.Run(context.Background(), prob, sub.Code, sub.Language)
-	
+
 	// 2. 寫入結果
 	sub.Status = result.Status
 	sub.Output = result.Output
@@ -79,8 +79,8 @@ func (s *SubmissionService) judgeAsync(sub domain.Submission, prob domain.Proble
 
 	// ⚠️ 關鍵點：評測完了，必須通知 Repo 對資料庫下 UPDATE 指令！
 	if err := s.repo.Update(sub); err != nil {
-		s.logger.Error("Failed to update final submission status to database", 
-			zap.Error(err), 
+		s.logger.Error("Failed to update final submission status to database",
+			zap.Error(err),
 			zap.String("submission_id", sub.ID),
 		)
 	}

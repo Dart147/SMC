@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"database/sql" // 新增 sql 標準庫
+	"database/sql"  // 新增 sql 標準庫
+	"encoding/json" // Serialize JSON responses (e.g., /api/version)
 	"fmt"
 	"net/http"
 	"os"
@@ -10,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"go.uber.org/zap"
 	_ "github.com/lib/pq" // ⚠️ 關鍵：匿名引入 PostgreSQL 驅動
+	"go.uber.org/zap"
 
 	"github.com/Dart147/SMC/backend/internal/config"
 	"github.com/Dart147/SMC/backend/internal/handler"
@@ -19,6 +20,12 @@ import (
 	"github.com/Dart147/SMC/backend/internal/middleware"
 	"github.com/Dart147/SMC/backend/internal/repository"
 	"github.com/Dart147/SMC/backend/internal/service"
+)
+
+// Build-time commit and version strings returned by GET /api/version (see README "Build metadata")
+var (
+	CommitHash = "dev"
+	Version    = "dev"
 )
 
 func main() {
@@ -33,7 +40,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "init logger: %v\n", err)
 		os.Exit(1)
 	}
-	defer logger.Sync() //nolint:errcheck
+	defer func() { // close function warned by go-lint
+		if err := logger.Sync(); err != nil {
+			fmt.Fprintf(os.Stderr, "logger sync: %v\n", err)
+		}
+	}()
 
 	// =========================================================================
 	// 🔌 1. 建立 PostgreSQL 資料庫連線
@@ -52,13 +63,17 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to open database", zap.Error(err))
 	}
-	defer db.Close()
+	defer func() { // close function warned by go-lint
+		if err := db.Close(); err != nil {
+			logger.Warn("db close", zap.Error(err))
+		}
+	}()
 
 	// 測試連線是否真的成功
 	if err := db.Ping(); err != nil {
 		logger.Fatal("failed to ping database", zap.Error(err))
 	}
-	logger.Info("✅ Successfully connected to PostgreSQL!")
+	logger.Info("Successfully connected to PostgreSQL!")
 	// =========================================================================
 
 	// Repositories
@@ -77,6 +92,14 @@ func main() {
 	// Router (Go 1.22 pattern-based mux)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/healthz", handler.Health)
+	// Exposes build metadata
+	mux.HandleFunc("GET /api/version", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"commit":  CommitHash,
+			"version": Version,
+		})
+	})
 	mux.HandleFunc("GET /api/problems", problemH.List)
 	mux.HandleFunc("GET /api/problems/{id}", problemH.GetByID)
 	mux.HandleFunc("GET /api/submissions", submissionH.List)

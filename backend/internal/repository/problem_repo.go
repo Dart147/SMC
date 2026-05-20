@@ -26,6 +26,11 @@ func (r *ProblemRepo) List() []domain.Problem {
 		fmt.Printf("failed to list problems: %v\n", err)
 		return []domain.Problem{}
 	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Printf("failed to close problem rows: %v\n", err)
+		}
+	}()
 
 	var problems []domain.Problem
 	for _, row := range rows {
