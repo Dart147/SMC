@@ -82,8 +82,8 @@ jobs:
             GIT_SHA=${{ github.sha }}
             BUILD_VERSION=pr-${{ github.event.pull_request.number }}
           tags: |
-            cn18smc/backend:pr-${{ github.event.pull_request.number }}
-            cn18smc/backend:${{ github.sha }}
+            lovetsmc/backend:pr-${{ github.event.pull_request.number }}
+            lovetsmc/backend:${{ github.sha }}
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 

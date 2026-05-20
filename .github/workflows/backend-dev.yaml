@@ -77,8 +77,8 @@ jobs:
             GIT_SHA=${{ github.sha }}
             BUILD_VERSION=dev
           tags: |
-            cn18smc/backend:dev
-            cn18smc/backend:${{ github.sha }}
+            lovetsmc/backend:dev
+            lovetsmc/backend:${{ github.sha }}
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 

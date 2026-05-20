@@ -93,7 +93,7 @@ What `docker compose up --build` does, end to end:
 3. Stage `source`: copy the app source on top of the dependency layer.
 4. Stage `build`: `npm run build` → `/frontend/dist` (lint/test targets are available for CI and are no-ops if scripts are missing).
 5. Stage `runtime`: copies `dist/` into `nginx:1.30-alpine-slim` and copies `nginx.conf` to `/etc/nginx/conf.d/default.conf`.
-6. Tags the image `smc-frontend:dev` (local-build tag — distinct from CI's `cn18smc/frontend:*`) and runs it with port `8080:80`.
+6. Tags the image `smc-frontend:dev` (local-build tag — distinct from CI's `lovetsmc/frontend:*`) and runs it with port `8080:80`.
 
 ### Reproduce CI locally (lint / test / build stages)
 

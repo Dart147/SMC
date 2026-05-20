@@ -74,13 +74,13 @@ jobs:
           no-cache-filters: runtime
           build-args: |
             APK_CACHE_BUST=${{ github.run_id }}-${{ github.run_attempt }}
-          tags: cn18smc/frontend:ci
+          tags: lovetsmc/frontend:ci
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
       - name: Run /healthz check
         run: |
-          docker run -d --rm -p 8080:80 --name frontend-healthz "cn18smc/frontend:ci"
+          docker run -d --rm -p 8080:80 --name frontend-healthz "lovetsmc/frontend:ci"
           if ! curl -fsS --retry 10 --retry-delay 1 --retry-all-errors http://localhost:8080/healthz; then
             echo "::group::nginx container logs"
             docker logs frontend-healthz || true
@@ -108,8 +108,8 @@ jobs:
           build-args: |
             APK_CACHE_BUST=${{ github.run_id }}-${{ github.run_attempt }}
           tags: |
-            cn18smc/frontend:pr-${{ github.event.number }}
-            cn18smc/frontend:${{ github.sha }}
+            lovetsmc/frontend:pr-${{ github.event.number }}
+            lovetsmc/frontend:${{ github.sha }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
