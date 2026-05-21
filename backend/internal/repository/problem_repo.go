@@ -46,7 +46,7 @@ func (r *ProblemRepo) List() []domain.Problem {
 func (r *ProblemRepo) GetByID(id string) (domain.Problem, bool) {
 	ctx := context.Background()
 	row, err := r.queries.GetProblemByID(ctx, id)
-	
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return domain.Problem{}, false
