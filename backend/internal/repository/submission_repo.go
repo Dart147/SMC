@@ -93,12 +93,6 @@ func (r *SubmissionRepo) List() []domain.Submission {
 		fmt.Printf("failed to query submissions: %v\n", err)
 		return []domain.Submission{} // 發生錯誤時回傳空陣列，避免前端炸掉
 	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			fmt.Printf("failed to close submission rows: %v\n", err)
-		}
-	}()
-
 	var submissions []domain.Submission
 	for _, row := range rows {
 		submissions = append(submissions, domain.Submission{
