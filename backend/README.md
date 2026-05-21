@@ -1,18 +1,27 @@
 # SMC Backend
 
-REST API server for the **Show Me your Code** online coding interview platform. Serves problems and judges code submissions.
+REST API server for the **Show Me your Code** online coding interview platform. Serves problems, authenticates users, and judges code submissions securely.
 
 ## Stack
 
 | Concern | Choice |
-|---|---|
+| --- | --- |
 | Language | Go 1.24 |
 | HTTP routing | `net/http` (Go 1.22 pattern-based mux) |
 | Logging | `go.uber.org/zap` |
 | Database | **PostgreSQL 15** (`github.com/lib/pq`) |
-| Storage | Relational Database (Replaced In-memory storage) |
+| Authentication | `golang-jwt/jwt/v5` |
+| Cryptography | `golang.org/x/crypto/bcrypt` & `HMAC-SHA256` |
 | Containerization | Docker & Docker Compose |
 | Code execution | `os/exec` subprocess per language |
+
+## Enterprise Security Features 🛡️
+
+Designed with zero-trust principles and enterprise-grade security in mind:
+
+* **Blind Indexing:** Usernames are deterministically hashed using HMAC-SHA256 before being stored in the database. This prevents username enumeration and protects identity privacy even in the event of a data breach.
+* **Salted Password Hashing:** Passwords are never stored in plaintext. We utilize `Bcrypt` to defend against rainbow table attacks.
+* **Auto-Seeding & Separation of Concerns:** Admin credentials and cryptographic keys are strictly managed via `.env` files and injected into the database via automatic seeding upon server startup, keeping secrets completely out of the source code.
 
 ## Project Layout
 
@@ -20,20 +29,23 @@ REST API server for the **Show Me your Code** online coding interview platform. 
 backend/
 ├── cmd/api/          # Binary entry point (main.go)
 ├── db/               
-│   └── init.sql      # PostgreSQL schema & initial seed data (Problems)
+│   └── init.sql      # PostgreSQL schema & initial seed data
 ├── internal/
 │   ├── config/       # YAML + env config loading
-│   ├── domain/       # Core types: Problem, TestCase, Submission
-│   ├── handler/      # HTTP handlers
+│   ├── db/           # Database initialization & Admin auto-seeding
+│   ├── domain/       # Core types: User, Problem, TestCase, Submission
+│   ├── handler/      # HTTP handlers (Auth, Problem, Submission)
 │   ├── judge/        # Code execution engine + memory-limit build tags
-│   ├── middleware/   # CORS
+│   ├── middleware/   # CORS & JWT Protection
 │   ├── repository/   # PostgreSQL data access layer
-│   └── service/      # Business logic + async judge dispatch
+│   ├── service/      # Business logic + async judge dispatch
+│   └── utils/        # Cryptography (Bcrypt/HMAC) & Utilities
 ├── configs/
 │   └── config.yaml   # Default configuration
 ├── docker-compose.yml# Multi-container orchestration (API + DB)
 ├── Dockerfile        # Production multi-stage build
-└── Dockerfile.dev    # Development build with Air (Hot Reload)
+├── Dockerfile.dev    # Development build with Air (Hot Reload)
+└── .env.example      # Example environment variables (secrets)
 
 ```
 
@@ -45,11 +57,33 @@ Base URL: `http://localhost:8081/api`
 | --- | --- | --- |
 | `GET` | `/healthz` | Health check |
 | `GET` | `/version` | Returns the commit ID and build version |
+| `POST` | `/auth/login` | Authenticate user and receive JWT token |
 | `GET` | `/problems` | List all problems from PostgreSQL |
 | `GET` | `/problems/{id}` | Get a problem by ID from PostgreSQL |
 | `GET` | `/submissions` | List all submissions history |
 | `POST` | `/submissions` | Submit code for judging |
 | `GET` | `/submissions/{id}` | Poll submission result |
+
+### POST /auth/login
+
+Request body:
+
+```json
+{
+  "username": "sys_admin_99",
+  "password": "admin123"
+}
+
+```
+
+Response (200 OK):
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5c..."
+}
+
+```
 
 ### POST /submissions
 
@@ -99,116 +133,101 @@ On failure, the response also includes:
 * `"expectedOutput"` — expected stdout for comparison (WA only)
 * `"error"` — human-readable failure description or stderr (RE, CE, TLE, MLE)
 
-## Judge Design
+## Configuration & Environment Variables
 
-Submissions are judged asynchronously after `POST /submissions` returns. A background goroutine runs the code and updates the stored submission in PostgreSQL once complete.
+Create a `.env` file in the root of the `backend/` directory before starting the server. **Do NOT commit the `.env` file to version control.**
 
-### Execution model
+| Env var | Description | Example / Default |
+| --- | --- | --- |
+| `DB_HOST` | PostgreSQL host | `postgres` |
+| `DB_PORT` | PostgreSQL port | `5432` |
+| `DB_USER` | PostgreSQL user | `admin` |
+| `DB_PASSWORD` | PostgreSQL password | `password123` |
+| `DB_NAME` | PostgreSQL DB name | `smcdb` |
+| `JWT_SECRET` | Secret key for JWT signing | `tsmc_super_secret_jwt_key_2026_do_not_share` |
+| `USERNAME_HMAC_SECRET` | Secret key for Blind Indexing | `tsmc_blind_index_hmac_key_998877` |
+| `ADMIN_USERNAME` | Auto-seeded admin username | `admin` |
+| `ADMIN_PASSWORD` | Auto-seeded admin password | `admin123` |
 
-1. Code is written to a temp file (`os.CreateTemp`).
-2. The language binary is invoked directly — **no shell** (`exec.Command(binary, file)`, never `sh -c`). This prevents shell injection.
-3. Each test case is fed via stdin; stdout is captured and compared against the expected output (trailing whitespace trimmed).
-4. The process is killed after **5 seconds** (`exec.CommandContext`) to handle infinite loops (TLE).
-5. On Linux, `RLIMIT_AS` is set to 256 MB via `SysProcAttr` for memory limiting (MLE).
+```
+DB_HOST=postgres
+DB_PORT=5432
+DB_USER=admin
+DB_PASSWORD=password123
+DB_NAME=smcdb
+JWT_SECRET=tsmc_super_secret_jwt_key_2026_do_not_share
+USERNAME_HMAC_SECRET=tsmc_blind_index_hmac_key_998877
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin123
+```
 
-## Configuration
-
-`configs/config.yaml` (environment variables override YAML values):
+`configs/config.yaml` provides non-sensitive app configurations:
 
 | YAML key | Env var | Default | Description |
 | --- | --- | --- | --- |
 | `port` | `PORT` | `8081` | HTTP listen port |
 | `log_level` | `LOG_LEVEL` | `info` | `info` or `debug` |
-| - | `DB_HOST` | `127.0.0.1` | PostgreSQL database host |
 
 ## Running (Docker Native Workflow)
 
-The backend has migrated to a Docker Compose workflow to automatically provision the PostgreSQL database alongside the Go API.
+The backend uses a Docker Compose workflow to automatically provision the PostgreSQL database alongside the Go API.
 
-### Start the entire stack (Recommended)
+### 0. Prerequisites
 
-Make sure you are in the `backend/` directory:
+Ensure you have created a `.env` file in the `backend/` directory as described in the Configuration section.
+
+### 1. Start the entire stack (Recommended)
 
 ```bash
-# Build and start both PostgreSQL and Go API
-docker-compose up --build
-
-# To run in the background (detached mode)
+# Build and start both PostgreSQL and Go API in detached mode
 docker-compose up -d --build
 
 ```
 
-**Note on Database Initialization:** On the first run, the PostgreSQL container will automatically execute `db/init.sql` to create tables and seed default problems. If you need to reset the database, remove the volume:
+**Note on Database Initialization:** * On the first run, the PostgreSQL container will automatically execute `db/init.sql` and the Go API will auto-seed the Admin account.
 
+* The database initialization process may take 30-90 seconds on Windows/WSL2 due to Disk I/O. The `docker-compose.yml` healthcheck is configured to wait (`start_period: 90s`) to ensure safe backend startup.
+* If you need to wipe and reset the database completely, remove the volume:
 ```bash
 docker-compose down -v
-docker-compose up --build
+# Remove physical data folder on host if needed: rm -rf db/postgres_data/
+docker-compose up -d --build
 
 ```
 
+
+
 ## Testing the API
 
-Quick end-to-end check after `docker compose up -d --build`. Run from any shell on the host. `jq` is optional pretty-printing — drop it if you don't have it.
+Quick end-to-end check after `docker compose up -d --build`. Run from any shell on the host.
 
-### 1. Health
+### 1. Health & Version
 
 ```bash
 curl -s http://localhost:8081/api/healthz
 # → {"status":"ok"}
+
+curl -s http://localhost:8081/api/version
+# → {"commit":"dev","version":"dev"}
+
 ```
 
-### 2. Version
+### 2. Authentication (Login)
 
 ```bash
-curl -s http://localhost:8081/api/version
-# → {"commit":"dev","version":"dev"}   (locally built)
-# → {"commit":"<sha>","version":"pr-N"}  (CI-built image)
-```
+curl -X POST http://localhost:8081/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "sys_admin_99", "password": "admin123"}'
+# → {"token": "eyJhbGciOiJIUzI1NiIs..."}
 
-A 404 here means the running container is an older image — rebuild with `docker compose up -d --build backend`.
+```
 
 ### 3. Problems
 
 ```bash
 curl -s http://localhost:8081/api/problems | jq .
 curl -s http://localhost:8081/api/problems/1 | jq .
-```
 
-The list should contain the seeded problems from `db/init.sql`. An empty array means the DB volume was preserved from a previous run and `init.sql` did not re-seed.
-
-### 4. Submit code and watch it judge
-
-Two steps because judging runs asynchronously: POST returns immediately with `"status":"Pending"`, then poll the GET endpoint until it settles.
-
-**Step 4a — submit.**
-
-```bash
-cat > /tmp/sub.json <<'EOF'
-{
-  "problemId": "1",
-  "language": "python",
-  "code": "nums=list(map(int,input().split()))\nt=int(input())\nfor i,a in enumerate(nums):\n  for j in range(i+1,len(nums)):\n    if a+nums[j]==t:\n      print(i,j); exit()"
-}
-EOF
-
-curl -s -X POST http://localhost:8081/api/submissions \
-  -H 'Content-Type: application/json' \
-  -d @/tmp/sub.json | jq .
-```
-
-The response includes an `id`. Copy it.
-
-**Step 4b — poll.** Replace `<ID>` with the id from step 4a:
-
-```bash
-ID=<ID>
-while :; do
-  out=$(curl -s http://localhost:8081/api/submissions/$ID)
-  status=$(echo "$out" | jq -r .status)
-  echo "$status"
-  [ "$status" != "Pending" ] && echo "$out" | jq . && break
-  sleep 0.5
-done
 ```
 
 ## Port Map
@@ -224,56 +243,22 @@ done
 
 The Dockerfile is the toolchain. Every check CI runs is a named stage in `backend/Dockerfile`
 
-
 ```bash
 cd /backend
 docker buildx build --progress=plain --target lint .   # golangci-lint
 docker buildx build --progress=plain --target format . # gofmt -l . (fails if any file needs formatting)
 docker buildx build --progress=plain --target test .   # go test ./...
 docker buildx build --progress=plain --target runtime -t smc-backend:local .  # final image
+
 ```
+
 ### Auto-fix Golang formatting
 
 ```bash
-docker run --rm -v "$PWD":/app -w /app golang:1.26-alpine gofmt -l .
-```
+docker run --rm -v "$PWD":/app -w /app golang:1.26-alpine gofmt -w .
 
-### Running the GitHub Actions workflows locally
-
-The `docker buildx` commands above only run the individual Dockerfile stages. To test `backend-pre-commit.yaml`, `backend-snapshot.yaml`, or `backend-dev.yaml`, run the workflow end-to-end with [`act`](https://github.com/nektos/act)
-
-**Run a workflow**
-
-```bash
-# Pre-commit (push to a non-main branch)
-act push -W .github/workflows/backend-pre-commit.yaml
-
-# Snapshot (PR to main)
-act pull_request -W .github/workflows/backend-snapshot.yaml
-
-# Dev (merge to main)
-act push -W .github/workflows/backend-dev.yaml
-```
-
-The first run downloads a ~1 GB runner image.
-
-**For steps that need secrets** (the Docker Hub login in snapshot/dev), put them in a gitignored `.secrets` file at the repo root:
-
-```
-DOCKER_REGISTRY_USERNAME=your-dockerhub-username
-DOCKER_REGISTRY_TOKEN=your-dockerhub-access-token
-```
-
-then add `--secret-file .secrets` to the `act` command.
-
-**Skip pushing locally:**
-
-```bash
-act pull_request -W .github/workflows/backend-snapshot.yaml --env ACT=true
 ```
 
 ## CORS
 
-The server allows all origins (`Access-Control-Allow-Origin: *`) and handles `OPTIONS` preflight requests, so the Vite dev server on port 5173 can call the API without proxy configuration.
-
-```
+The server allows all origins (`Access-Control-Allow-Origin: *`) and handles `OPTIONS` preflight requests, so the Vite dev server on port 5173 can call the API without proxy configuration. All protected API routes expect the `Authorization: Bearer <token>` header.

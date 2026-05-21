@@ -1,7 +1,13 @@
-export const login = async (_credentials: any) => {
-  // ... 這裡可以寫模擬的登入邏輯
+// auth/api.ts
+import { apiClient } from '../../services/apiClient';
+
+export const login = async (credentials: { username: string; password: string }) => {
+  // 打向後端的 /api/auth/login
+  const response = await apiClient.post('/auth/login', credentials);
+  return response.data; // 預期會拿到 { token: "eyJhbG..." }
 };
 
 export const logout = async () => {
-  return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 500));
+  localStorage.removeItem("auth_token");
+  return Promise.resolve({ success: true });
 };
