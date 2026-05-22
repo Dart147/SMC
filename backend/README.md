@@ -12,7 +12,7 @@ REST API server for the **Show Me your Code** online coding interview platform. 
 | Database | **PostgreSQL 15** (`github.com/lib/pq`) |
 | Storage | Relational Database (Replaced In-memory storage) |
 | Containerization | Docker & Docker Compose |
-| Code execution | `os/exec` subprocess per language |
+| Code execution | Pluggable `Runner` interface — `ProcessRunner` (dev) or `DockerRunner` (isolated containers) |
 
 ## Project Layout
 
@@ -25,7 +25,7 @@ backend/
 │   ├── config/       # YAML + env config loading
 │   ├── domain/       # Core types: Problem, TestCase, Submission
 │   ├── handler/      # HTTP handlers
-│   ├── judge/        # Code execution engine + memory-limit build tags
+│   ├── judge/        # Runner interface, ProcessRunner, DockerRunner, semaphore coordinator
 │   ├── middleware/   # CORS
 │   ├── repository/   # PostgreSQL data access layer
 │   └── service/      # Business logic + async judge dispatch
@@ -103,13 +103,52 @@ On failure, the response also includes:
 
 Submissions are judged asynchronously after `POST /submissions` returns. A background goroutine runs the code and updates the stored submission in PostgreSQL once complete.
 
-### Execution model
+### Runner interface
+
+The judge package defines a `Runner` interface with two implementations selected at startup via `JUDGE_BACKEND`:
+
+| Runner | Env value | Isolation | Use |
+|---|---|---|---|
+| `ProcessRunner` | `process` (default) | None — direct subprocess | Local development |
+| `DockerRunner` | `docker` | Container per test case | Production |
+
+A `Judge` coordinator wraps the chosen runner with a semaphore capping **4 concurrent executions**.
+
+### ProcessRunner — execution model
 
 1. Code is written to a temp file (`os.CreateTemp`).
 2. The language binary is invoked directly — **no shell** (`exec.Command(binary, file)`, never `sh -c`). This prevents shell injection.
 3. Each test case is fed via stdin; stdout is captured and compared against the expected output (trailing whitespace trimmed).
 4. The process is killed after **5 seconds** (`exec.CommandContext`) to handle infinite loops (TLE).
 5. On Linux, `RLIMIT_AS` is set to 256 MB via `SysProcAttr` for memory limiting (MLE).
+
+> **Warning:** `ProcessRunner` has no filesystem or network isolation. Submitted code can read server files and make network requests. Use only in development.
+
+### DockerRunner — sandbox model
+
+When `JUDGE_BACKEND=docker`, each test case runs in a fresh container:
+
+```
+docker run --rm \
+  --network none \        # no outbound network
+  --memory 256m \         # hard memory cap (Linux cgroups)
+  --cpus 0.5 \            # CPU quota
+  --read-only \           # immutable root filesystem
+  --tmpfs /tmp \          # writable scratch space for compilation
+  -v /tmp/smc-xxx.py:/code.py:ro \   # only the submitted file is visible
+  python:3.12-slim \
+  python3 /code.py
+```
+
+Language → image map:
+
+| Language | Image | Notes |
+|---|---|---|
+| `python` | `python:3.12-slim` | — |
+| `javascript` | `node:20-slim` | — |
+| `go` | `golang:1.22-alpine` | `GOPATH` and `GOCACHE` redirected to `/tmp` for compilation |
+
+> **Deployment note:** `DockerRunner` requires the `docker` CLI binary and access to the Docker daemon socket. When running the backend on the host (`go run ./cmd/api`), this works automatically. When running inside a container, the socket must be mounted and `docker-cli` must be present in the image — see `ROADMAP.md` Part 8 and SMC-18 for the production solution (Temporal judge worker).
 
 ## Configuration
 
@@ -120,31 +159,60 @@ Submissions are judged asynchronously after `POST /submissions` returns. A backg
 | `port` | `PORT` | `8081` | HTTP listen port |
 | `log_level` | `LOG_LEVEL` | `info` | `info` or `debug` |
 | - | `DB_HOST` | `127.0.0.1` | PostgreSQL database host |
+| - | `JUDGE_BACKEND` | `process` | `docker` for isolated containers, `process` for direct subprocess (dev only) |
 
-## Running (Docker Native Workflow)
+## Running
 
-The backend has migrated to a Docker Compose workflow to automatically provision the PostgreSQL database alongside the Go API.
+### Full stack — all three services (recommended)
 
-### Start the entire stack (Recommended)
-
-Make sure you are in the `backend/` directory:
-
-```bash
-# Build and start both PostgreSQL and Go API
-docker-compose up --build
-
-# To run in the background (detached mode)
-docker-compose up -d --build
-
-```
-
-**Note on Database Initialization:** On the first run, the PostgreSQL container will automatically execute `db/init.sql` to create tables and seed default problems. If you need to reset the database, remove the volume:
+From the **repo root** (`SMC/`), the root `docker-compose.yaml` brings up postgres, backend, and frontend together:
 
 ```bash
-docker-compose down -v
-docker-compose up --build
+# Build and start everything
+docker compose up -d --build
 
+# Tear down (keeps the DB volume)
+docker compose down
+
+# Tear down and wipe the DB
+docker compose down -v
 ```
+
+Services started:
+
+| Container | Port | Image |
+|---|---|---|
+| `smc-postgres` | 5432 | `postgres:15-alpine` |
+| `smc-backend` | 8081 | built from `./backend` |
+| `smc-frontend` | 8080 | built from `./frontend` |
+
+**Note on Database Initialization:** On the first run, `db/init.sql` creates the schema automatically. To seed problems and test cases, run:
+
+```bash
+docker exec -i smc-postgres psql -U admin -d smcdb < backend/db/test_data.sql
+```
+
+### Backend only (with sandbox on host)
+
+To run `DockerRunner` without the Docker-in-Docker limitation, run the backend directly on the host while postgres runs in Docker:
+
+```bash
+# Start only postgres
+cd backend && docker compose up -d postgres
+
+# Run backend with Docker sandbox enabled
+JUDGE_BACKEND=docker DB_HOST=127.0.0.1 go run ./cmd/api
+```
+
+The backend process can call `docker run` natively, and the sandbox works with full isolation.
+
+### Backend only (process runner, dev)
+
+```bash
+cd backend && docker compose up -d --build
+```
+
+This uses `ProcessRunner` (no isolation). Suitable for development only.
 
 ## Testing the API
 

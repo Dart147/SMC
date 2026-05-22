@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	sqlcdb "github.com/Dart147/SMC/backend/internal/db"
 	"github.com/Dart147/SMC/backend/internal/domain"
@@ -46,7 +47,6 @@ func (r *ProblemRepo) List() []domain.Problem {
 func (r *ProblemRepo) GetByID(id string) (domain.Problem, bool) {
 	ctx := context.Background()
 	row, err := r.queries.GetProblemByID(ctx, id)
-
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return domain.Problem{}, false
@@ -55,10 +55,25 @@ func (r *ProblemRepo) GetByID(id string) (domain.Problem, bool) {
 		return domain.Problem{}, false
 	}
 
+	tcRows, err := r.queries.GetTestCasesByProblemID(ctx, sql.NullString{String: id, Valid: true})
+	if err != nil {
+		fmt.Printf("failed to query test cases for problem %q: %v\n", id, err)
+		return domain.Problem{}, false
+	}
+
+	testCases := make([]domain.TestCase, 0, len(tcRows))
+	for _, tc := range tcRows {
+		testCases = append(testCases, domain.TestCase{
+			Input:          strings.ReplaceAll(tc.Input, `\n`, "\n"),
+			ExpectedOutput: strings.ReplaceAll(tc.ExpectedOutput, `\n`, "\n"),
+		})
+	}
+
 	return domain.Problem{
 		ID:          row.ID,
 		Title:       row.Title,
 		Difficulty:  row.Difficulty.String,
 		Description: row.Description,
+		TestCases:   testCases,
 	}, true
 }
