@@ -34,9 +34,10 @@ services:
     env_file:
       - .env
     environment:
-      # DB_HOST 屬於 Docker 內部網路特有設定，保留在這裡覆蓋
-      - DB_HOST=postgres 
-    # 等 postgres 的狀態變成 "healthy" 才可以啟動後端
+      - DB_HOST=postgres
+      - JUDGE_BACKEND=docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       postgres:
         condition: service_healthy

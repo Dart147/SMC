@@ -1,8 +1,37 @@
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: smc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: smcdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./backend/db/postgres_data:/var/lib/postgresql/data
+      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d smcdb"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
   backend:
     build: ./backend
+    container_name: smc-backend
     ports:
       - "8081:8081"
+    restart: unless-stopped
+    environment:
+      - DB_HOST=postgres
+      - JUDGE_BACKEND=docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8081/api/healthz"]
       interval: 5s
@@ -11,6 +40,7 @@ services:
 
   frontend:
     build: ./frontend
+    container_name: smc-frontend
     ports:
       - "8080:80"
     depends_on:

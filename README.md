@@ -7,19 +7,32 @@ Show Me your Code (SMC) is an Online Code Test platform: interviewees take codin
 ## Quick start
 
 ```bash
-# Run the full stack (frontend on :8080, backend on :8081)
-docker compose up --build
+# Build and start everything (postgres + backend + frontend)
+docker compose up -d --build
+
+# Seed problems and test cases (first run only)
+docker exec -i smc-postgres psql -U admin -d smcdb < backend/db/test_data.sql
 ```
 
-The root `docker-compose.yaml` builds and starts both services. The frontend waits for the backend healthcheck to pass before coming up.
+The root `docker-compose.yaml` builds and starts all three services in order: postgres → backend → frontend. The backend waits for postgres to be healthy, and the frontend waits for the backend healthcheck to pass.
+
+To reset the database:
+
+```bash
+docker compose down -v && docker compose up -d --build
+```
 
 ## Repository layout
 
 ```
 SMC/
-├── frontend/   # browser apps.
-├── backend/    # API + grader services — TBD
-└── infra/      # docker-compose / Traefik / observability — TBD
+├── frontend/          # Vite + React SPA (nginx on :8080)
+├── backend/           # Go REST API + judge engine (:8081)
+│   ├── internal/judge/   # Runner interface, ProcessRunner, DockerRunner
+│   ├── db/               # PostgreSQL schema + seed data
+│   └── ...
+├── docker-compose.yaml   # Full stack: postgres + backend + frontend
+└── infra/             # Temporal / CD-service / observability — TBD
 ```
 
 ### Ports
@@ -30,24 +43,27 @@ visually distinct and avoid collisions. Where possible, **host port equals
 container port** so there is no host/container confusion when reading logs or
 config.
 
-| Service | Container port | Host port (SMC) | Source compose | Action |
-|---|---|---|---|---|
-| Frontend nginx (SMC) | `80` | `8080` | `frontend/docker-compose.yaml` | keep — already in use |
-| Vite dev server (SMC, local-only) | `5173` | `5173` | `npm run dev` | keep |
-| Temporal server (gRPC) | `7233` | `7233` | `infra/deploy/docker-compose.temporal.yaml` | keep as upstream |
-| **Temporal UI** | `7080` | `7080` | `infra/deploy/docker-compose.temporal.yaml` | **remap** from upstream `8080` so the temporal family stays in `7xxx` and we never share digits with the frontend. `TEMPORAL_UI_PORT=7080` set on the container. |
-| **Temporal Postgres** | `5432` | **(unpublished)** | `infra/deploy/docker-compose.temporal.yaml` | **no `ports:` block** — Temporal reaches Postgres by service name on the internal Docker network. Frees host `5432` for SMC's future application Postgres. |
-| **Elasticsearch (Temporal visibility)** | `9200` | **(unpublished)** | `infra/deploy/docker-compose.temporal.yaml` | **no `ports:` block** — same reasoning. Frees host `9200` for SMC's own use later. |
-| **CD-service API** | `7082` | `7082` | `infra/deploy/docker-compose.yaml` | **remap** from upstream `8080`/`8082` so the temporal family stays in `7xxx`. `PORT=7082` env + `server.port: "7082"` in `config.example.yaml` + `EXPOSE 7082` in `Dockerfile` all aligned. |
-| CD-service Worker | — | — | `infra/deploy/docker-compose.yaml` | no inbound port; outbound poll to Temporal only. |
+| Service | Container port | Host port | Source compose |
+|---|---|---|---|
+| `smc-postgres` | `5432` | `5432` | root `docker-compose.yaml` |
+| `smc-backend` | `8081` | `8081` | root `docker-compose.yaml` |
+| `smc-frontend` | `80` | `8080` | root `docker-compose.yaml` |
+| Vite dev server (local only) | `5173` | `5173` | `npm run dev` |
+| Temporal server (gRPC) | `7233` | `7233` | `infra/deploy/docker-compose.temporal.yaml` |
+| **Temporal UI** | `7080` | `7080` | `infra/deploy/docker-compose.temporal.yaml` |
+| **Temporal Postgres** | `5432` | **(unpublished)** | `infra/deploy/docker-compose.temporal.yaml` |
+| **Elasticsearch (Temporal visibility)** | `9200` | **(unpublished)** | `infra/deploy/docker-compose.temporal.yaml` |
+| **CD-service API** | `7082` | `7082` | `infra/deploy/docker-compose.yaml` |
+| CD-service Worker | — | — | `infra/deploy/docker-compose.yaml` |
 
-**Quick host-port reference (what to `curl` from your laptop):**
+**Quick host-port reference:**
 
-- `5173` — Vite dev (frontend, optional)
+- `5173` — Vite dev server (frontend, local dev only)
+- `5432` — PostgreSQL (SMC app database)
 - `7080` — Temporal UI (`http://localhost:7080`)
-- `7082` — CD-service webhook API (`http://localhost:7082/api/webhook/deploy`)
-- `7233` — Temporal gRPC (for SDK clients)
-- `8080` — SMC frontend nginx (`http://localhost:8080`)
+- `7082` — CD-service webhook API
+- `7233` — Temporal gRPC
+- `8080` — SMC frontend (`http://localhost:8080`)
 - `8081` — SMC backend API (`http://localhost:8081/api`)
 
 ## Frontend
@@ -58,9 +74,14 @@ See **[`frontend/README.md`](frontend/README.md)** for setup, dev commands, and 
 
 ## Backend
 
-A Go 1.24 REST API (`backend/`) that serves problems and judges code submissions. Submissions are executed in a subprocess per language (Python, JavaScript, Node.js, Go), stdout is compared against test cases seeded from YAML, and the result (AC / WA / TLE / MLE / RE / CE) is written back asynchronously. The frontend polls `GET /api/submissions/{id}` until a terminal status appears.
+A Go 1.24 REST API (`backend/`) that serves problems and judges code submissions against PostgreSQL-backed test cases. The judge uses a pluggable `Runner` interface with two backends:
 
-Port: **8081**. See [`backend/README.md`](backend/README.md) for the full API reference, judge design, and run instructions.
+- **`ProcessRunner`** — direct subprocess per language (dev only, no isolation)
+- **`DockerRunner`** — one isolated container per test case (`--network none`, `--memory 256m`, `--read-only`); selected via `JUDGE_BACKEND=docker`
+
+Results (Accepted / Wrong Answer / TLE / MLE / Runtime Error / Compile Error) are written back asynchronously; the frontend polls until a terminal status appears.
+
+Port: **8081**. See [`backend/README.md`](backend/README.md) for the full API reference, judge design, sandbox flags, and run instructions.
 
 ## Infra
 

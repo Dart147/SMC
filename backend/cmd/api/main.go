@@ -125,7 +125,16 @@ func main() {
 	// Services
 	authSvc := service.NewAuthService(userRepo, os.Getenv("JWT_SECRET"))
 	problemSvc := service.NewProblemService(problemRepo)
-	j := judge.NewJudge(logger)
+
+	var runner judge.Runner
+	if os.Getenv("JUDGE_BACKEND") == "docker" {
+		logger.Info("judge backend: docker (isolated containers)")
+		runner = judge.NewDockerRunner(logger)
+	} else {
+		logger.Warn("judge backend: process (no isolation — development only)")
+		runner = judge.NewProcessRunner(logger)
+	}
+	j := judge.NewJudge(runner, logger)
 	submissionSvc := service.NewSubmissionService(submissionRepo, problemRepo, j, logger)
 
 	// Handlers
