@@ -1,6 +1,6 @@
 import { useState } from "react";
 // 引入你的 API 呼叫函式 (我們稍後在 api.ts 裡面新增)
-import { createCandidate } from "../../services/api"; 
+import { createCandidate } from "../../services/api";
 
 const InterviewerPage = () => {
   const [info, setInfo] = useState({ acc: "", pw: "" });
@@ -35,8 +35,8 @@ const InterviewerPage = () => {
           onClick={generate}
           disabled={isLoading}
           className={`font-bold py-2 px-4 rounded transition w-full ${
-            isLoading 
-              ? "bg-gray-500 cursor-not-allowed" 
+            isLoading
+              ? "bg-gray-500 cursor-not-allowed"
               : "bg-blue-600 hover:bg-blue-700 text-white"
           }`}
         >
@@ -47,8 +47,12 @@ const InterviewerPage = () => {
           <div className="mt-6 p-4 bg-gray-900 rounded border border-green-500">
             <p className="text-gray-400 text-sm">請將以下資訊提供給面試者：</p>
             <div className="mt-2">
-              <p>帳號：<span className="text-yellow-400 font-mono text-lg">{info.acc}</span></p>
-              <p>密碼：<span className="text-yellow-400 font-mono text-lg">{info.pw}</span></p>
+              <p>
+                帳號：<span className="text-yellow-400 font-mono text-lg">{info.acc}</span>
+              </p>
+              <p>
+                密碼：<span className="text-yellow-400 font-mono text-lg">{info.pw}</span>
+              </p>
             </div>
           </div>
         )}

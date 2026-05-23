@@ -1,14 +1,14 @@
 // auth/components/LoginForm.tsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth"; 
+import { useAuth } from "../hooks/useAuth";
 
 export const LoginForm = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false); // 新增本機 loading 狀態
-  
+
   const navigate = useNavigate();
   const { login } = useAuth(); // 從 Zustand store 取出 login 函式
 
@@ -22,13 +22,13 @@ export const LoginForm = () => {
     }
 
     setIsLoading(true); // 開始載入動畫
-    
+
     try {
       // 🌟 等待 API 回應 (注意：傳入的是一個物件)
       await login({ username, password });
-      
+
       // 走到這裡代表沒報錯，登入成功！
-      navigate("/problems"); 
+      navigate("/problems");
     } catch (err: any) {
       // 攔截 axios 拋出的錯誤，精準判斷 401 狀態碼
       if (err.response?.status === 401) {
@@ -73,7 +73,7 @@ export const LoginForm = () => {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        
+
         {/* 錯誤訊息顯示區塊 */}
         {error && <p className="text-red-500 dark:text-red-400 text-sm italic">{error}</p>}
 
@@ -81,10 +81,12 @@ export const LoginForm = () => {
           type="submit"
           disabled={isLoading}
           className={`w-full text-white font-medium py-2.5 rounded-lg shadow-sm transition-all ${
-            isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.98]'
+            isLoading
+              ? "bg-blue-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700 active:scale-[0.98]"
           }`}
         >
-          {isLoading ? '登入中...' : '進入工作區'}
+          {isLoading ? "登入中..." : "進入工作區"}
         </button>
       </form>
     </div>

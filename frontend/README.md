@@ -8,23 +8,23 @@ The frontend for **SMC**'s Online Code Test system. Vite + React 18 + TypeScript
 
 **Done**
 
-* **Enterprise-Grade Authentication 🔐**: Replaced all static mock data and insecure `localStorage` credential generation. The frontend is now fully wired to the Go REST API using **JWT (JSON Web Tokens)** for secure, session-based authentication.
-* **Token Persistence & Interceptors**: Auto-attaches the JWT token to all outgoing Axios requests via interceptors for protected routes.
-* **Secure Interviewer Dashboard 👨‍💼**: Role-Based Access Control (RBAC) ensures only users with the `admin` role can access the `/interviewer` route. The dashboard allows interviewers to generate real, DB-backed candidate accounts secured via Bcrypt and Blind Indexing. Includes a highly secure, session-bound history table to safely display and copy one-time plaintext credentials without persisting them.
-* **Backend Integration (Live!)**: Problems and submission histories are dynamically fetched from the PostgreSQL database. Error handling now correctly intercepts standard HTTP statuses (e.g., 401 Unauthorized, 404 Not Found).
-* **Interactive Submissions History**: Upgraded the `/submissions` page with an accordion UI. Users can expand rows to see detailed "Wrong Answer" diffs (Your Output vs Expected Output) and raw compilation/runtime error logs.
-* **Modern Architecture**: Fully migrated to a 2025 "Feature-based" structure, separating logic into `/features`, `/pages`, and `/components`. Custom hooks are scoped precisely.
-* **Resizable Workspace Layout**: Implemented a LeetCode-style 3-pane split view (Problem, Editor, Console) using `react-resizable-panels` (V4) for smooth, draggable layouts.
-* **Global Theme Integration**: Synchronized Dark/Light mode across the entire workspace (Editor, Problem Description, Console, and Toolbar).
-* **Decoupled Editor**: `@monaco-editor/react` encapsulated as a standalone feature in `features/workspace/` with header chrome.
-* **Language Support**: Switching across **JavaScript, Python, Go, C, C++** with specific skeletons for each.
-* **UI Modernization**: Fully integrated Tailwind CSS for consistent, responsive, and dual-theme (Dark/Light) UI components (Cards, Pill Badges, Forms).
-* **Docker Ready**: Multi-stage `Dockerfile` with explicit `lint`, `test`, `build`, and `runtime` targets. The final image uses `nginx:1.30-alpine-slim` for a tiny footprint (~8 MB).
+- **Enterprise-Grade Authentication 🔐**: Replaced all static mock data and insecure `localStorage` credential generation. The frontend is now fully wired to the Go REST API using **JWT (JSON Web Tokens)** for secure, session-based authentication.
+- **Token Persistence & Interceptors**: Auto-attaches the JWT token to all outgoing Axios requests via interceptors for protected routes.
+- **Secure Interviewer Dashboard 👨‍💼**: Role-Based Access Control (RBAC) ensures only users with the `admin` role can access the `/interviewer` route. The dashboard allows interviewers to generate real, DB-backed candidate accounts secured via Bcrypt and Blind Indexing. Includes a highly secure, session-bound history table to safely display and copy one-time plaintext credentials without persisting them.
+- **Backend Integration (Live!)**: Problems and submission histories are dynamically fetched from the PostgreSQL database. Error handling now correctly intercepts standard HTTP statuses (e.g., 401 Unauthorized, 404 Not Found).
+- **Interactive Submissions History**: Upgraded the `/submissions` page with an accordion UI. Users can expand rows to see detailed "Wrong Answer" diffs (Your Output vs Expected Output) and raw compilation/runtime error logs.
+- **Modern Architecture**: Fully migrated to a 2025 "Feature-based" structure, separating logic into `/features`, `/pages`, and `/components`. Custom hooks are scoped precisely.
+- **Resizable Workspace Layout**: Implemented a LeetCode-style 3-pane split view (Problem, Editor, Console) using `react-resizable-panels` (V4) for smooth, draggable layouts.
+- **Global Theme Integration**: Synchronized Dark/Light mode across the entire workspace (Editor, Problem Description, Console, and Toolbar).
+- **Decoupled Editor**: `@monaco-editor/react` encapsulated as a standalone feature in `features/workspace/` with header chrome.
+- **Language Support**: Switching across **JavaScript, Python, Go, C, C++** with specific skeletons for each.
+- **UI Modernization**: Fully integrated Tailwind CSS for consistent, responsive, and dual-theme (Dark/Light) UI components (Cards, Pill Badges, Forms).
+- **Docker Ready**: Multi-stage `Dockerfile` with explicit `lint`, `test`, `build`, and `runtime` targets. The final image uses `nginx:1.30-alpine-slim` for a tiny footprint (~8 MB).
 
 **Not done yet**
 
-* **Real-time Execution Status**: Implement WebSocket or Polling to show live "Judging..." status updates without requiring a page refresh.
-* **Time-limited Candidate Sessions**: Implement a countdown mechanism (e.g., 3 hours) that begins upon a candidate's first login and automatically expires their access when time is up.
+- **Real-time Execution Status**: Implement WebSocket or Polling to show live "Judging..." status updates without requiring a page refresh.
+- **Time-limited Candidate Sessions**: Implement a countdown mechanism (e.g., 3 hours) that begins upon a candidate's first login and automatically expires their access when time is up.
 
 ---
 
@@ -32,11 +32,11 @@ The frontend for **SMC**'s Online Code Test system. Vite + React 18 + TypeScript
 
 The application uses **React Router v7** with a centralized layout (`MainLayout`). Here are the currently implemented routes and their purposes:
 
-* `/` **(Home/Login)**: The landing page containing the `LoginForm`. Authenticates users directly against the Go backend database.
-* `/problems` **(ProblemList)**: A dashboard listing all available coding problems fetched from the DB. Candidates select a problem here to start coding.
-* `/workspace/:problemId` **(Workspace)**: The core interview interface. A 3-pane layout containing the markdown problem description, the Monaco code editor, and the console/output panel.
-* `/submissions` **(SubmissionsPage)**: A history table showing all code executions with an expandable accordion to view diffs and error logs.
-* `/interviewer` **(Interviewer Dashboard)**: An RBAC-protected portal strictly for admins. Interviewers can generate secure candidate credentials, view session-history for easy copying, and monitor the live count of candidates in the database.
+- `/` **(Home/Login)**: The landing page containing the `LoginForm`. Authenticates users directly against the Go backend database.
+- `/problems` **(ProblemList)**: A dashboard listing all available coding problems fetched from the DB. Candidates select a problem here to start coding.
+- `/workspace/:problemId` **(Workspace)**: The core interview interface. A 3-pane layout containing the markdown problem description, the Monaco code editor, and the console/output panel.
+- `/submissions` **(SubmissionsPage)**: A history table showing all code executions with an expandable accordion to view diffs and error logs.
+- `/interviewer` **(Interviewer Dashboard)**: An RBAC-protected portal strictly for admins. Interviewers can generate secure candidate credentials, view session-history for easy copying, and monitor the live count of candidates in the database.
 
 ---
 
@@ -128,7 +128,7 @@ SMC/frontend/
 
 The system has moved from a monolithic component to a modular, decoupled architecture:
 
-* **Component Decoupling**: The UI is split into **Dumb Components** (UI-only in `src/components`) and **Smart Components** (logic-heavy in `src/features`).
-* **Feature-based Hooks**: Hooks specific to a domain (like editor execution logic) are co-located within `src/features/*/hooks/`, maintaining high cohesion and avoiding global hook clutter.
-* **State Management**: Uses **Zustand** for lightweight and robust state management instead of complex Prop drilling. Contexts (`src/contexts`) are used for pure UI-state like Themes.
-* **Backend Ready**: Interfaces in `src/types/` are designed to exactly match the **Go backend** structs, ensuring type safety from the database all the way to the browser DOM. API requests are routed through a centralized `apiClient.ts` to seamlessly handle base URLs and authentication tokens.
+- **Component Decoupling**: The UI is split into **Dumb Components** (UI-only in `src/components`) and **Smart Components** (logic-heavy in `src/features`).
+- **Feature-based Hooks**: Hooks specific to a domain (like editor execution logic) are co-located within `src/features/*/hooks/`, maintaining high cohesion and avoiding global hook clutter.
+- **State Management**: Uses **Zustand** for lightweight and robust state management instead of complex Prop drilling. Contexts (`src/contexts`) are used for pure UI-state like Themes.
+- **Backend Ready**: Interfaces in `src/types/` are designed to exactly match the **Go backend** structs, ensuring type safety from the database all the way to the browser DOM. API requests are routed through a centralized `apiClient.ts` to seamlessly handle base URLs and authentication tokens.

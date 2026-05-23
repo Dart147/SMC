@@ -1,11 +1,11 @@
 import React from "react";
 import { Outlet, Link } from "react-router-dom";
 // 引入你的 Auth Hook (請確認路徑與實作)
-import { useAuth } from "../features/auth/hooks/useAuth"; 
+import { useAuth } from "../features/auth/hooks/useAuth";
 
 export const MainLayout: React.FC = () => {
   // 從系統狀態中取得目前登入的使用者資訊
-  const { user } = useAuth(); 
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
@@ -25,8 +25,8 @@ export const MainLayout: React.FC = () => {
 
         {/*條件渲染：只有當 role 是 admin 時，才顯示 Interviewer 連結 */}
         {user?.role === "admin" && (
-          <Link 
-            to="/interviewer" 
+          <Link
+            to="/interviewer"
             className="ml-auto text-yellow-400 hover:text-yellow-300 font-bold transition-colors border border-yellow-400 px-3 py-1 rounded"
           >
             Control panel

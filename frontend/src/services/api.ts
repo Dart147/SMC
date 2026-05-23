@@ -39,7 +39,7 @@ export interface SubmissionResponse {
 // ==========================================
 export const apiClient = axios.create({
   // 這裡對應你 Go 後端 Docker 開放的 port 與基礎路由
-  baseURL: "http://localhost:8081/api", 
+  baseURL: "http://localhost:8081/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -60,7 +60,7 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // ==========================================
@@ -70,7 +70,10 @@ apiClient.interceptors.request.use(
 /**
  * [Auth] 使用者登入 (Admin 或 Candidate)
  */
-export const login = async (credentials: { username: string; password: string }): Promise<LoginResponse> => {
+export const login = async (credentials: {
+  username: string;
+  password: string;
+}): Promise<LoginResponse> => {
   const response = await apiClient.post<LoginResponse>("/auth/login", credentials);
   return response.data;
 };
