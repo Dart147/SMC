@@ -3,12 +3,10 @@ package service
 import (
 	"errors"
 	"time"
-
+	"fmt"
 	"github.com/Dart147/SMC/backend/internal/repository"
 	"github.com/Dart147/SMC/backend/internal/utils"
-
 	"github.com/golang-jwt/jwt/v5"
-    // ⚠️ 注意：已經把 bcrypt 刪掉了
 )
 
 type AuthService struct {
@@ -48,4 +46,21 @@ func (s *AuthService) Login(username, password string) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+func (s *AuthService) CreateCandidate(username, password string) error {
+	// 1. 帳號隱盲索引 (HMAC)
+	hashedUsername := utils.HashUsername(username)
+
+	// 2. 密碼加密 (Bcrypt)
+	hashedPassword, err := utils.HashPassword(password)
+	if err != nil {
+		return err
+	}
+
+	// 3. 產生一個簡單的唯一 ID (加上時間戳避免重複)
+	id := fmt.Sprintf("usr_%d", time.Now().UnixNano())
+
+	// 4. 寫入資料庫，強制賦予 'candidate' 角色
+	return s.repo.CreateUser(id, hashedUsername, hashedPassword, "candidate")
 }

@@ -136,6 +136,7 @@ func main() {
 	})
 	
 	mux.HandleFunc("POST /api/auth/login", authH.Login)
+	mux.HandleFunc("POST /api/users", authH.CreateCandidate)
 	mux.HandleFunc("GET /api/problems", problemH.List)
 	mux.HandleFunc("GET /api/problems/{id}", problemH.GetByID)
 	mux.HandleFunc("GET /api/submissions", submissionH.List)

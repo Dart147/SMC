@@ -1,5 +1,5 @@
 // auth/api.ts
-import { apiClient } from '../../services/apiClient';
+import { apiClient } from '../../services/api';
 
 export const login = async (credentials: { username: string; password: string }) => {
   // 打向後端的 /api/auth/login

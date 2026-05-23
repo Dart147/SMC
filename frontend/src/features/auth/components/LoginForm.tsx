@@ -1,14 +1,16 @@
 // auth/components/LoginForm.tsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth"; // 引入剛改好的 hook
+import { useAuth } from "../hooks/useAuth"; 
 
 export const LoginForm = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // 新增本機 loading 狀態
+  
   const navigate = useNavigate();
-  const { login, isLoading } = useAuth(); // 使用真實的 login 邏輯
+  const { login } = useAuth(); // 從 Zustand store 取出 login 函式
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,13 +21,23 @@ export const LoginForm = () => {
       return;
     }
 
-    // 等待 API 回應
-    const success = await login(username, password);
+    setIsLoading(true); // 開始載入動畫
     
-    if (success) {
-      navigate("/problems"); // 成功就跳轉
-    } else {
-      setError("帳號或密碼錯誤，請重新輸入。"); // 失敗顯示錯誤
+    try {
+      // 🌟 等待 API 回應 (注意：傳入的是一個物件)
+      await login({ username, password });
+      
+      // 走到這裡代表沒報錯，登入成功！
+      navigate("/problems"); 
+    } catch (err: any) {
+      // 攔截 axios 拋出的錯誤，精準判斷 401 狀態碼
+      if (err.response?.status === 401) {
+        setError("帳號或密碼錯誤，請重新輸入。");
+      } else {
+        setError("伺服器連線異常，請稍後再試。");
+      }
+    } finally {
+      setIsLoading(false); // 無論成功失敗，都解除 loading 狀態
     }
   };
 
@@ -62,6 +74,7 @@ export const LoginForm = () => {
           />
         </div>
         
+        {/* 錯誤訊息顯示區塊 */}
         {error && <p className="text-red-500 dark:text-red-400 text-sm italic">{error}</p>}
 
         <button

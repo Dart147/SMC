@@ -37,3 +37,9 @@ func (r *UserRepository) GetUserByUsername(username string) (*User, error) {
 	}
 	return user, nil
 }
+
+func (r *UserRepository) CreateUser(id, username, passwordHash, role string) error {
+	query := `INSERT INTO users (id, username, password_hash, role) VALUES ($1, $2, $3, $4)`
+	_, err := r.db.Exec(query, id, username, passwordHash, role)
+	return err
+}

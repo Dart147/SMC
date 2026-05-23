@@ -2,13 +2,15 @@
 
 ## What this is
 
-The frontend for **SMC**'s Online Code Test system. Vite + React 18 + TypeScript (strict), organised as a feature-based architecture with React Router, Zustand state, and an Axios client fully wired to the Go backend. The Monaco editor is the core feature, and we have recently expanded to include real authentication (`auth`), dynamic `problems`, `submissions`, and a secure `interviewer` view.
+The frontend for **SMC**'s Online Code Test system. Vite + React 18 + TypeScript (strict), organised as a feature-based architecture with React Router, Zustand state, and an Axios client fully wired to the Go backend. The Monaco editor is the core feature, and we have recently expanded to include real authentication (`auth`), dynamic `problems`, `submissions`, and a secure `interviewer` dashboard.
 
 ## Current status
 
 **Done**
 
 * **Enterprise-Grade Authentication 🔐**: Replaced all static mock data and insecure `localStorage` credential generation. The frontend is now fully wired to the Go REST API using **JWT (JSON Web Tokens)** for secure, session-based authentication.
+* **Token Persistence & Interceptors**: Auto-attaches the JWT token to all outgoing Axios requests via interceptors for protected routes.
+* **Secure Interviewer Dashboard 👨‍💼**: Role-Based Access Control (RBAC) ensures only users with the `admin` role can access the `/interviewer` route. The dashboard allows interviewers to generate real, DB-backed candidate accounts secured via Bcrypt and Blind Indexing. Includes a highly secure, session-bound history table to safely display and copy one-time plaintext credentials without persisting them.
 * **Backend Integration (Live!)**: Problems and submission histories are dynamically fetched from the PostgreSQL database. Error handling now correctly intercepts standard HTTP statuses (e.g., 401 Unauthorized, 404 Not Found).
 * **Interactive Submissions History**: Upgraded the `/submissions` page with an accordion UI. Users can expand rows to see detailed "Wrong Answer" diffs (Your Output vs Expected Output) and raw compilation/runtime error logs.
 * **Modern Architecture**: Fully migrated to a 2025 "Feature-based" structure, separating logic into `/features`, `/pages`, and `/components`. Custom hooks are scoped precisely.
@@ -22,7 +24,7 @@ The frontend for **SMC**'s Online Code Test system. Vite + React 18 + TypeScript
 **Not done yet**
 
 * **Real-time Execution Status**: Implement WebSocket or Polling to show live "Judging..." status updates without requiring a page refresh.
-* **Token Persistence & Interceptors**: Auto-attach the JWT token to all outgoing Axios requests via interceptors for protected routes.
+* **Time-limited Candidate Sessions**: Implement a countdown mechanism (e.g., 3 hours) that begins upon a candidate's first login and automatically expires their access when time is up.
 
 ---
 
@@ -34,13 +36,13 @@ The application uses **React Router v7** with a centralized layout (`MainLayout`
 * `/problems` **(ProblemList)**: A dashboard listing all available coding problems fetched from the DB. Candidates select a problem here to start coding.
 * `/workspace/:problemId` **(Workspace)**: The core interview interface. A 3-pane layout containing the markdown problem description, the Monaco code editor, and the console/output panel.
 * `/submissions` **(SubmissionsPage)**: A history table showing all code executions with an expandable accordion to view diffs and error logs.
-* `/interviewer` **(InterviewerPage)**: A dedicated portal for interviewers. *(Note: Mock credential generation has been deprecated in favor of backend Auto-Seeding via `.env` files).*
+* `/interviewer` **(Interviewer Dashboard)**: An RBAC-protected portal strictly for admins. Interviewers can generate secure candidate credentials, view session-history for easy copying, and monitor the live count of candidates in the database.
 
 ---
 
 ## How to run
 
-> 💡 **Prerequisite:** Ensure the Go backend and PostgreSQL database are running via Docker Compose (`localhost:8081`) before starting the frontend to fetch real data and authenticate successfully.
+> **Prerequisite:** Ensure the Go backend and PostgreSQL database are running via Docker Compose (`localhost:8081`) before starting the frontend to fetch real data and authenticate successfully.
 
 There are two ways to run the editor: a fast dev loop (Vite HMR) and a production-shaped Docker build.
 
