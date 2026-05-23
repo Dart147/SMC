@@ -2,11 +2,11 @@ package service
 
 import (
 	"errors"
-	"time"
 	"fmt"
 	"github.com/Dart147/SMC/backend/internal/repository"
 	"github.com/Dart147/SMC/backend/internal/utils"
 	"github.com/golang-jwt/jwt/v5"
+	"time"
 )
 
 type AuthService struct {

@@ -12,9 +12,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq" // ⚠️ 關鍵：匿名引入 PostgreSQL 驅動
 	"go.uber.org/zap"
-	"github.com/joho/godotenv"
 
 	"github.com/Dart147/SMC/backend/internal/config"
 
@@ -44,7 +44,7 @@ func main() {
 	if utils.UsernameSecretKey == "" {
 		log.Fatal("❌ Missing USERNAME_HMAC_SECRET in environment")
 	}
-	
+
 	cfg, err := config.Load("configs/config.yaml")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "load config: %v\n", err)
@@ -68,24 +68,34 @@ func main() {
 
 	// 依序讀取環境變數，若不存在則給予預設值 (確保本地直接 run 也不會崩潰)
 	dbHost := os.Getenv("DB_HOST")
-	if dbHost == "" { dbHost = "127.0.0.1" }
+	if dbHost == "" {
+		dbHost = "127.0.0.1"
+	}
 
 	dbPort := os.Getenv("DB_PORT")
-	if dbPort == "" { dbPort = "5432" }
+	if dbPort == "" {
+		dbPort = "5432"
+	}
 
 	dbUser := os.Getenv("DB_USER")
-	if dbUser == "" { dbUser = "postgres" }
+	if dbUser == "" {
+		dbUser = "postgres"
+	}
 
 	dbPassword := os.Getenv("DB_PASSWORD")
-	if dbPassword == "" { dbPassword = "your_secure_db_password" }
+	if dbPassword == "" {
+		dbPassword = "your_secure_db_password"
+	}
 
 	dbName := os.Getenv("DB_NAME")
-	if dbName == "" { dbName = "smc" }
+	if dbName == "" {
+		dbName = "smc"
+	}
 
 	// 組合動態的 DSN
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", 
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		dbHost, dbPort, dbUser, dbPassword, dbName)
-	
+
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		logger.Fatal("failed to open database", zap.Error(err))
@@ -134,7 +144,7 @@ func main() {
 			"version": Version,
 		})
 	})
-	
+
 	mux.HandleFunc("POST /api/auth/login", authH.Login)
 	mux.HandleFunc("POST /api/users", authH.CreateCandidate)
 	mux.HandleFunc("GET /api/problems", problemH.List)

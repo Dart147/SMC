@@ -23,10 +23,10 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 
 func (r *UserRepository) GetUserByUsername(username string) (*User, error) {
 	user := &User{}
-	
+
 	// 🌟 修正 2：把查詢語句中的 password 改成 password_hash
 	query := `SELECT id, username, password_hash, role FROM users WHERE username = $1`
-	
+
 	// Scan 會依序把找出來的值塞進我們定義的 user 變數裡
 	err := r.db.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Password, &user.Role)
 	if err != nil {

@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"log"
 	"os"
-	
+
 	"github.com/Dart147/SMC/backend/internal/utils" // 引入我們上一篇寫的 hash.go
 	"github.com/google/uuid"
 )
@@ -37,7 +37,7 @@ func SeedAdminUser(db *sql.DB) {
 	// 3. 如果不存在，就插入這筆最高權限帳號
 	if !exists {
 		adminID := uuid.New().String() // 產生一組 UUID 給 Admin
-		
+
 		query := `
 			INSERT INTO users (id, username, password_hash, role) 
 			VALUES ($1, $2, $3, 'admin')

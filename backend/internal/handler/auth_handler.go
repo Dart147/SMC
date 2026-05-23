@@ -3,8 +3,8 @@ package handler
 
 import (
 	"encoding/json"
-	"net/http"
 	"github.com/Dart147/SMC/backend/internal/service"
+	"net/http"
 )
 
 type AuthHandler struct {
