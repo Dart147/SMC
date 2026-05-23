@@ -16,14 +16,14 @@ import (
 type SubmissionService struct {
 	repo        *repository.SubmissionRepo
 	problemRepo *repository.ProblemRepo
-	judge       *judge.Judge
+	judge       judge.Runner
 	logger      *zap.Logger
 }
 
 func NewSubmissionService(
 	repo *repository.SubmissionRepo,
 	problemRepo *repository.ProblemRepo,
-	j *judge.Judge,
+	j judge.Runner,
 	logger *zap.Logger,
 ) *SubmissionService {
 	return &SubmissionService{repo: repo, problemRepo: problemRepo, judge: j, logger: logger}

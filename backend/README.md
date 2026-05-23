@@ -13,7 +13,7 @@ REST API server for the **Show Me your Code** online coding interview platform. 
 | Authentication | `golang-jwt/jwt/v5` |
 | Cryptography | `golang.org/x/crypto/bcrypt` & `HMAC-SHA256` |
 | Containerization | Docker & Docker Compose |
-| Code execution | `os/exec` subprocess per language |
+| Code execution | Pluggable `Runner` interface — `ProcessRunner` (dev) or `DockerRunner` (isolated containers) |
 
 ## Enterprise Security Features 🛡️
 
@@ -35,7 +35,7 @@ backend/
 │   ├── db/           # Database initialization & Admin auto-seeding
 │   ├── domain/       # Core types: User, Problem, TestCase, Submission
 │   ├── handler/      # HTTP handlers (Auth, Problem, Submission)
-│   ├── judge/        # Code execution engine + memory-limit build tags
+│   ├── judge/        # Runner interface, ProcessRunner, DockerRunner, semaphore coordinator
 │   ├── middleware/   # CORS & JWT Protection
 │   ├── repository/   # PostgreSQL data access layer
 │   ├── service/      # Business logic + async judge dispatch
@@ -136,6 +136,18 @@ On failure, the response also includes:
 ## Configuration & Environment Variables
 
 Create a `.env` file in the root of the `backend/` directory before starting the server. **Do NOT commit the `.env` file to version control.**
+### Runner interface
+
+The judge package defines a `Runner` interface with two implementations selected at startup via `JUDGE_BACKEND`:
+
+| Runner | Env value | Isolation | Use |
+|---|---|---|---|
+| `ProcessRunner` | `process` (default) | None — direct subprocess | Local development |
+| `DockerRunner` | `docker` | Container per test case | Production |
+
+A `Judge` coordinator wraps the chosen runner with a semaphore capping **4 concurrent executions**.
+
+### ProcessRunner — execution model
 
 | Env var | Description | Example / Default |
 | --- | --- | --- |
@@ -160,6 +172,35 @@ USERNAME_HMAC_SECRET=tsmc_blind_index_hmac_key_998877
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin123
 ```
+> **Warning:** `ProcessRunner` has no filesystem or network isolation. Submitted code can read server files and make network requests. Use only in development.
+
+### DockerRunner — sandbox model
+
+When `JUDGE_BACKEND=docker`, each test case runs in a fresh container:
+
+```
+docker run --rm \
+  --network none \        # no outbound network
+  --memory 256m \         # hard memory cap (Linux cgroups)
+  --cpus 0.5 \            # CPU quota
+  --read-only \           # immutable root filesystem
+  --tmpfs /tmp \          # writable scratch space for compilation
+  -v /tmp/smc-xxx.py:/code.py:ro \   # only the submitted file is visible
+  python:3.12-slim \
+  python3 /code.py
+```
+
+Language → image map:
+
+| Language | Image | Notes |
+|---|---|---|
+| `python` | `python:3.12-slim` | — |
+| `javascript` | `node:20-slim` | — |
+| `go` | `golang:1.22-alpine` | `GOPATH` and `GOCACHE` redirected to `/tmp` for compilation |
+
+> **Deployment note:** `DockerRunner` requires the `docker` CLI binary and access to the Docker daemon socket. When running the backend on the host (`go run ./cmd/api`), this works automatically. When running inside a container, the socket must be mounted and `docker-cli` must be present in the image — see `ROADMAP.md` Part 8 and SMC-18 for the production solution (Temporal judge worker).
+
+## Configuration
 
 `configs/config.yaml` provides non-sensitive app configurations:
 
@@ -167,24 +208,44 @@ ADMIN_PASSWORD=admin123
 | --- | --- | --- | --- |
 | `port` | `PORT` | `8081` | HTTP listen port |
 | `log_level` | `LOG_LEVEL` | `info` | `info` or `debug` |
+| - | `DB_HOST` | `127.0.0.1` | PostgreSQL database host |
+| - | `JUDGE_BACKEND` | `process` | `docker` for isolated containers, `process` for direct subprocess (dev only) |
 
-## Running (Docker Native Workflow)
+## Running
 
-The backend uses a Docker Compose workflow to automatically provision the PostgreSQL database alongside the Go API.
+### Full stack — all three services (recommended)
 
-### 0. Prerequisites
-
-Ensure you have created a `.env` file in the `backend/` directory as described in the Configuration section.
-
-### 1. Start the entire stack (Recommended)
+From the **repo root** (`SMC/`), the root `docker-compose.yaml` brings up postgres, backend, and frontend together:
 
 ```bash
-# Build and start both PostgreSQL and Go API in detached mode
-docker-compose up -d --build
+# Build and start everything
+docker compose up -d --build
 
+# Tear down (keeps the DB volume)
+docker compose down
+
+# Tear down and wipe the DB
+docker compose down -v
 ```
 
 **Note on Database Initialization:** * On the first run, the PostgreSQL container will automatically execute `db/init.sql` and the Go API will auto-seed the Admin account.
+Services started:
+
+| Container | Port | Image |
+|---|---|---|
+| `smc-postgres` | 5432 | `postgres:15-alpine` |
+| `smc-backend` | 8081 | built from `./backend` |
+| `smc-frontend` | 8080 | built from `./frontend` |
+
+**Note on Database Initialization:** On the first run, `db/init.sql` creates the schema automatically. To seed problems and test cases, run:
+
+```bash
+docker exec -i smc-postgres psql -U admin -d smcdb < backend/db/test_data.sql
+```
+
+### Backend only (with sandbox on host)
+
+To run `DockerRunner` without the Docker-in-Docker limitation, run the backend directly on the host while postgres runs in Docker:
 
 * The database initialization process may take 30-90 seconds on Windows/WSL2 due to Disk I/O. The `docker-compose.yml` healthcheck is configured to wait (`start_period: 90s`) to ensure safe backend startup.
 * If you need to wipe and reset the database completely, remove the volume:
@@ -192,10 +253,22 @@ docker-compose up -d --build
 docker-compose down -v
 # Remove physical data folder on host if needed: rm -rf db/postgres_data/
 docker-compose up -d --build
+# Start only postgres
+cd backend && docker compose up -d postgres
 
+# Run backend with Docker sandbox enabled
+JUDGE_BACKEND=docker DB_HOST=127.0.0.1 go run ./cmd/api
 ```
 
+The backend process can call `docker run` natively, and the sandbox works with full isolation.
 
+### Backend only (process runner, dev)
+
+```bash
+cd backend && docker compose up -d --build
+```
+
+This uses `ProcessRunner` (no isolation). Suitable for development only.
 
 ## Testing the API
 
