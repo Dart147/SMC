@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "format:check": "prettier . --check",
     "format:write": "prettier . --write",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\"",
+    "lock": "docker run --rm -v \"$PWD\":/w -w /w node:22-alpine sh -c 'npm install --package-lock-only --ignore-scripts'"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
