@@ -34,7 +34,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	_ = json.NewEncoder(w).Encode(map[string]string{
 		"token": token,
 	})
 }
@@ -62,5 +62,5 @@ func (h *AuthHandler) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 	// 成功回傳 201 Created
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"message": "User created successfully"})
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "User created successfully"})
 }
