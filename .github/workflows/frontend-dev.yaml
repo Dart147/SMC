@@ -115,7 +115,7 @@ jobs:
                 setup_domain: {
                   enable: false,
                   title:  "Endpoint",
-                  name:   "dev.showmeyourcode.online",
+                  name:   "showmeyourcode.online",
                   value:  ""
                 },
                 notify_discord: {
