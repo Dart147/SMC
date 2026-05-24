@@ -9,11 +9,13 @@
     "preview": "vite preview",
     "format:check": "prettier . --check",
     "format:write": "prettier . --write",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\"",
+    "lock": "docker run --rm -v \"$PWD\":/w -w /w node:22-alpine sh -c 'npm install --package-lock-only --ignore-scripts'"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "axios": "^1.16.0",
+    "jwt-decode": "^4.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^10.1.0",
@@ -38,5 +40,20 @@
   },
   "overrides": {
     "dompurify": "^3.3.4"
+  },
+  "supportedArchitectures": {
+    "os": [
+      "darwin",
+      "linux",
+      "win32"
+    ],
+    "cpu": [
+      "x64",
+      "arm64"
+    ],
+    "libc": [
+      "glibc",
+      "musl"
+    ]
   }
 }

@@ -1,28 +1,30 @@
-# SMC Editor
+# SMC Editor (Frontend)
 
 ## What this is
 
-The frontend for **SMC**'s Online Code Test system. Vite + React 18 + TypeScript (strict), organised as a feature-based architecture with React Router, Zustand state, and an Axios client fully wired to the Go backend. The Monaco editor is the core feature, and we have recently expanded to include `auth`, `problems`, `submissions`, and an `interviewer` view.
+The frontend for **SMC**'s Online Code Test system. Vite + React 18 + TypeScript (strict), organised as a feature-based architecture with React Router, Zustand state, and an Axios client fully wired to the Go backend. The Monaco editor is the core feature, and we have recently expanded to include real authentication (`auth`), dynamic `problems`, `submissions`, and a secure `interviewer` dashboard.
 
 ## Current status
 
 **Done**
 
-- **Backend Integration (Live!)**: Replaced all static mock data. The frontend is now fully wired to the Go REST API. Problems and submission histories are dynamically fetched from the PostgreSQL database.
+- **Enterprise-Grade Authentication 🔐**: Replaced all static mock data and insecure `localStorage` credential generation. The frontend is now fully wired to the Go REST API using **JWT (JSON Web Tokens)** for secure, session-based authentication.
+- **Token Persistence & Interceptors**: Auto-attaches the JWT token to all outgoing Axios requests via interceptors for protected routes.
+- **Secure Interviewer Dashboard 👨‍💼**: Role-Based Access Control (RBAC) ensures only users with the `admin` role can access the `/interviewer` route. The dashboard allows interviewers to generate real, DB-backed candidate accounts secured via Bcrypt and Blind Indexing. Includes a highly secure, session-bound history table to safely display and copy one-time plaintext credentials without persisting them.
+- **Backend Integration (Live!)**: Problems and submission histories are dynamically fetched from the PostgreSQL database. Error handling now correctly intercepts standard HTTP statuses (e.g., 401 Unauthorized, 404 Not Found).
 - **Interactive Submissions History**: Upgraded the `/submissions` page with an accordion UI. Users can expand rows to see detailed "Wrong Answer" diffs (Your Output vs Expected Output) and raw compilation/runtime error logs.
-- **Modern Architecture**: Fully migrated to a 2025 "Feature-based" structure, separating logic into `/features`, `/pages`, and `/components`. Custom hooks are scoped precisely (e.g., workspace-specific hooks live in `features/workspace/hooks/`).
+- **Modern Architecture**: Fully migrated to a 2025 "Feature-based" structure, separating logic into `/features`, `/pages`, and `/components`. Custom hooks are scoped precisely.
 - **Resizable Workspace Layout**: Implemented a LeetCode-style 3-pane split view (Problem, Editor, Console) using `react-resizable-panels` (V4) for smooth, draggable layouts.
-- **Global Theme Integration**: Synchronized Dark/Light mode across the entire workspace (Editor, Problem Description, Console, and Toolbar) using a centralized `THEME_CONFIG` and a dedicated `ThemeContext`.
+- **Global Theme Integration**: Synchronized Dark/Light mode across the entire workspace (Editor, Problem Description, Console, and Toolbar).
 - **Decoupled Editor**: `@monaco-editor/react` encapsulated as a standalone feature in `features/workspace/` with header chrome.
 - **Language Support**: Switching across **JavaScript, Python, Go, C, C++** with specific skeletons for each.
-- **Model Management**: Per-language skeletons seeded into Monaco models keyed by `path={solution.<lang>}` for clean buffer swapping and independent undo stacks.
 - **UI Modernization**: Fully integrated Tailwind CSS for consistent, responsive, and dual-theme (Dark/Light) UI components (Cards, Pill Badges, Forms).
 - **Docker Ready**: Multi-stage `Dockerfile` with explicit `lint`, `test`, `build`, and `runtime` targets. The final image uses `nginx:1.30-alpine-slim` for a tiny footprint (~8 MB).
 
 **Not done yet**
 
 - **Real-time Execution Status**: Implement WebSocket or Polling to show live "Judging..." status updates without requiring a page refresh.
-- All Tier A/B feature ideas listed below remain open.
+- **Time-limited Candidate Sessions**: Implement a countdown mechanism (e.g., 3 hours) that begins upon a candidate's first login and automatically expires their access when time is up.
 
 ---
 
@@ -30,21 +32,21 @@ The frontend for **SMC**'s Online Code Test system. Vite + React 18 + TypeScript
 
 The application uses **React Router v7** with a centralized layout (`MainLayout`). Here are the currently implemented routes and their purposes:
 
-- `/` **(Home)**: The landing page containing the `LoginForm`. Used by candidates to enter their interview credentials and access the system.
-- `/problems` **(ProblemList)**: A dashboard listing all available coding problems with their difficulty levels fetched from the DB. Candidates select a problem here to start coding.
+- `/` **(Home/Login)**: The landing page containing the `LoginForm`. Authenticates users directly against the Go backend database.
+- `/problems` **(ProblemList)**: A dashboard listing all available coding problems fetched from the DB. Candidates select a problem here to start coding.
 - `/workspace/:problemId` **(Workspace)**: The core interview interface. A 3-pane layout containing the markdown problem description, the Monaco code editor, and the console/output panel.
 - `/submissions` **(SubmissionsPage)**: A history table showing all code executions with an expandable accordion to view diffs and error logs.
-- `/interviewer` **(InterviewerPage)**: A dedicated portal for interviewers to generate temporary credentials, monitor candidate progress, and manage the interview session.
+- `/interviewer` **(Interviewer Dashboard)**: An RBAC-protected portal strictly for admins. Interviewers can generate secure candidate credentials, view session-history for easy copying, and monitor the live count of candidates in the database.
 
 ---
 
 ## How to run
 
-> 💡 **Prerequisite:** Ensure the Go backend and PostgreSQL database are running via Docker Compose (`localhost:8081`) before starting the frontend to fetch real data.
+> **Prerequisite:** Ensure the Go backend and PostgreSQL database are running via Docker Compose (`localhost:8081`) before starting the frontend to fetch real data and authenticate successfully.
 
 There are two ways to run the editor: a fast dev loop (Vite HMR) and a production-shaped Docker build.
 
-### 1. local dev server
+### 1. Local dev server
 
 ```bash
 cd SMC/frontend
@@ -86,53 +88,6 @@ docker images smc-frontend:dev         # built image (~50 MB)
 
 ```
 
-What `docker compose up --build` does, end to end:
-
-1. Reads `docker-compose.yaml` → service `frontend`, build context `.` (the `frontend/` folder).
-2. Stage `depends`: install dependencies once (`npm ci`).
-3. Stage `source`: copy the app source on top of the dependency layer.
-4. Stage `build`: `npm run build` → `/frontend/dist` (lint/test targets are available for CI and are no-ops if scripts are missing).
-5. Stage `runtime`: copies `dist/` into `nginx:1.30-alpine-slim` and copies `nginx.conf` to `/etc/nginx/conf.d/default.conf`.
-6. Tags the image `smc-frontend:dev` (local-build tag — distinct from CI's `lovetsmc/frontend:*`) and runs it with port `8080:80`.
-
-### Reproduce CI locally (lint / test / build stages)
-
-CI calls the Dockerfile stages by name; you can run the same commands to debug a CI failure:
-
-```bash
-cd /frontend
-docker buildx build --progress=plain --target lint .
-docker buildx build --progress=plain --target test .
-docker buildx build --progress=plain --target format .
-docker buildx build --progress=plain --target runtime -t smc-frontend:dev .
-
-```
-
-### If the Format police screams
-
-Run the docker command below to fix the issues from the Prettier police:
-
-```bash
-cd SMC/frontend
-docker run --rm -v "$PWD":/frontend -w /frontend node:22-alpine \
-  sh -c "npm ci && npm run format:write"
-
-```
-
-### Check the runtime image for CVEs
-
-The runtime stage runs `apk upgrade` on every CI build, with the `APK_CACHE_BUST` build-arg set per run so the upgrade layer never reuses stale cache. To verify locally and re-run a Docker Scout / Trivy scan:
-
-```bash
-cd SMC/frontend
-docker buildx build --pull --no-cache-filter=runtime \
-  --build-arg APK_CACHE_BUST="$(date +%s)" \
-  --target runtime -t smc-frontend:dev --load .
-
-docker scout cves smc-frontend:dev      # or: trivy image smc-frontend:dev
-
-```
-
 ## File map
 
 ```text
@@ -150,18 +105,18 @@ SMC/frontend/
     ├── components/Common/ # Dumb UI atoms (Button, Modal, ResizeHandle, …)
     ├── contexts/          # Global Context Providers (e.g., ThemeContext)
     ├── features/          # Vertical slices — the heart of SMC
-    │   ├── auth/          # LoginForm + useAuth
+    │   ├── auth/          # LoginForm + useAuth (JWT Backend Integration)
     │   ├── problems/      # ProblemDescription, ProblemList UI (Wired to DB)
     │   ├── submissions/   # Accordion history table and status badges (Wired to DB)
     │   └── workspace/     # CodeEditor, EditorToolbar, ConsolePanel, hooks/
     ├── pages/             # Route-level shells
-    │   ├── Home/          # Route: /
+    │   ├── Home/          # Route: / (Login)
     │   ├── interviewer/   # Route: /interviewer
     │   ├── ProblemList/   # Route: /problems
     │   ├── Submissions/   # Route: /submissions
     │   └── Workspace/     # Route: /workspace/:problemId
     ├── layouts/           # Shared chrome (MainLayout with <Outlet/>, Navbar)
-    ├── services/          # apiClient.ts — single shared Axios instance
+    ├── services/          # apiClient.ts — single shared Axios instance (API Base: /api)
     ├── store/             # globalStore.ts — cross-feature Zustand state
     ├── hooks/             # Cross-feature global hooks (useDebounce, …)
     ├── types/             # TS interfaces mapped strictly to Go backend structs
@@ -176,8 +131,4 @@ The system has moved from a monolithic component to a modular, decoupled archite
 - **Component Decoupling**: The UI is split into **Dumb Components** (UI-only in `src/components`) and **Smart Components** (logic-heavy in `src/features`).
 - **Feature-based Hooks**: Hooks specific to a domain (like editor execution logic) are co-located within `src/features/*/hooks/`, maintaining high cohesion and avoiding global hook clutter.
 - **State Management**: Uses **Zustand** for lightweight and robust state management instead of complex Prop drilling. Contexts (`src/contexts`) are used for pure UI-state like Themes.
-- **Backend Ready**: Interfaces in `src/types/` are designed to exactly match the **Go backend** structs, ensuring type safety from the database all the way to the browser DOM.
-
-```
-
-```
+- **Backend Ready**: Interfaces in `src/types/` are designed to exactly match the **Go backend** structs, ensuring type safety from the database all the way to the browser DOM. API requests are routed through a centralized `apiClient.ts` to seamlessly handle base URLs and authentication tokens.
