@@ -39,7 +39,8 @@ func (s *AuthService) Login(username, password string) (string, error) {
 	// 4. 🌟 考試時間邏輯
 	var examExpiresAt int64
 	now := time.Now()
-	examDuration := 3 * time.Hour
+	// examDuration := 1 * time.Minute
+	examDuration := 1 * time.Hour
 
 	// 只有一般考生 (candidate) 需要計算 3 小時限制，admin 不需要
 	if user.Role == "candidate" {
