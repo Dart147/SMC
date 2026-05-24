@@ -9,7 +9,7 @@ import (
 type User struct {
 	ID            string
 	Username      string
-	Password      string 
+	Password      string
 	Role          string
 	ExamStartedAt *time.Time // 🌟 修正 1：補上這個欄位！(用指標是因為還沒考過試的人會是 NULL)
 }
@@ -30,13 +30,13 @@ func (r *UserRepository) GetUserByUsername(username string) (*User, error) {
 
 	// 🌟 修正 3：Scan 時要把值對應塞進 &user.ExamStartedAt
 	err := r.db.QueryRow(query, username).Scan(
-		&user.ID, 
-		&user.Username, 
-		&user.Password, 
-		&user.Role, 
+		&user.ID,
+		&user.Username,
+		&user.Password,
+		&user.Role,
 		&user.ExamStartedAt,
 	)
-	
+
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errors.New("user not found")
