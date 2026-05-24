@@ -3,7 +3,7 @@ FROM golang:1.26-alpine AS deps
 
 # dependency for backend workflows: sqlc, mockery, and go-lint
 RUN apk add --no-cache git make curl
-# sqlc generates type-safe Go DB code from .sql queries, keeping raw SQL with compile-time checks.
+# sqlc generates type-safe Go DB code from .sql queries
 COPY --from=sqlc/sqlc:1.31.0 /workspace/sqlc /usr/local/bin/sqlc
 # mockery
 RUN go install github.com/vektra/mockery/v3@v3.7.0
@@ -26,6 +26,13 @@ RUN golangci-lint run ./...
 # format
 FROM source AS format
 RUN test -z "$(gofmt -l . | tee /dev/stderr)"
+
+# sqlc-verify: regenerate and diff against committed internal/db/ to ensure committed generated code is up-to-date
+FROM source AS sqlc-verify
+RUN cp -r internal/db /tmp/db.committed \
+    && rm -rf internal/db \
+    && sqlc generate \
+    && diff -r /tmp/db.committed internal/db
 
 # test
 FROM source AS test

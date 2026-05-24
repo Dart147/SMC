@@ -42,6 +42,15 @@ jobs:
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 
+      - name: Sqlc
+        uses: docker/build-push-action@v7
+        with:
+          context: backend/
+          file: backend/Dockerfile
+          target: sqlc-verify
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+          
       - name: Test
         uses: docker/build-push-action@v7
         with:
