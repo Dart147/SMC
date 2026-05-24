@@ -16,24 +16,49 @@ func NewAuthHandler(svc *service.AuthService) *AuthHandler {
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	// 1. 定義局部結構體接收前端請求
 	var req struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
 
+	// 2. 解析 JSON 請求本體
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest) // 400
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request body"})
 		return
 	}
 
+	// 驗證欄位不可為空
+	if req.Username == "" || req.Password == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest) // 400
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Username and password are required"})
+		return
+	}
+
+	// 3. 呼叫核心商業邏輯（統一使用 h.authService）
 	token, err := h.svc.Login(req.Username, req.Password)
 	if err != nil {
-		// 為了資安，帳號或密碼錯誤都統一回傳 Unauthorized，防猜測
-		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+
+		// 狀況 A：如果是 3 小時考試時間到了
+		if err.Error() == "EXAM_EXPIRED" {
+			w.WriteHeader(http.StatusForbidden) // 403 Forbidden
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "考試時間已結束，帳號已失效"})
+			return
+		}
+
+		// 狀況 B：密碼打錯或帳號不存在（維持 401，符合資安防猜測原則）
+		w.WriteHeader(http.StatusUnauthorized) // 401 Unauthorized
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Invalid username or password"})
 		return
 	}
 
+	// 4. 驗證成功：回傳 200 OK 與 JWT Token
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK) // 200 OK
 	_ = json.NewEncoder(w).Encode(map[string]string{
 		"token": token,
 	})
