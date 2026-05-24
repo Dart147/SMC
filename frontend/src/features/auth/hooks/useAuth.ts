@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { jwtDecode } from "jwt-decode";
-import { login as apiLogin } from "../api"; 
+import { login as apiLogin } from "../api";
 
 interface JwtPayload {
   sub: string;
@@ -46,7 +46,7 @@ export const useAuth = create<AuthState>((set) => {
       const newToken = response.token;
 
       const decoded = jwtDecode<JwtPayload>(newToken);
-      
+
       localStorage.setItem("smc_token", newToken);
 
       set({

@@ -5,7 +5,7 @@ import { useAuth } from "../features/auth/hooks/useAuth";
 export const MainLayout: React.FC = () => {
   const { user, examExpiresAt, logout } = useAuth();
   const navigate = useNavigate();
-  
+
   // 儲存剩餘時間的顯示字串 (例如 "02:59:45")
   const [timeLeft, setTimeLeft] = useState<string>("");
 
@@ -49,6 +49,12 @@ export const MainLayout: React.FC = () => {
   }, [user, examExpiresAt, logout, navigate]);
 
   const handleLogout = () => {
+    if (user?.role === "admin") {
+      logout();
+      navigate("/");
+      return;
+    }
+
     if (window.confirm("確定要登出嗎？登出後計時仍會繼續執行！")) {
       logout();
       navigate("/");
@@ -84,13 +90,19 @@ export const MainLayout: React.FC = () => {
           )}
 
           {user?.role === "admin" && (
-            <Link to="/interviewer" className="text-yellow-400 border border-yellow-400 px-3 py-1 rounded">
+            <Link
+              to="/interviewer"
+              className="text-yellow-400 border border-yellow-400 px-3 py-1 rounded"
+            >
               Control panel
             </Link>
           )}
 
           {user && (
-            <button onClick={handleLogout} className="text-sm bg-gray-700 hover:bg-gray-600 px-4 py-1.5 rounded">
+            <button
+              onClick={handleLogout}
+              className="text-sm bg-gray-700 hover:bg-gray-600 px-4 py-1.5 rounded"
+            >
               登出
             </button>
           )}
