@@ -4,7 +4,7 @@ FROM golang:1.26-alpine AS deps
 # dependency for backend workflows: sqlc, mockery, and go-lint
 RUN apk add --no-cache git make curl
 # sqlc generates type-safe Go DB code from .sql queries
-COPY --from=sqlc/sqlc:1.31.0 /workspace/sqlc /usr/local/bin/sqlc
+COPY --from=sqlc/sqlc:1.31.1 /workspace/sqlc /usr/local/bin/sqlc
 # mockery
 RUN go install github.com/vektra/mockery/v3@v3.7.0
 # go-lint

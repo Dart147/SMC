@@ -1,5 +1,4 @@
-// internal/db/seed.go
-package db
+package seed
 
 import (
 	"database/sql"
@@ -10,8 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// SeedAdminUser 會在系統啟動時執行，確保 Admin 帳號安全寫入 DB
-func SeedAdminUser(db *sql.DB) {
+// AdminUser 會在系統啟動時執行，確保 Admin 帳號安全寫入 DB
+func AdminUser(db *sql.DB) {
 	adminUsername := os.Getenv("ADMIN_USERNAME")
 	adminPassword := os.Getenv("ADMIN_PASSWORD")
 

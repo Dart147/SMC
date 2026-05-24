@@ -18,11 +18,11 @@ import (
 
 	"github.com/Dart147/SMC/backend/internal/config"
 
-	internaldb "github.com/Dart147/SMC/backend/internal/db"
 	"github.com/Dart147/SMC/backend/internal/handler"
 	"github.com/Dart147/SMC/backend/internal/judge"
 	"github.com/Dart147/SMC/backend/internal/middleware"
 	"github.com/Dart147/SMC/backend/internal/repository"
+	"github.com/Dart147/SMC/backend/internal/seed"
 	"github.com/Dart147/SMC/backend/internal/service"
 	"github.com/Dart147/SMC/backend/internal/utils"
 )
@@ -112,8 +112,7 @@ func main() {
 	}
 	logger.Info("Successfully connected to PostgreSQL!")
 
-	// 👇 修正：正確呼叫 internal/db 裡的 SeedAdminUser，並傳入 db 變數
-	internaldb.SeedAdminUser(db)
+	seed.AdminUser(db)
 
 	// =========================================================================
 

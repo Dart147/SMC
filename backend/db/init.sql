@@ -1,4 +1,4 @@
-﻿-- 1. Users 表：增加 totp_secret 並擴大 username 長度
+-- 1. Users 表：增加 totp_secret 並擴大 username 長度
 CREATE TABLE users (
     id VARCHAR(50) PRIMARY KEY,
     -- ⚠️ 重要：HMAC-SHA256 產生的 Hex 字串長度是 64，所以不能只用 VARCHAR(50)
