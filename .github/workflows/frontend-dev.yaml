@@ -105,8 +105,9 @@ jobs:
               },
               method: "deploy",
               metadata: {
-                environment: "dev",
-                component:   "frontend"
+                project_name: "SMC",
+                environment:  "dev",
+                component:    "frontend"
               },
               setup: {
                 inject_secret: { enable: false }
