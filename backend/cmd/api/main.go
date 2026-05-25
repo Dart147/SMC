@@ -1,144 +1,135 @@
 package main
 
 import (
-	"context"
-	"database/sql"  // 新增 sql 標準庫
-	"encoding/json" // Serialize JSON responses (e.g., /api/version)
-	"fmt"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+    "context"
+    "database/sql"
+    //"encoding/json"
+    "fmt"
+    "log"
+    "net/http"
+    "os"
+    "os/signal"
+    "syscall"
+    "time"
 
-	_ "github.com/lib/pq" // ⚠️ 關鍵：匿名引入 PostgreSQL 驅動
-	"go.uber.org/zap"
+    "github.com/joho/godotenv"
+    _ "github.com/lib/pq"
+    "go.uber.org/zap"
 
-	"github.com/Dart147/SMC/backend/internal/config"
-	"github.com/Dart147/SMC/backend/internal/handler"
-	"github.com/Dart147/SMC/backend/internal/judge"
-	"github.com/Dart147/SMC/backend/internal/middleware"
-	"github.com/Dart147/SMC/backend/internal/repository"
-	"github.com/Dart147/SMC/backend/internal/service"
+    "github.com/Dart147/SMC/backend/internal/config"
+    internaldb "github.com/Dart147/SMC/backend/internal/db"
+    "github.com/Dart147/SMC/backend/internal/handler"
+    "github.com/Dart147/SMC/backend/internal/judge"
+    "github.com/Dart147/SMC/backend/internal/middleware"
+    "github.com/Dart147/SMC/backend/internal/repository"
+    "github.com/Dart147/SMC/backend/internal/service"
+    "github.com/Dart147/SMC/backend/internal/utils"
 )
 
-// Build-time commit and version strings returned by GET /api/version (see README "Build metadata")
 var (
-	CommitHash = "dev"
-	Version    = "dev"
+    CommitHash = "dev"
+    Version    = "dev"
 )
 
 func main() {
-	cfg, err := config.Load("configs/config.yaml")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "load config: %v\n", err)
-		os.Exit(1)
-	}
+    godotenv.Load()
 
-	logger, err := buildLogger(cfg.LogLevel)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "init logger: %v\n", err)
-		os.Exit(1)
-	}
-	defer func() { // close function warned by go-lint
-		if err := logger.Sync(); err != nil {
-			fmt.Fprintf(os.Stderr, "logger sync: %v\n", err)
-		}
-	}()
+    utils.UsernameSecretKey = os.Getenv("USERNAME_HMAC_SECRET")
+    if utils.UsernameSecretKey == "" {
+        log.Fatal("❌ Missing USERNAME_HMAC_SECRET in environment")
+    }
 
-	// =========================================================================
-	// 🔌 1. 建立 PostgreSQL 資料庫連線
-	// =========================================================================
-	// backend/cmd/api/main.go
+    cfg, err := config.Load("configs/config.yaml")
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "load config: %v\n", err)
+        os.Exit(1)
+    }
 
-	// 1. 檢查有沒有 Docker 傳進來的環境變數 DB_HOST
-	dbHost := os.Getenv("DB_HOST")
-	if dbHost == "" {
-		dbHost = "127.0.0.1" // 如果是在本地用 go run，預設連 127.0.0.1
-	}
+    logger, _ := buildLogger(cfg.LogLevel)
+    defer logger.Sync()
 
-	// 2. 組合動態的 DSN
-	dsn := fmt.Sprintf("host=%s port=5435 user=admin password=password123 dbname=smcdb sslmode=disable", dbHost)
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		logger.Fatal("failed to open database", zap.Error(err))
-	}
-	defer func() { // close function warned by go-lint
-		if err := db.Close(); err != nil {
-			logger.Warn("db close", zap.Error(err))
-		}
-	}()
+    // 🔌 資料庫設定：優先讀取環境變數，若無則使用本地設定
+    dbHost := os.Getenv("DB_HOST")
+    if dbHost == "" { dbHost = "127.0.0.1" }
+    
+    dbPort := os.Getenv("DB_PORT")
+    if dbPort == "" { dbPort = "5432" } 
 
-	// 測試連線是否真的成功
-	if err := db.Ping(); err != nil {
-		logger.Fatal("failed to ping database", zap.Error(err))
-	}
-	logger.Info("Successfully connected to PostgreSQL!")
-	// =========================================================================
+    dbUser := os.Getenv("DB_USER")
+    if dbUser == "" { dbUser = "admin" }
 
-	// Repositories
-	problemRepo := repository.NewProblemRepo(db)
-	submissionRepo := repository.NewSubmissionRepo(db)
+    dbPassword := os.Getenv("DB_PASSWORD")
+    if dbPassword == "" { dbPassword = "password123" }
 
-	// Services
-	problemSvc := service.NewProblemService(problemRepo)
-	j := judge.NewJudge(logger)
-	submissionSvc := service.NewSubmissionService(submissionRepo, problemRepo, j, logger)
+    dbName := os.Getenv("DB_NAME")
+    if dbName == "" { dbName = "smcdb" }
 
-	// Handlers
-	problemH := handler.NewProblemHandler(problemSvc)
-	submissionH := handler.NewSubmissionHandler(submissionSvc)
+    dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+        dbHost, dbPort, dbUser, dbPassword, dbName)
 
-	// Router (Go 1.22 pattern-based mux)
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/healthz", handler.Health)
-	// Exposes build metadata
-	mux.HandleFunc("GET /api/version", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"commit":  CommitHash,
-			"version": Version,
-		})
-	})
-	mux.HandleFunc("GET /api/problems", problemH.List)
-	mux.HandleFunc("GET /api/problems/{id}", problemH.GetByID)
-	mux.HandleFunc("POST /api/problems", problemH.Create)
-	mux.HandleFunc("GET /api/submissions", submissionH.List)
-	mux.HandleFunc("POST /api/submissions", submissionH.Create)
-	mux.HandleFunc("GET /api/submissions/{id}", submissionH.GetByID)
+    db, err := sql.Open("postgres", dsn)
+    if err != nil {
+        logger.Fatal("failed to open database", zap.Error(err))
+    }
+    defer db.Close()
 
-	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.Port),
-		Handler:      middleware.CORS(mux),
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  60 * time.Second,
-	}
+    if err := db.Ping(); err != nil {
+        logger.Fatal("failed to ping database", zap.Error(err))
+    }
+    logger.Info("Successfully connected to PostgreSQL!")
 
-	// Graceful shutdown
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+    internaldb.SeedAdminUser(db)
 
-	go func() {
-		logger.Info("server starting", zap.Int("port", cfg.Port))
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatal("server error", zap.Error(err))
-		}
-	}()
+    // Repositories & Services & Handlers (維持原本結構)
+    userRepo := repository.NewUserRepository(db)
+    problemRepo := repository.NewProblemRepo(db)
+    submissionRepo := repository.NewSubmissionRepo(db)
+    authSvc := service.NewAuthService(userRepo, os.Getenv("JWT_SECRET"))
+    problemSvc := service.NewProblemService(problemRepo)
 
-	<-quit
-	logger.Info("shutting down")
+    var runner judge.Runner
+    if os.Getenv("JUDGE_BACKEND") == "docker" {
+        runner = judge.NewDockerRunner(logger)
+    } else {
+        runner = judge.NewProcessRunner(logger)
+    }
+    j := judge.NewJudge(runner, logger)
+    submissionSvc := service.NewSubmissionService(submissionRepo, problemRepo, j, logger)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		logger.Error("shutdown error", zap.Error(err))
-	}
+    authH := handler.NewAuthHandler(authSvc)
+    problemH := handler.NewProblemHandler(problemSvc)
+    submissionH := handler.NewSubmissionHandler(submissionSvc)
+
+    mux := http.NewServeMux()
+    mux.HandleFunc("GET /api/healthz", handler.Health)
+    mux.HandleFunc("POST /api/auth/login", authH.Login)
+    mux.HandleFunc("POST /api/users", authH.CreateCandidate)
+    mux.HandleFunc("GET /api/problems", problemH.List)
+    mux.HandleFunc("GET /api/problems/{id}", problemH.GetByID)
+    mux.HandleFunc("POST /api/problems", problemH.Create)
+    mux.HandleFunc("GET /api/submissions", submissionH.List)
+    mux.HandleFunc("POST /api/submissions", submissionH.Create)
+
+    srv := &http.Server{
+        Addr:    fmt.Sprintf(":%d", cfg.Port),
+        Handler: middleware.CORS(mux),
+    }
+
+    go func() {
+        logger.Info("server starting", zap.Int("port", cfg.Port))
+        srv.ListenAndServe()
+    }()
+
+    quit := make(chan os.Signal, 1)
+    signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+    <-quit
+    
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+    srv.Shutdown(ctx)
 }
 
 func buildLogger(level string) (*zap.Logger, error) {
-	if level == "debug" {
-		return zap.NewDevelopment()
-	}
-	return zap.NewProduction()
+    if level == "debug" { return zap.NewDevelopment() }
+    return zap.NewProduction()
 }

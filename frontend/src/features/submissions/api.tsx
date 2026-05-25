@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import { useSubmissionsStore } from "./store"; // 請確認路徑是否正確
 import { SubmissionList } from "./components/SubmissionList";
 import { Submission } from "../../types/submission";
-import { apiClient } from "../../services/apiClient";
+import { apiClient } from "../../services/api";
 
 export const fetchSubmission = async (id: string): Promise<Submission> => {
   const response = await apiClient.get<Submission>(`/api/submissions/${id}`);

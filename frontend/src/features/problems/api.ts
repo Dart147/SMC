@@ -1,4 +1,4 @@
-import { apiClient } from "../../services/apiClient";
+import { apiClient } from "../../services/api";
 import { Problem } from "../../types/problem";
 
 export const fetchProblems = async (): Promise<Problem[]> => {
