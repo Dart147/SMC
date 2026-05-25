@@ -1,8 +1,8 @@
 # SMC
 
-## What this is
+## Show Me your Code (SMC)
 
-Show Me your Code (SMC) is an Online Code Test platform: interviewees take coding tests in the browser, and hiring managers create tests, manage candidates, and review results.
+ An Online Code Test platform: interviewees take coding tests in the browser, and hiring managers create tests, manage candidates, and review results.
 
 ## Quick start
 
@@ -31,8 +31,7 @@ SMC/
 │   ├── internal/judge/   # Runner interface, ProcessRunner, DockerRunner
 │   ├── db/               # PostgreSQL schema + seed data
 │   └── ...
-├── docker-compose.yaml   # Full stack: postgres + backend + frontend
-└── infra/             # Temporal / CD-service / observability — TBD
+└── docker-compose.yaml   # Full stack: postgres + backend + frontend
 ```
 
 ### Ports
@@ -82,7 +81,3 @@ A Go 1.24 REST API (`backend/`) that serves problems and judges code submissions
 Results (Accepted / Wrong Answer / TLE / MLE / Runtime Error / Compile Error) are written back asynchronously; the frontend polls until a terminal status appears.
 
 Port: **8081**. See [`backend/README.md`](backend/README.md) for the full API reference, judge design, sandbox flags, and run instructions.
-
-## Infra
-
-**TBD.** Will hold the unified `docker-compose` / Traefik / observability configuration that ties the frontend, backend, and supporting services together for the single-host deployment.
