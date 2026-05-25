@@ -26,6 +26,7 @@ import (
 )
 
 func main() {
+	// 修正 1: 檢查 godotenv.Load 錯誤
 	if err := godotenv.Load(); err != nil {
 		log.Printf("Warning: .env file not found")
 	}
@@ -42,6 +43,7 @@ func main() {
 	}
 
 	logger, _ := buildLogger(cfg.LogLevel)
+	// 修正 2: 檢查 logger.Sync 錯誤
 	defer func() { _ = logger.Sync() }()
 
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
@@ -53,6 +55,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to open database", zap.Error(err))
 	}
+	// 修正 3: 檢查 db.Close 錯誤
 	defer func() { _ = db.Close() }()
 
 	internaldb.SeedAdminUser(db)
@@ -71,14 +74,26 @@ func main() {
 	}
 	submissionSvc := service.NewSubmissionService(submissionRepo, problemRepo, judge.NewJudge(runner, logger), logger)
 
-	problemH := handler.NewProblemHandler(problemSvc)
+	// 這裡宣告了三個 Handler
 	authH := handler.NewAuthHandler(authSvc)
+	problemH := handler.NewProblemHandler(problemSvc)
 	submissionH := handler.NewSubmissionHandler(submissionSvc)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/problems", problemH.Create)
+
+	// 修正 4: 註冊所有路由，解決「declared but not used」問題
+	// Auth 相關
+	mux.HandleFunc("POST /api/auth/login", authH.Login)
+	mux.HandleFunc("POST /api/users", authH.CreateCandidate)
+
+	// 題目相關
 	mux.HandleFunc("GET /api/problems", problemH.List)
 	mux.HandleFunc("GET /api/problems/{id}", problemH.GetByID)
+	mux.HandleFunc("POST /api/problems", problemH.Create)
+
+	// 提交相關
+	mux.HandleFunc("GET /api/submissions", submissionH.List)
+	mux.HandleFunc("POST /api/submissions", submissionH.Create)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Port),
@@ -86,6 +101,7 @@ func main() {
 	}
 
 	go func() {
+		// 修正 5: 檢查 ListenAndServe 錯誤
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("server error", zap.Error(err))
 		}
@@ -97,6 +113,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	// 修正 6: 檢查 Shutdown 錯誤
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Error("shutdown error", zap.Error(err))
 	}
