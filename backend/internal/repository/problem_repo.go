@@ -2,7 +2,7 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
+	//"fmt"
 	"math/rand"
 	"strings"
 	"time"
