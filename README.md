@@ -49,10 +49,10 @@ config.
 | `smc-frontend` | `80` | `8080` | root `docker-compose.yaml` |
 | Vite dev server (local only) | `5173` | `5173` | `npm run dev` |
 | Temporal server (gRPC) | `7233` | `7233` | `infra/deploy/docker-compose.temporal.yaml` |
-| **Temporal UI** | `7080` | `7080` | `infra/deploy/docker-compose.temporal.yaml` |
-| **Temporal Postgres** | `5432` | **(unpublished)** | `infra/deploy/docker-compose.temporal.yaml` |
-| **Elasticsearch (Temporal visibility)** | `9200` | **(unpublished)** | `infra/deploy/docker-compose.temporal.yaml` |
-| **CD-service API** | `7082` | `7082` | `infra/deploy/docker-compose.yaml` |
+| Temporal UI | `7080` | `7080` | `infra/deploy/docker-compose.temporal.yaml` |
+| Temporal Postgres | `5432` | (unpublished) | `infra/deploy/docker-compose.temporal.yaml` |
+| Elasticsearch (Temporal visibility) | `9200` | (unpublished) | `infra/deploy/docker-compose.temporal.yaml` |
+| CD-service API | `7082` | `7082` | `infra/deploy/docker-compose.yaml` |
 | CD-service Worker | — | — | `infra/deploy/docker-compose.yaml` |
 
 **Quick host-port reference:**
@@ -81,3 +81,14 @@ A Go 1.24 REST API (`backend/`) that serves problems and judges code submissions
 Results (Accepted / Wrong Answer / TLE / MLE / Runtime Error / Compile Error) are written back asynchronously; the frontend polls until a terminal status appears.
 
 Port: **8081**. See [`backend/README.md`](backend/README.md) for the full API reference, judge design, sandbox flags, and run instructions.
+
+### `sqlc-verify` Guard
+
+The backend CI runs an `sqlc-verify` stage as a drift guard: it runs `sqlc generate` from scratch and diffs the result against the committed `internal/db/*.go`. If anyone edits `schema.sql` or `queries/*.sql` without re-running `sqlc generate` locally and committing the regenerated `internal/db/*.go`, this check fails and blocks the PR.
+
+To fix: 
+```bash
+cd backend/
+docker run --rm -v "$(pwd):/src" -w /src sqlc/sqlc generate
+```
+then commit the updated `internal/db/` files.

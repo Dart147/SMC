@@ -47,11 +47,12 @@ type TestCase struct {
 }
 
 type User struct {
-	ID           string
-	Username     string
-	PasswordHash string
-	Email        sql.NullString
-	Role         sql.NullString
-	TotpSecret   sql.NullString
-	CreatedAt    sql.NullTime
+	ID            string
+	Username      string
+	PasswordHash  string
+	Email         sql.NullString
+	Role          sql.NullString
+	TotpSecret    sql.NullString
+	ExamStartedAt sql.NullTime
+	CreatedAt     sql.NullTime
 }
