@@ -21,6 +21,7 @@ Designed with zero-trust principles and enterprise-grade security in mind:
 
 * **Blind Indexing:** Usernames are deterministically hashed using HMAC-SHA256 before being stored in the database. This prevents username enumeration and protects identity privacy even in the event of a data breach.
 * **Salted Password Hashing:** Passwords are never stored in plaintext. We utilize `Bcrypt` to defend against rainbow table attacks.
+* **Time-Bound Exam Sessions:** Candidate accounts are strictly limited to a 3-hour testing window starting from their first successful login. Expiration logic is enforced server-side via PostgreSQL timestamps (`exam_started_at`) to prevent client-side time manipulation. Admin accounts bypass this restriction.
 * **Auto-Seeding & Separation of Concerns:** Admin credentials and cryptographic keys are strictly managed via `.env` files and injected into the database via automatic seeding upon server startup, keeping secrets completely out of the source code.
 
 ## Project Layout
@@ -46,6 +47,7 @@ backend/
 ├── Dockerfile        # Production multi-stage build
 ├── Dockerfile.dev    # Development build with Air (Hot Reload)
 └── .env.example      # Example environment variables (secrets)
+
 
 ```
 
@@ -85,6 +87,26 @@ Response (200 OK):
 
 ```
 
+*Note: The generated JWT payload includes an `exam_expires_at` claim (Unix timestamp) for candidate roles to sync frontend countdown timers.*
+
+Response (401 Unauthorized) — *Invalid credentials:*
+
+```json
+{
+  "error": "Invalid username or password"
+}
+
+```
+
+Response (403 Forbidden) — *Triggered when a candidate's 3-hour exam window has expired:*
+
+```json
+{
+  "error": "考試時間已結束，帳號已失效"
+}
+
+```
+
 ### POST /submissions
 
 Request body:
@@ -95,6 +117,7 @@ Request body:
   "code": "nums=list(map(int,input().split()))\nt=int(input())\n...",
   "language": "python"
 }
+
 
 ```
 
@@ -112,6 +135,7 @@ Response (201) — immediately returns `"Pending"`:
   "passedTestCases": 0,
   "totalTestCases": 3
 }
+
 
 ```
 
@@ -136,12 +160,13 @@ On failure, the response also includes:
 ## Configuration & Environment Variables
 
 Create a `.env` file in the root of the `backend/` directory before starting the server. **Do NOT commit the `.env` file to version control.**
+
 ### Runner interface
 
 The judge package defines a `Runner` interface with two implementations selected at startup via `JUDGE_BACKEND`:
 
 | Runner | Env value | Isolation | Use |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `ProcessRunner` | `process` (default) | None — direct subprocess | Local development |
 | `DockerRunner` | `docker` | Container per test case | Production |
 
@@ -171,7 +196,9 @@ JWT_SECRET=tsmc_super_secret_jwt_key_2026_do_not_share
 USERNAME_HMAC_SECRET=tsmc_blind_index_hmac_key_998877
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin123
+
 ```
+
 > **Warning:** `ProcessRunner` has no filesystem or network isolation. Submitted code can read server files and make network requests. Use only in development.
 
 ### DockerRunner — sandbox model
@@ -188,12 +215,13 @@ docker run --rm \
   -v /tmp/smc-xxx.py:/code.py:ro \   # only the submitted file is visible
   python:3.12-slim \
   python3 /code.py
+
 ```
 
 Language → image map:
 
 | Language | Image | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `python` | `python:3.12-slim` | — |
 | `javascript` | `node:20-slim` | — |
 | `go` | `golang:1.22-alpine` | `GOPATH` and `GOCACHE` redirected to `/tmp` for compilation |
@@ -226,13 +254,14 @@ docker compose down
 
 # Tear down and wipe the DB
 docker compose down -v
+
 ```
 
 **Note on Database Initialization:** * On the first run, the PostgreSQL container will automatically execute `db/init.sql` and the Go API will auto-seed the Admin account.
 Services started:
 
 | Container | Port | Image |
-|---|---|---|
+| --- | --- | --- |
 | `smc-postgres` | 5432 | `postgres:15-alpine` |
 | `smc-backend` | 8081 | built from `./backend` |
 | `smc-frontend` | 8080 | built from `./frontend` |
@@ -241,6 +270,7 @@ Services started:
 
 ```bash
 docker exec -i smc-postgres psql -U admin -d smcdb < backend/db/test_data.sql
+
 ```
 
 ### Backend only (with sandbox on host)
@@ -249,6 +279,7 @@ To run `DockerRunner` without the Docker-in-Docker limitation, run the backend d
 
 * The database initialization process may take 30-90 seconds on Windows/WSL2 due to Disk I/O. The `docker-compose.yml` healthcheck is configured to wait (`start_period: 90s`) to ensure safe backend startup.
 * If you need to wipe and reset the database completely, remove the volume:
+
 ```bash
 docker-compose down -v
 # Remove physical data folder on host if needed: rm -rf db/postgres_data/
@@ -258,6 +289,7 @@ cd backend && docker compose up -d postgres
 
 # Run backend with Docker sandbox enabled
 JUDGE_BACKEND=docker DB_HOST=127.0.0.1 go run ./cmd/api
+
 ```
 
 The backend process can call `docker run` natively, and the sandbox works with full isolation.
@@ -266,6 +298,7 @@ The backend process can call `docker run` natively, and the sandbox works with f
 
 ```bash
 cd backend && docker compose up -d --build
+
 ```
 
 This uses `ProcessRunner` (no isolation). Suitable for development only.
@@ -283,6 +316,7 @@ curl -s http://localhost:8081/api/healthz
 curl -s http://localhost:8081/api/version
 # → {"commit":"dev","version":"dev"}
 
+
 ```
 
 ### 2. Authentication (Login)
@@ -293,6 +327,7 @@ curl -X POST http://localhost:8081/api/auth/login \
   -d '{"username": "sys_admin_99", "password": "admin123"}'
 # → {"token": "eyJhbGciOiJIUzI1NiIs..."}
 
+
 ```
 
 ### 3. Problems
@@ -300,6 +335,7 @@ curl -X POST http://localhost:8081/api/auth/login \
 ```bash
 curl -s http://localhost:8081/api/problems | jq .
 curl -s http://localhost:8081/api/problems/1 | jq .
+
 
 ```
 
@@ -323,6 +359,7 @@ docker buildx build --progress=plain --target format . # gofmt -l . (fails if an
 docker buildx build --progress=plain --target test .   # go test ./...
 docker buildx build --progress=plain --target runtime -t smc-backend:local .  # final image
 
+
 ```
 
 ### Auto-fix Golang formatting
@@ -330,8 +367,11 @@ docker buildx build --progress=plain --target runtime -t smc-backend:local .  # 
 ```bash
 docker run --rm -v "$PWD":/app -w /app golang:1.26-alpine gofmt -w .
 
+
 ```
 
 ## CORS
 
 The server allows all origins (`Access-Control-Allow-Origin: *`) and handles `OPTIONS` preflight requests, so the Vite dev server on port 5173 can call the API without proxy configuration. All protected API routes expect the `Authorization: Bearer <token>` header.
+
+```

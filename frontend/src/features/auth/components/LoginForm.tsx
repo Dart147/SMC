@@ -30,14 +30,18 @@ export const LoginForm = () => {
       // 走到這裡代表沒報錯，登入成功！
       navigate("/problems");
     } catch (err: any) {
-      // 攔截 axios 拋出的錯誤，精準判斷 401 狀態碼
+      // 攔截 axios 拋出的錯誤，精準判斷狀態碼
       if (err.response?.status === 401) {
         setError("帳號或密碼錯誤，請重新輸入。");
+      } else if (err.response?.status === 403) {
+        // 🌟 新增 403 判斷：精準捕捉考試過期的狀態
+        setError("您的考試時間已結束，該帳號已失效。");
       } else {
+        // 其他真正的伺服器錯誤 (例如 500) 或網路斷線
         setError("伺服器連線異常，請稍後再試。");
       }
     } finally {
-      setIsLoading(false); // 無論成功失敗，都解除 loading 狀態
+      setIsLoading(false); // 如果你有這行的話保留著
     }
   };
 

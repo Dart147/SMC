@@ -9,9 +9,10 @@ The frontend for **SMC**'s Online Code Test system. Vite + React 18 + TypeScript
 **Done**
 
 - **Enterprise-Grade Authentication 🔐**: Replaced all static mock data and insecure `localStorage` credential generation. The frontend is now fully wired to the Go REST API using **JWT (JSON Web Tokens)** for secure, session-based authentication.
+- **Time-Bound Exam Sessions ⏳**: Implemented a secure 3-hour countdown timer for candidates. The frontend decodes the JWT to retrieve the `exam_expires_at` claim, rendering a live, pulsating global timer in the navigation bar. If the time expires, or if the backend returns a `403 Forbidden`, the user is automatically logged out and gracefully redirected with a clear expiration message.
 - **Token Persistence & Interceptors**: Auto-attaches the JWT token to all outgoing Axios requests via interceptors for protected routes.
 - **Secure Interviewer Dashboard 👨‍💼**: Role-Based Access Control (RBAC) ensures only users with the `admin` role can access the `/interviewer` route. The dashboard allows interviewers to generate real, DB-backed candidate accounts secured via Bcrypt and Blind Indexing. Includes a highly secure, session-bound history table to safely display and copy one-time plaintext credentials without persisting them.
-- **Backend Integration (Live!)**: Problems and submission histories are dynamically fetched from the PostgreSQL database. Error handling now correctly intercepts standard HTTP statuses (e.g., 401 Unauthorized, 404 Not Found).
+- **Backend Integration (Live!)**: Problems and submission histories are dynamically fetched from the PostgreSQL database. Error handling now correctly intercepts standard HTTP statuses (e.g., 401 Unauthorized, 403 Forbidden, 404 Not Found) to provide precise user feedback.
 - **Interactive Submissions History**: Upgraded the `/submissions` page with an accordion UI. Users can expand rows to see detailed "Wrong Answer" diffs (Your Output vs Expected Output) and raw compilation/runtime error logs.
 - **Modern Architecture**: Fully migrated to a 2025 "Feature-based" structure, separating logic into `/features`, `/pages`, and `/components`. Custom hooks are scoped precisely.
 - **Resizable Workspace Layout**: Implemented a LeetCode-style 3-pane split view (Problem, Editor, Console) using `react-resizable-panels` (V4) for smooth, draggable layouts.
@@ -24,7 +25,6 @@ The frontend for **SMC**'s Online Code Test system. Vite + React 18 + TypeScript
 **Not done yet**
 
 - **Real-time Execution Status**: Implement WebSocket or Polling to show live "Judging..." status updates without requiring a page refresh.
-- **Time-limited Candidate Sessions**: Implement a countdown mechanism (e.g., 3 hours) that begins upon a candidate's first login and automatically expires their access when time is up.
 
 ---
 
@@ -32,7 +32,7 @@ The frontend for **SMC**'s Online Code Test system. Vite + React 18 + TypeScript
 
 The application uses **React Router v7** with a centralized layout (`MainLayout`). Here are the currently implemented routes and their purposes:
 
-- `/` **(Home/Login)**: The landing page containing the `LoginForm`. Authenticates users directly against the Go backend database.
+- `/` **(Home/Login)**: The landing page containing the `LoginForm`. Authenticates users directly against the Go backend database and handles session expiration states.
 - `/problems` **(ProblemList)**: A dashboard listing all available coding problems fetched from the DB. Candidates select a problem here to start coding.
 - `/workspace/:problemId` **(Workspace)**: The core interview interface. A 3-pane layout containing the markdown problem description, the Monaco code editor, and the console/output panel.
 - `/submissions` **(SubmissionsPage)**: A history table showing all code executions with an expandable accordion to view diffs and error logs.
@@ -105,7 +105,7 @@ SMC/frontend/
     ├── components/Common/ # Dumb UI atoms (Button, Modal, ResizeHandle, …)
     ├── contexts/          # Global Context Providers (e.g., ThemeContext)
     ├── features/          # Vertical slices — the heart of SMC
-    │   ├── auth/          # LoginForm + useAuth (JWT Backend Integration)
+    │   ├── auth/          # LoginForm + useAuth (JWT parsing, Auth & Timer state)
     │   ├── problems/      # ProblemDescription, ProblemList UI (Wired to DB)
     │   ├── submissions/   # Accordion history table and status badges (Wired to DB)
     │   └── workspace/     # CodeEditor, EditorToolbar, ConsolePanel, hooks/
@@ -115,7 +115,7 @@ SMC/frontend/
     │   ├── ProblemList/   # Route: /problems
     │   ├── Submissions/   # Route: /submissions
     │   └── Workspace/     # Route: /workspace/:problemId
-    ├── layouts/           # Shared chrome (MainLayout with <Outlet/>, Navbar)
+    ├── layouts/           # Shared chrome (MainLayout with <Outlet/>, Navbar, and Global Exam Timer)
     ├── services/          # apiClient.ts — single shared Axios instance (API Base: /api)
     ├── store/             # globalStore.ts — cross-feature Zustand state
     ├── hooks/             # Cross-feature global hooks (useDebounce, …)
@@ -128,7 +128,9 @@ SMC/frontend/
 
 The system has moved from a monolithic component to a modular, decoupled architecture:
 
-- **Component Decoupling**: The UI is split into **Dumb Components** (UI-only in `src/components`) and **Smart Components** (logic-heavy in `src/features`).
-- **Feature-based Hooks**: Hooks specific to a domain (like editor execution logic) are co-located within `src/features/*/hooks/`, maintaining high cohesion and avoiding global hook clutter.
-- **State Management**: Uses **Zustand** for lightweight and robust state management instead of complex Prop drilling. Contexts (`src/contexts`) are used for pure UI-state like Themes.
-- **Backend Ready**: Interfaces in `src/types/` are designed to exactly match the **Go backend** structs, ensuring type safety from the database all the way to the browser DOM. API requests are routed through a centralized `apiClient.ts` to seamlessly handle base URLs and authentication tokens.
+* **Component Decoupling**: The UI is split into **Dumb Components** (UI-only in `src/components`) and **Smart Components** (logic-heavy in `src/features`).
+* **Feature-based Hooks**: Hooks specific to a domain (like editor execution logic) are co-located within `src/features/*/hooks/`, maintaining high cohesion and avoiding global hook clutter.
+* **State Management**: Uses **Zustand** for lightweight and robust state management instead of complex Prop drilling. Contexts (`src/contexts`) are used for pure UI-state like Themes.
+* **Backend Ready**: Interfaces in `src/types/` are designed to exactly match the **Go backend** structs, ensuring type safety from the database all the way to the browser DOM. API requests are routed through a centralized `apiClient.ts` to seamlessly handle base URLs and authentication tokens.
+
+```
