@@ -13,7 +13,7 @@ export function SubmissionsPage() {
     const fetchSubmissions = async () => {
       try {
         setLoading(true);
-        const response = await fetch("http://localhost:8081/api/submissions");
+        const response = await fetch("/api/submissions");
 
         if (!response.ok) {
           throw new Error("Failed to fetch submissions");
