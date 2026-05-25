@@ -17,7 +17,7 @@ func NewProblemService(repo *repository.ProblemRepo) *ProblemService {
 func (s *ProblemService) Create(prob *domain.Problem) error {
 	// 這裡可以加入一些業務邏輯驗證
 	// 例如：檢查標題是否重複，或過濾不合法的字元
-	
+
 	// 呼叫 Repository 層將資料持久化
 	return s.repo.Create(prob)
 }

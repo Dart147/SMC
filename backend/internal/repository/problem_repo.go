@@ -47,7 +47,7 @@ func (r *ProblemRepo) Create(prob *domain.Problem) error {
 			return err
 		}
 	}
-	
+
 	prob.ID = newProblemID
 	return nil
 }

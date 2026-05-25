@@ -66,8 +66,8 @@ func (h *ProblemHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "OPTIONS" {
 		return
 	}
-	
-	id := r.PathValue("id") 
+
+	id := r.PathValue("id")
 	problem, ok := h.svc.GetByID(id)
 	if !ok {
 		http.Error(w, "Problem not found", http.StatusNotFound)
@@ -80,7 +80,7 @@ func (h *ProblemHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 func setHeaders(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	// 允許前端開發伺服器存取
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173") 
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 }
