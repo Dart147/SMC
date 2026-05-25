@@ -24,30 +24,24 @@ func NewProblemRepo(db *sql.DB) *ProblemRepo {
 }
 
 func (r *ProblemRepo) Create(prob *domain.Problem) error {
-	// ⚡️ 核心修正：資料庫不給 ID，我們自己生一個隨機 6 位數
-	rand.Seed(time.Now().UnixNano())
-	newProblemID := rand.Intn(899999) + 100000
+	// 修正過時的 rand.Seed
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	newProblemID := rng.Intn(899999) + 100000
 
-	// 1. 插入題目 (強行指定 ID)
 	queryProblem := `INSERT INTO problems (id, title, difficulty, description) VALUES ($1, $2, $3, $4)`
 	_, err := r.db.Exec(queryProblem, newProblemID, prob.Title, prob.Difficulty, prob.Description)
 	if err != nil {
-		fmt.Printf("❌ 題目儲存失敗: %v\n", err)
 		return err
 	}
 
-	// 2. 插入測資
 	for _, tc := range prob.TestCases {
-		// 測資的 ID 也自己生一個 8 位數
-		newTCID := rand.Intn(89999999) + 10000000
+		newTCID := rng.Intn(89999999) + 10000000
 		queryTC := `INSERT INTO test_cases (id, problem_id, input, expected_output) VALUES ($1, $2, $3, $4)`
 		_, err = r.db.Exec(queryTC, newTCID, newProblemID, tc.Input, tc.ExpectedOutput)
 		if err != nil {
-			fmt.Printf("❌ 測資儲存失敗: %v\n", err)
 			return err
 		}
 	}
-
 	prob.ID = newProblemID
 	return nil
 }
@@ -57,7 +51,8 @@ func (r *ProblemRepo) List() []domain.Problem {
 	if err != nil {
 		return []domain.Problem{}
 	}
-	defer rows.Close()
+	// 修正 errcheck: 加上底線忽略錯誤
+	defer func() { _ = rows.Close() }()
 
 	var problems []domain.Problem
 	for rows.Next() {
@@ -92,7 +87,7 @@ func (r *ProblemRepo) getTestCasesByProblemID(pID int) []domain.TestCase {
 	if err != nil {
 		return []domain.TestCase{}
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var tcs []domain.TestCase
 	for rows.Next() {
