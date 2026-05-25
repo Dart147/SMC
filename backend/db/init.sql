@@ -1,4 +1,4 @@
-﻿-- 1. Users 表：增加 totp_secret 並擴大 username 長度
+-- 1. Users 表：增加 totp_secret 並擴大 username 長度
 CREATE TABLE users (
     id VARCHAR(50) PRIMARY KEY,
     -- ⚠️ 重要：HMAC-SHA256 產生的 Hex 字串長度是 64，所以不能只用 VARCHAR(50)
@@ -7,6 +7,7 @@ CREATE TABLE users (
     email VARCHAR(100) UNIQUE,
     role VARCHAR(20) DEFAULT 'candidate', -- 'candidate' or 'admin'
     totp_secret VARCHAR(255),             -- 為了之後的兩步驟驗證 (MFA) 預留
+    exam_started_at TIMESTAMP WITH TIME ZONE DEFAULT NULL, -- 🌟 新增：記錄考生第一次登入（開始考試）的時間
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
