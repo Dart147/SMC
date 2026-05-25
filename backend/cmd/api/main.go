@@ -58,7 +58,7 @@ func main() {
 	}
 
 	// 2. 組合動態的 DSN
-	dsn := fmt.Sprintf("host=%s port=5432 user=admin password=password123 dbname=smcdb sslmode=disable", dbHost)
+	dsn := fmt.Sprintf("host=%s port=5435 user=admin password=password123 dbname=smcdb sslmode=disable", dbHost)
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		logger.Fatal("failed to open database", zap.Error(err))
@@ -102,6 +102,7 @@ func main() {
 	})
 	mux.HandleFunc("GET /api/problems", problemH.List)
 	mux.HandleFunc("GET /api/problems/{id}", problemH.GetByID)
+	mux.HandleFunc("POST /api/problems", problemH.Create)
 	mux.HandleFunc("GET /api/submissions", submissionH.List)
 	mux.HandleFunc("POST /api/submissions", submissionH.Create)
 	mux.HandleFunc("GET /api/submissions/{id}", submissionH.GetByID)
