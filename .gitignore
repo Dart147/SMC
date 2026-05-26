@@ -39,4 +39,4 @@ test-results/
 *.sln
 *.sw?
 
-backend/db/postgres_data/
+postgres_data/

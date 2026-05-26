@@ -1,79 +1,102 @@
 package repository
 
 import (
-	"context"
 	"database/sql"
-	"fmt"
+	//"fmt"
+	"math/rand"
 	"strings"
+	"time"
 
 	sqlcdb "github.com/Dart147/SMC/backend/internal/db"
 	"github.com/Dart147/SMC/backend/internal/domain"
 )
 
 type ProblemRepo struct {
+	db      *sql.DB
 	queries *sqlcdb.Queries
 }
 
-// 💡 調整建構函式，改為使用 sqlc 生成的 queries
 func NewProblemRepo(db *sql.DB) *ProblemRepo {
-	return &ProblemRepo{queries: sqlcdb.New(db)}
+	return &ProblemRepo{
+		db:      db,
+		queries: sqlcdb.New(db),
+	}
 }
 
-// List 獲取所有題目列表 (從資料庫撈取)
-func (r *ProblemRepo) List() []domain.Problem {
-	ctx := context.Background()
-	rows, err := r.queries.ListProblems(ctx)
+func (r *ProblemRepo) Create(prob *domain.Problem) error {
+	// 修正過時的 rand.Seed
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	newProblemID := rng.Intn(899999) + 100000
+
+	queryProblem := `INSERT INTO problems (id, title, difficulty, description) VALUES ($1, $2, $3, $4)`
+	_, err := r.db.Exec(queryProblem, newProblemID, prob.Title, prob.Difficulty, prob.Description)
 	if err != nil {
-		fmt.Printf("failed to list problems: %v\n", err)
-		return []domain.Problem{}
-	}
-	var problems []domain.Problem
-	for _, row := range rows {
-		problems = append(problems, domain.Problem{
-			ID:          row.ID,
-			Title:       row.Title,
-			Difficulty:  row.Difficulty.String,
-			Description: row.Description,
-		})
+		return err
 	}
 
-	if problems == nil {
+	for _, tc := range prob.TestCases {
+		newTCID := rng.Intn(89999999) + 10000000
+		queryTC := `INSERT INTO test_cases (id, problem_id, input, expected_output) VALUES ($1, $2, $3, $4)`
+		_, err = r.db.Exec(queryTC, newTCID, newProblemID, tc.Input, tc.ExpectedOutput)
+		if err != nil {
+			return err
+		}
+	}
+	prob.ID = newProblemID
+	return nil
+}
+
+func (r *ProblemRepo) List() []domain.Problem {
+	rows, err := r.db.Query(`SELECT id, title, difficulty, description FROM problems ORDER BY id DESC`)
+	if err != nil {
 		return []domain.Problem{}
+	}
+	// 修正 errcheck: 加上底線忽略錯誤
+	defer func() { _ = rows.Close() }()
+
+	var problems []domain.Problem
+	for rows.Next() {
+		var p domain.Problem
+		var diff sql.NullString
+		if err := rows.Scan(&p.ID, &p.Title, &diff, &p.Description); err != nil {
+			continue
+		}
+		p.Difficulty = diff.String
+		p.TestCases = r.getTestCasesByProblemID(p.ID)
+		problems = append(problems, p)
 	}
 	return problems
 }
 
-// GetByID 根據 ID 獲取單一題目詳細內容
 func (r *ProblemRepo) GetByID(id string) (domain.Problem, bool) {
-	ctx := context.Background()
-	row, err := r.queries.GetProblemByID(ctx, id)
+	var p domain.Problem
+	var diff sql.NullString
+	err := r.db.QueryRow(`SELECT id, title, difficulty, description FROM problems WHERE id = $1`, id).
+		Scan(&p.ID, &p.Title, &diff, &p.Description)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return domain.Problem{}, false
+		return domain.Problem{}, false
+	}
+	p.Difficulty = diff.String
+	p.TestCases = r.getTestCasesByProblemID(p.ID)
+	return p, true
+}
+
+func (r *ProblemRepo) getTestCasesByProblemID(pID int) []domain.TestCase {
+	query := `SELECT input, expected_output FROM test_cases WHERE problem_id = $1`
+	rows, err := r.db.Query(query, pID)
+	if err != nil {
+		return []domain.TestCase{}
+	}
+	defer func() { _ = rows.Close() }()
+
+	var tcs []domain.TestCase
+	for rows.Next() {
+		var tc domain.TestCase
+		if err := rows.Scan(&tc.Input, &tc.ExpectedOutput); err == nil {
+			tc.Input = strings.ReplaceAll(tc.Input, `\n`, "\n")
+			tc.ExpectedOutput = strings.ReplaceAll(tc.ExpectedOutput, `\n`, "\n")
+			tcs = append(tcs, tc)
 		}
-		fmt.Printf("failed to query problem by id %q: %v\n", id, err)
-		return domain.Problem{}, false
 	}
-
-	tcRows, err := r.queries.GetTestCasesByProblemID(ctx, sql.NullString{String: id, Valid: true})
-	if err != nil {
-		fmt.Printf("failed to query test cases for problem %q: %v\n", id, err)
-		return domain.Problem{}, false
-	}
-
-	testCases := make([]domain.TestCase, 0, len(tcRows))
-	for _, tc := range tcRows {
-		testCases = append(testCases, domain.TestCase{
-			Input:          strings.ReplaceAll(tc.Input, `\n`, "\n"),
-			ExpectedOutput: strings.ReplaceAll(tc.ExpectedOutput, `\n`, "\n"),
-		})
-	}
-
-	return domain.Problem{
-		ID:          row.ID,
-		Title:       row.Title,
-		Difficulty:  row.Difficulty.String,
-		Description: row.Description,
-		TestCases:   testCases,
-	}, true
+	return tcs
 }
