@@ -87,6 +87,12 @@ func main() {
 
 	mux := http.NewServeMux()
 
+	// Health check used by docker-compose healthcheck and Traefik.
+	mux.HandleFunc("GET /api/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		_, _ = w.Write([]byte("ok\n"))
+	})
+
 	// 修正 4: 註冊所有路由，解決「declared but not used」問題
 	// Auth 相關
 	mux.HandleFunc("POST /api/auth/login", authH.Login)
