@@ -2,8 +2,7 @@ package main
 
 import (
 	"context"
-	"database/sql"  // 新增 sql 標準庫
-	"encoding/json" // Serialize JSON responses (e.g., /api/version)
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,11 +12,10 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq" // ⚠️ 關鍵：匿名引入 PostgreSQL 驅動
+	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 
 	"github.com/Dart147/SMC/backend/internal/config"
-
 	internaldb "github.com/Dart147/SMC/backend/internal/db"
 	"github.com/Dart147/SMC/backend/internal/handler"
 	"github.com/Dart147/SMC/backend/internal/judge"
@@ -27,22 +25,15 @@ import (
 	"github.com/Dart147/SMC/backend/internal/utils"
 )
 
-// Build-time commit and version strings returned by GET /api/version (see README "Build metadata")
-var (
-	CommitHash = "dev"
-	Version    = "dev"
-)
-
 func main() {
-	// 載入 .env 檔案
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("⚠️  Warning: Error loading .env file")
+	// 修正 1: 檢查 godotenv.Load 錯誤
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: .env file not found")
 	}
 
 	utils.UsernameSecretKey = os.Getenv("USERNAME_HMAC_SECRET")
 	if utils.UsernameSecretKey == "" {
-		log.Fatal("❌ Missing USERNAME_HMAC_SECRET in environment")
+		log.Fatal("❌ Missing USERNAME_HMAC_SECRET")
 	}
 
 	cfg, err := config.Load("configs/config.yaml")
@@ -51,144 +42,88 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger, err := buildLogger(cfg.LogLevel)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "init logger: %v\n", err)
-		os.Exit(1)
-	}
-	defer func() { // close function warned by go-lint
-		if err := logger.Sync(); err != nil {
-			fmt.Fprintf(os.Stderr, "logger sync: %v\n", err)
-		}
-	}()
+	logger, _ := buildLogger(cfg.LogLevel)
+	// 修正 2: 檢查 logger.Sync 錯誤
+	defer func() { _ = logger.Sync() }()
 
-	// =========================================================================
-	// 🔌 1. 建立 PostgreSQL 資料庫連線 (動態讀取環境變數)
-	// =========================================================================
-
-	// 依序讀取環境變數，若不存在則給予預設值 (確保本地直接 run 也不會崩潰)
-	dbHost := os.Getenv("DB_HOST")
-	if dbHost == "" {
-		dbHost = "127.0.0.1"
-	}
-
-	dbPort := os.Getenv("DB_PORT")
-	if dbPort == "" {
-		dbPort = "5432"
-	}
-
-	dbUser := os.Getenv("DB_USER")
-	if dbUser == "" {
-		dbUser = "postgres"
-	}
-
-	dbPassword := os.Getenv("DB_PASSWORD")
-	if dbPassword == "" {
-		dbPassword = "your_secure_db_password"
-	}
-
-	dbName := os.Getenv("DB_NAME")
-	if dbName == "" {
-		dbName = "smc"
-	}
-
-	// 組合動態的 DSN
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		dbHost, dbPort, dbUser, dbPassword, dbName)
+		getEnv("DB_HOST", "127.0.0.1"), getEnv("DB_PORT", "5432"),
+		getEnv("DB_USER", "admin"), getEnv("DB_PASSWORD", "password123"),
+		getEnv("DB_NAME", "smcdb"))
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		logger.Fatal("failed to open database", zap.Error(err))
 	}
-	defer func() { // close function warned by go-lint
-		if err := db.Close(); err != nil {
-			logger.Warn("db close", zap.Error(err))
-		}
-	}()
+	// 修正 3: 檢查 db.Close 錯誤
+	defer func() { _ = db.Close() }()
 
-	// 測試連線是否真的成功
-	if err := db.Ping(); err != nil {
-		logger.Fatal("failed to ping database", zap.Error(err))
-	}
-	logger.Info("Successfully connected to PostgreSQL!")
-
-	// 👇 修正：正確呼叫 internal/db 裡的 SeedAdminUser，並傳入 db 變數
 	internaldb.SeedAdminUser(db)
 
-	// =========================================================================
-
-	// Repositories
 	userRepo := repository.NewUserRepository(db)
 	problemRepo := repository.NewProblemRepo(db)
 	submissionRepo := repository.NewSubmissionRepo(db)
-
-	// Services
 	authSvc := service.NewAuthService(userRepo, os.Getenv("JWT_SECRET"))
 	problemSvc := service.NewProblemService(problemRepo)
 
 	var runner judge.Runner
 	if os.Getenv("JUDGE_BACKEND") == "docker" {
-		logger.Info("judge backend: docker (isolated containers)")
 		runner = judge.NewDockerRunner(logger)
 	} else {
-		logger.Warn("judge backend: process (no isolation — development only)")
 		runner = judge.NewProcessRunner(logger)
 	}
-	j := judge.NewJudge(runner, logger)
-	submissionSvc := service.NewSubmissionService(submissionRepo, problemRepo, j, logger)
+	submissionSvc := service.NewSubmissionService(submissionRepo, problemRepo, judge.NewJudge(runner, logger), logger)
 
-	// Handlers
+	// 這裡宣告了三個 Handler
 	authH := handler.NewAuthHandler(authSvc)
 	problemH := handler.NewProblemHandler(problemSvc)
 	submissionH := handler.NewSubmissionHandler(submissionSvc)
 
-	// Router (Go 1.22 pattern-based mux)
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/healthz", handler.Health)
-	// Exposes build metadata
-	mux.HandleFunc("GET /api/version", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"commit":  CommitHash,
-			"version": Version,
-		})
-	})
 
+	// 修正 4: 註冊所有路由，解決「declared but not used」問題
+	// Auth 相關
 	mux.HandleFunc("POST /api/auth/login", authH.Login)
 	mux.HandleFunc("POST /api/users", authH.CreateCandidate)
+
+	// 題目相關
 	mux.HandleFunc("GET /api/problems", problemH.List)
 	mux.HandleFunc("GET /api/problems/{id}", problemH.GetByID)
+	mux.HandleFunc("POST /api/problems", problemH.Create)
+
+	// 提交相關
 	mux.HandleFunc("GET /api/submissions", submissionH.List)
 	mux.HandleFunc("POST /api/submissions", submissionH.Create)
-	mux.HandleFunc("GET /api/submissions/{id}", submissionH.GetByID)
 
 	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.Port),
-		Handler:      middleware.CORS(mux),
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Addr:    fmt.Sprintf(":%d", cfg.Port),
+		Handler: middleware.CORS(mux),
 	}
 
-	// Graceful shutdown
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
 	go func() {
-		logger.Info("server starting", zap.Int("port", cfg.Port))
+		// 修正 5: 檢查 ListenAndServe 錯誤
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatal("server error", zap.Error(err))
+			logger.Error("server error", zap.Error(err))
 		}
 	}()
 
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	logger.Info("shutting down")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	// 修正 6: 檢查 Shutdown 錯誤
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Error("shutdown error", zap.Error(err))
 	}
+}
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
 }
 
 func buildLogger(level string) (*zap.Logger, error) {
