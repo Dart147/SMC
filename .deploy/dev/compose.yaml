@@ -24,7 +24,7 @@ services:
       start_period: 30s
 
   backend:
-    build: ../../backend
+    image: lovetsmc/backend:dev
     container_name: smc-backend
     restart: unless-stopped
     env_file:
@@ -47,7 +47,7 @@ services:
       start_period: 30s
 
   frontend:
-    build: ../../frontend
+    image: lovetsmc/frontend:dev
     container_name: smc-frontend
     restart: unless-stopped
     depends_on:

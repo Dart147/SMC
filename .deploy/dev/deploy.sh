@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# Rolling deploy for the SMC dev environment on S2.
+# Pulls the latest :dev images from Docker Hub
 # Usage:
-#   ./deploy.sh                  # rebuild + roll all services
-#   ./deploy.sh frontend         # rebuild + roll only the frontend container
-#   ./deploy.sh backend          # rebuild + roll only the backend container
-# Idempotent. Preserves the smc-postgres-data volume.
+#   ./deploy.sh                  # pull + recreate all services
+#   ./deploy.sh frontend         # pull + recreate only the frontend
+#   ./deploy.sh backend          # pull + recreate only the backend
 
 set -euo pipefail
 
@@ -20,11 +19,15 @@ COMPOSE="docker compose --env-file $ENV_FILE"
 COMPONENT="${1:-}"
 
 if [[ -n "$COMPONENT" ]]; then
-  echo ":: Rolling SMC $COMPONENT..."
-  $COMPOSE up -d --no-deps --build --wait "$COMPONENT"
+  echo ":: Pulling latest $COMPONENT image..."
+  $COMPOSE pull "$COMPONENT"
+  echo ":: Recreating $COMPONENT..."
+  $COMPOSE up -d --no-deps --wait "$COMPONENT"
 else
-  echo ":: Rolling all SMC services..."
-  $COMPOSE up -d --build --wait
+  echo ":: Pulling latest images..."
+  $COMPOSE pull
+  echo ":: Recreating services with changed images..."
+  $COMPOSE up -d --wait
 fi
 
 echo "==> deploy complete"
