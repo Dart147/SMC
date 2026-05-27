@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	
+
 	sqlcdb "github.com/Dart147/SMC/backend/internal/db"
 	"github.com/Dart147/SMC/backend/internal/domain"
 )
@@ -40,14 +40,14 @@ func (r *SubmissionRepo) Save(s domain.Submission) error {
 func (r *SubmissionRepo) GetByID(id string) (domain.Submission, bool) {
 	ctx := context.Background()
 	row, err := r.queries.GetSubmissionByID(ctx, id)
-	
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return domain.Submission{}, false
 		}
-		return domain.Submission{}, false 
+		return domain.Submission{}, false
 	}
-	
+
 	return domain.Submission{
 		ID:              row.ID,
 		ProblemID:       row.ProblemID.String,
@@ -65,7 +65,7 @@ func (r *SubmissionRepo) GetByID(id string) (domain.Submission, bool) {
 // 3. 當背景 Sandbox 評測完畢，將最終結果更新回 PostgreSQL
 func (r *SubmissionRepo) Update(s domain.Submission) error {
 	ctx := context.Background()
-	
+
 	_, err := r.queries.UpdateSubmission(ctx, sqlcdb.UpdateSubmissionParams{
 		Status:          sql.NullString{String: s.Status, Valid: s.Status != ""},
 		PassedTestCases: sql.NullInt32{Int32: int32(s.PassedTestCases), Valid: true},
@@ -74,7 +74,7 @@ func (r *SubmissionRepo) Update(s domain.Submission) error {
 		Error:           sql.NullString{String: s.Error, Valid: s.Error != ""},
 		ID:              s.ID,
 	})
-	
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("submission %q not found", s.ID)
@@ -152,7 +152,7 @@ func (r *SubmissionRepo) ListByUserID(userID string) []domain.Submission {
 func (r *SubmissionRepo) GetCandidateScores(userID string) map[string]int {
 	ctx := context.Background()
 	rows, err := r.queries.GetCandidateScores(ctx, sql.NullString{String: userID, Valid: userID != ""})
-	
+
 	scores := make(map[string]int)
 	if err != nil {
 		fmt.Printf("failed to query scores for user %s: %v\n", userID, err)
@@ -168,6 +168,6 @@ func (r *SubmissionRepo) GetCandidateScores(userID string) map[string]int {
 			}
 		}
 	}
-	
+
 	return scores
 }
