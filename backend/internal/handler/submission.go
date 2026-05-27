@@ -80,3 +80,17 @@ func (h *SubmissionHandler) GetLatest(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, sub)
 }
+
+// GET /api/admin/submissions?userId=xxx — 管理台查詢特定考生的提交紀錄
+func (h *SubmissionHandler) ListByUserID(w http.ResponseWriter, r *http.Request) {
+	userID := r.URL.Query().Get("userId")
+	if userID == "" {
+		writeError(w, http.StatusBadRequest, "userId is required in query parameters")
+		return
+	}
+	submissions := h.svc.ListByUserID(userID)
+	if submissions == nil {
+		submissions = []domain.Submission{}
+	}
+	writeJSON(w, http.StatusOK, submissions)
+}

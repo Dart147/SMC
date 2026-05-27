@@ -1,9 +1,11 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
-	//"fmt"
+	"fmt"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,25 +26,51 @@ func NewProblemRepo(db *sql.DB) *ProblemRepo {
 }
 
 func (r *ProblemRepo) Create(prob *domain.Problem) error {
-	// 修正過時的 rand.Seed
+	ctx := context.Background()
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	newProblemID := rng.Intn(899999) + 100000
+	newProblemID := fmt.Sprintf("%d", rng.Intn(899999)+100000)
 
-	queryProblem := `INSERT INTO problems (id, title, difficulty, description) VALUES ($1, $2, $3, $4)`
-	_, err := r.db.Exec(queryProblem, newProblemID, prob.Title, prob.Difficulty, prob.Description)
+	// Begin transaction — 確保題目與測資一起成功或一起失敗
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }() // 如果 Commit 成功，Rollback 是 no-op
+
+	qtx := r.queries.WithTx(tx)
+
+	_, err = qtx.CreateProblem(ctx, sqlcdb.CreateProblemParams{
+		ID:            newProblemID,
+		Title:         prob.Title,
+		Difficulty:    sql.NullString{String: prob.Difficulty, Valid: prob.Difficulty != ""},
+		Description:   prob.Description,
+		TimeLimitMs:   5000,
+		MemoryLimitKb: 262144,
+	})
+	if err != nil {
+		return fmt.Errorf("create problem: %w", err)
 	}
 
 	for _, tc := range prob.TestCases {
-		newTCID := rng.Intn(89999999) + 10000000
-		queryTC := `INSERT INTO test_cases (id, problem_id, input, expected_output) VALUES ($1, $2, $3, $4)`
-		_, err = r.db.Exec(queryTC, newTCID, newProblemID, tc.Input, tc.ExpectedOutput)
+		newTCID := fmt.Sprintf("%d", rng.Intn(89999999)+10000000)
+		err = qtx.CreateTestCase(ctx, sqlcdb.CreateTestCaseParams{
+			ID:             newTCID,
+			ProblemID:      sql.NullString{String: newProblemID, Valid: true},
+			Input:          tc.Input,
+			ExpectedOutput: tc.ExpectedOutput,
+			IsHidden:       sql.NullBool{Bool: false, Valid: true},
+		})
 		if err != nil {
-			return err
+			return fmt.Errorf("create test case: %w", err)
 		}
 	}
-	prob.ID = newProblemID
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
+	}
+
+	id, _ := strconv.Atoi(newProblemID)
+	prob.ID = id
 	return nil
 }
 

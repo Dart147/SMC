@@ -10,6 +10,35 @@ import (
 	"database/sql"
 )
 
+const createProblem = `-- name: CreateProblem :one
+INSERT INTO problems (id, title, difficulty, description, time_limit_ms, memory_limit_kb)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id
+`
+
+type CreateProblemParams struct {
+	ID            string
+	Title         string
+	Difficulty    sql.NullString
+	Description   string
+	TimeLimitMs   int32
+	MemoryLimitKb int32
+}
+
+func (q *Queries) CreateProblem(ctx context.Context, arg CreateProblemParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, createProblem,
+		arg.ID,
+		arg.Title,
+		arg.Difficulty,
+		arg.Description,
+		arg.TimeLimitMs,
+		arg.MemoryLimitKb,
+	)
+	var id string
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createSubmission = `-- name: CreateSubmission :exec
 INSERT INTO submissions (id, problem_id, code, language, status, passed_test_cases, total_test_cases)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -36,6 +65,84 @@ func (q *Queries) CreateSubmission(ctx context.Context, arg CreateSubmissionPara
 		arg.TotalTestCases,
 	)
 	return err
+}
+
+const createTestCase = `-- name: CreateTestCase :exec
+INSERT INTO test_cases (id, problem_id, input, expected_output, is_hidden)
+VALUES ($1, $2, $3, $4, $5)
+`
+
+type CreateTestCaseParams struct {
+	ID             string
+	ProblemID      sql.NullString
+	Input          string
+	ExpectedOutput string
+	IsHidden       sql.NullBool
+}
+
+func (q *Queries) CreateTestCase(ctx context.Context, arg CreateTestCaseParams) error {
+	_, err := q.db.ExecContext(ctx, createTestCase,
+		arg.ID,
+		arg.ProblemID,
+		arg.Input,
+		arg.ExpectedOutput,
+		arg.IsHidden,
+	)
+	return err
+}
+
+const getCandidateScores = `-- name: GetCandidateScores :many
+SELECT
+    u.id        AS user_id,
+    u.username,
+    u.exam_started_at,
+    COALESCE(SUM(s.score), 0)::int                                                AS total_score,
+    COUNT(DISTINCT s.problem_id)::int                                             AS problems_attempted,
+    COUNT(DISTINCT CASE WHEN s.status = 'Accepted' THEN s.problem_id END)::int   AS problems_accepted
+FROM users u
+LEFT JOIN submissions s ON u.id = s.user_id
+WHERE u.role = 'candidate'
+GROUP BY u.id, u.username, u.exam_started_at
+ORDER BY total_score DESC
+`
+
+type GetCandidateScoresRow struct {
+	UserID            string
+	Username          string
+	ExamStartedAt     sql.NullTime
+	TotalScore        int32
+	ProblemsAttempted int32
+	ProblemsAccepted  int32
+}
+
+func (q *Queries) GetCandidateScores(ctx context.Context) ([]GetCandidateScoresRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCandidateScores)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetCandidateScoresRow
+	for rows.Next() {
+		var i GetCandidateScoresRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.Username,
+			&i.ExamStartedAt,
+			&i.TotalScore,
+			&i.ProblemsAttempted,
+			&i.ProblemsAccepted,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getLatestSubmissionByProblem = `-- name: GetLatestSubmissionByProblem :one
@@ -251,6 +358,56 @@ func (q *Queries) ListSubmissions(ctx context.Context) ([]ListSubmissionsRow, er
 			&i.Output,
 			&i.ExpectedOutput,
 			&i.Error,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSubmissionsByUserID = `-- name: ListSubmissionsByUserID :many
+SELECT id, problem_id, language, status, passed_test_cases, total_test_cases, score, created_at
+FROM submissions
+WHERE user_id = $1
+ORDER BY created_at DESC
+`
+
+type ListSubmissionsByUserIDRow struct {
+	ID              string
+	ProblemID       sql.NullString
+	Language        string
+	Status          sql.NullString
+	PassedTestCases sql.NullInt32
+	TotalTestCases  sql.NullInt32
+	Score           sql.NullInt32
+	CreatedAt       sql.NullTime
+}
+
+func (q *Queries) ListSubmissionsByUserID(ctx context.Context, userID sql.NullString) ([]ListSubmissionsByUserIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, listSubmissionsByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListSubmissionsByUserIDRow
+	for rows.Next() {
+		var i ListSubmissionsByUserIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProblemID,
+			&i.Language,
+			&i.Status,
+			&i.PassedTestCases,
+			&i.TotalTestCases,
+			&i.Score,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
