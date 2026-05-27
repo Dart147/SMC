@@ -61,3 +61,22 @@ func (h *SubmissionHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, submissions)
 }
+
+// 獲取該題目的最新提交 (URL 範例: /api/submissions/latest?problemId=1)
+func (h *SubmissionHandler) GetLatest(w http.ResponseWriter, r *http.Request) {
+	// 從 Query String 抓取 problemId
+	problemID := r.URL.Query().Get("problemId")
+	if problemID == "" {
+		writeError(w, http.StatusBadRequest, "problemId is required in query parameters")
+		return
+	}
+
+	sub, ok := h.svc.GetLatestByProblem(problemID)
+	if !ok {
+		// 回傳 404，這樣前端的 try-catch 就會捕捉到並乖乖退回「預設模板」
+		writeError(w, http.StatusNotFound, "no submission found for this problem")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, sub)
+}

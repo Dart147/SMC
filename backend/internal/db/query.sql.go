@@ -38,6 +38,46 @@ func (q *Queries) CreateSubmission(ctx context.Context, arg CreateSubmissionPara
 	return err
 }
 
+const getLatestSubmissionByProblem = `-- name: GetLatestSubmissionByProblem :one
+SELECT id, problem_id, code, language, status, passed_test_cases, total_test_cases, 
+       COALESCE(output, '') as output, COALESCE(expected_output, '') as expected_output, COALESCE(error, '') as error
+FROM submissions
+WHERE problem_id = $1
+ORDER BY created_at DESC
+LIMIT 1
+`
+
+type GetLatestSubmissionByProblemRow struct {
+	ID              string
+	ProblemID       sql.NullString
+	Code            string
+	Language        string
+	Status          sql.NullString
+	PassedTestCases sql.NullInt32
+	TotalTestCases  sql.NullInt32
+	Output          string
+	ExpectedOutput  string
+	Error           string
+}
+
+func (q *Queries) GetLatestSubmissionByProblem(ctx context.Context, problemID sql.NullString) (GetLatestSubmissionByProblemRow, error) {
+	row := q.db.QueryRowContext(ctx, getLatestSubmissionByProblem, problemID)
+	var i GetLatestSubmissionByProblemRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProblemID,
+		&i.Code,
+		&i.Language,
+		&i.Status,
+		&i.PassedTestCases,
+		&i.TotalTestCases,
+		&i.Output,
+		&i.ExpectedOutput,
+		&i.Error,
+	)
+	return i, err
+}
+
 const getProblemByID = `-- name: GetProblemByID :one
 SELECT id, title, difficulty, description FROM problems WHERE id = $1
 `

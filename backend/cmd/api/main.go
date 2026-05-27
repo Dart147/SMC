@@ -105,6 +105,8 @@ func main() {
 
 	// 提交相關
 	mux.HandleFunc("GET /api/submissions", submissionH.List)
+	mux.HandleFunc("GET /api/submissions/{id}", submissionH.GetByID)
+	mux.HandleFunc("GET /api/submissions/latest", submissionH.GetLatest)
 	mux.HandleFunc("POST /api/submissions", submissionH.Create)
 
 	srv := &http.Server{

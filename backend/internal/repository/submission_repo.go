@@ -115,3 +115,31 @@ func (r *SubmissionRepo) List() []domain.Submission {
 
 	return submissions
 }
+
+// 5. 獲取特定題目的最新一次提交紀錄 (供前端草稿復原使用)
+func (r *SubmissionRepo) GetLatestByProblem(problemID string) (domain.Submission, bool) {
+	ctx := context.Background()
+
+	// 注意：這裡呼叫的是你 sqlc generate 出來的方法名稱 (GetLatestSubmissionByProblem)
+	row, err := r.queries.GetLatestSubmissionByProblem(ctx, sql.NullString{String: problemID, Valid: problemID != ""})
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return domain.Submission{}, false
+		}
+		return domain.Submission{}, false
+	}
+
+	return domain.Submission{
+		ID:              row.ID,
+		ProblemID:       row.ProblemID.String,
+		Code:            row.Code,
+		Language:        row.Language,
+		Status:          row.Status.String,
+		PassedTestCases: int(row.PassedTestCases.Int32),
+		TotalTestCases:  int(row.TotalTestCases.Int32),
+		Output:          row.Output,
+		ExpectedOutput:  row.ExpectedOutput,
+		Error:           row.Error,
+	}, true
+}

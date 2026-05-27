@@ -31,3 +31,11 @@ SELECT id, problem_id, code, language, status, passed_test_cases, total_test_cas
        COALESCE(output, '') as output, COALESCE(expected_output, '') as expected_output, COALESCE(error, '') as error
 FROM submissions
 ORDER BY created_at DESC;
+
+-- name: GetLatestSubmissionByProblem :one
+SELECT id, problem_id, code, language, status, passed_test_cases, total_test_cases, 
+       COALESCE(output, '') as output, COALESCE(expected_output, '') as expected_output, COALESCE(error, '') as error
+FROM submissions
+WHERE problem_id = $1
+ORDER BY created_at DESC
+LIMIT 1;
