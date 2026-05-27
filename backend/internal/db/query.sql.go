@@ -10,6 +10,32 @@ import (
 	"database/sql"
 )
 
+const createProblem = `-- name: CreateProblem :exec
+INSERT INTO problems (id, title, description, time_limit_ms, memory_limit_kb, difficulty) 
+VALUES ($1, $2, $3, $4, $5, $6)
+`
+
+type CreateProblemParams struct {
+	ID            string
+	Title         string
+	Description   string
+	TimeLimitMs   int32
+	MemoryLimitKb int32
+	Difficulty    sql.NullString
+}
+
+func (q *Queries) CreateProblem(ctx context.Context, arg CreateProblemParams) error {
+	_, err := q.db.ExecContext(ctx, createProblem,
+		arg.ID,
+		arg.Title,
+		arg.Description,
+		arg.TimeLimitMs,
+		arg.MemoryLimitKb,
+		arg.Difficulty,
+	)
+	return err
+}
+
 const createSubmission = `-- name: CreateSubmission :exec
 INSERT INTO submissions (id, problem_id, code, language, status, passed_test_cases, total_test_cases)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -36,6 +62,65 @@ func (q *Queries) CreateSubmission(ctx context.Context, arg CreateSubmissionPara
 		arg.TotalTestCases,
 	)
 	return err
+}
+
+const createTestCase = `-- name: CreateTestCase :exec
+INSERT INTO test_cases (id, problem_id, input, expected_output, is_hidden)
+VALUES ($1, $2, $3, $4, $5)
+`
+
+type CreateTestCaseParams struct {
+	ID             string
+	ProblemID      sql.NullString
+	Input          string
+	ExpectedOutput string
+	IsHidden       sql.NullBool
+}
+
+func (q *Queries) CreateTestCase(ctx context.Context, arg CreateTestCaseParams) error {
+	_, err := q.db.ExecContext(ctx, createTestCase,
+		arg.ID,
+		arg.ProblemID,
+		arg.Input,
+		arg.ExpectedOutput,
+		arg.IsHidden,
+	)
+	return err
+}
+
+const getCandidateScores = `-- name: GetCandidateScores :many
+SELECT problem_id, MAX(score) as best_score 
+FROM submissions 
+WHERE user_id = $1 
+GROUP BY problem_id
+`
+
+type GetCandidateScoresRow struct {
+	ProblemID sql.NullString
+	BestScore interface{}
+}
+
+func (q *Queries) GetCandidateScores(ctx context.Context, userID sql.NullString) ([]GetCandidateScoresRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCandidateScores, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetCandidateScoresRow
+	for rows.Next() {
+		var i GetCandidateScoresRow
+		if err := rows.Scan(&i.ProblemID, &i.BestScore); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getProblemByID = `-- name: GetProblemByID :one
@@ -95,6 +180,31 @@ func (q *Queries) GetSubmissionByID(ctx context.Context, id string) (GetSubmissi
 		&i.Output,
 		&i.ExpectedOutput,
 		&i.Error,
+	)
+	return i, err
+}
+
+const getUserByUsername = `-- name: GetUserByUsername :one
+SELECT id, username, password_hash, email, role FROM users WHERE username = $1
+`
+
+type GetUserByUsernameRow struct {
+	ID           string
+	Username     string
+	PasswordHash string
+	Email        sql.NullString
+	Role         sql.NullString
+}
+
+func (q *Queries) GetUserByUsername(ctx context.Context, username string) (GetUserByUsernameRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserByUsername, username)
+	var i GetUserByUsernameRow
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.Email,
+		&i.Role,
 	)
 	return i, err
 }
@@ -178,6 +288,50 @@ func (q *Queries) ListSubmissions(ctx context.Context) ([]ListSubmissionsRow, er
 			&i.Output,
 			&i.ExpectedOutput,
 			&i.Error,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSubmissionsByUserID = `-- name: ListSubmissionsByUserID :many
+SELECT id, user_id, problem_id, code, language, status, passed_test_cases, total_test_cases, output, expected_output, error, execution_time_ms, memory_used_kb, score, coding_style_score, created_at FROM submissions WHERE user_id = $1 ORDER BY created_at DESC
+`
+
+func (q *Queries) ListSubmissionsByUserID(ctx context.Context, userID sql.NullString) ([]Submission, error) {
+	rows, err := q.db.QueryContext(ctx, listSubmissionsByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Submission
+	for rows.Next() {
+		var i Submission
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.ProblemID,
+			&i.Code,
+			&i.Language,
+			&i.Status,
+			&i.PassedTestCases,
+			&i.TotalTestCases,
+			&i.Output,
+			&i.ExpectedOutput,
+			&i.Error,
+			&i.ExecutionTimeMs,
+			&i.MemoryUsedKb,
+			&i.Score,
+			&i.CodingStyleScore,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}

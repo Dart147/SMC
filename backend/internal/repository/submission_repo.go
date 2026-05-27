@@ -93,11 +93,6 @@ func (r *SubmissionRepo) List() []domain.Submission {
 		fmt.Printf("failed to query submissions: %v\n", err)
 		return []domain.Submission{} // 發生錯誤時回傳空陣列，避免前端炸掉
 	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			fmt.Printf("failed to close submission rows: %v\n", err)
-		}
-	}()
 
 	var submissions []domain.Submission
 	for _, row := range rows {
@@ -120,4 +115,59 @@ func (r *SubmissionRepo) List() []domain.Submission {
 	}
 
 	return submissions
+}
+
+// 5. 獲取特定面試者的提交紀錄 (管理台報表用)
+func (r *SubmissionRepo) ListByUserID(userID string) []domain.Submission {
+	ctx := context.Background()
+	rows, err := r.queries.ListSubmissionsByUserID(ctx, sql.NullString{String: userID, Valid: userID != ""})
+	if err != nil {
+		fmt.Printf("failed to query submissions for user %s: %v\n", userID, err)
+		return []domain.Submission{}
+	}
+
+	var submissions []domain.Submission
+	for _, row := range rows {
+		submissions = append(submissions, domain.Submission{
+			ID:              row.ID,
+			ProblemID:       row.ProblemID.String,
+			Code:            row.Code,
+			Language:        row.Language,
+			Status:          row.Status.String,
+			PassedTestCases: int(row.PassedTestCases.Int32),
+			TotalTestCases:  int(row.TotalTestCases.Int32),
+			Output:          row.Output.String,
+			ExpectedOutput:  row.ExpectedOutput.String,
+			Error:           row.Error.String,
+		})
+	}
+
+	if submissions == nil {
+		return []domain.Submission{}
+	}
+	return submissions
+}
+
+// 6. 撈取面試者各題的最高分 (成績單報表用)
+func (r *SubmissionRepo) GetCandidateScores(userID string) map[string]int {
+	ctx := context.Background()
+	rows, err := r.queries.GetCandidateScores(ctx, sql.NullString{String: userID, Valid: userID != ""})
+	
+	scores := make(map[string]int)
+	if err != nil {
+		fmt.Printf("failed to query scores for user %s: %v\n", userID, err)
+		return scores
+	}
+
+	for _, row := range rows {
+		// 將 problem_id 對應到它的 best_score
+		if row.ProblemID.Valid {
+			// SQL 的 MAX() 型別可能轉為 int64
+			if val, ok := row.BestScore.(int64); ok {
+				scores[row.ProblemID.String] = int(val)
+			}
+		}
+	}
+	
+	return scores
 }
