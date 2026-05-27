@@ -13,6 +13,9 @@ import { useWorkspaceStore } from "../../features/workspace/store";
 import { fetchProblemById } from "../../features/problems/api";
 import { Problem } from "../../types/problem";
 
+import { apiClient } from "../../services/api";
+import { useDebounce } from "../../hooks/useDebounce";
+
 import { useParams, Navigate } from "react-router-dom";
 
 export function Workspace() {
@@ -26,26 +29,102 @@ export function Workspace() {
   const [currentProblem, setCurrentProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true); // 🌟 新增：控制編輯器草稿載入狀態
 
   const { runCode, isRunning } = useRunCode(problemId ?? "");
+  const debouncedCode = useDebounce(code, 500); // 🌟 新增：對程式碼進行防抖動處理
 
+  // 3. 初始化題目資料 + 三段式回復機制
   useEffect(() => {
     if (!problemId) return;
-    fetchProblemById(problemId)
-      .then(setCurrentProblem)
-      .catch(() => setNotFound(true))
-      .finally(() => setLoading(false));
+
+    const initWorkspace = async () => {
+      setLoading(true);
+      setIsInitializing(true);
+
+      try {
+        // A. 抓取題目基本描述
+        const problemData = await fetchProblemById(problemId);
+        setCurrentProblem(problemData);
+
+        // B. 執行草稿水合 (Hydration) 邏輯
+        // 第一道防線：檢查 LocalStorage 是否有上次選擇的語言與草稿
+        const savedLang = localStorage.getItem(`smc_lang_${problemId}`) as Language | null;
+        const targetLang = savedLang || "python"; // 預設使用 python
+
+        const savedCode = localStorage.getItem(`smc_draft_${problemId}_${targetLang}`);
+
+        if (savedCode) {
+          // LocalStorage 有資料，直接完美還原
+          setLanguage(targetLang);
+          setCode(savedCode);
+        } else {
+          // 第二道防線：LocalStorage 被清空，向後端 DB 請求最後一次的 Submission 紀錄
+          try {
+            const response = await apiClient.get(`/submissions/latest`, {
+              params: { problemId }
+            });
+            const latestSub = response.data;
+
+            if (latestSub && latestSub.code) {
+              // DB 撈到歷史紀錄！同步至全域與本地暫存
+              setLanguage(latestSub.language);
+              setCode(latestSub.code);
+              localStorage.setItem(`smc_lang_${problemId}`, latestSub.language);
+              localStorage.setItem(`smc_draft_${problemId}_${latestSub.language}`, latestSub.code);
+            } else {
+              // 第三道防線：無任何歷史紀錄，載入全新題目預設模板
+              setLanguage(targetLang);
+              setCode(SKELETONS[targetLang] ?? "");
+            }
+          } catch (apiErr) {
+            // 如果後端回傳 404 或連線異常，直接退回第三道防線
+            setLanguage(targetLang);
+            setCode(SKELETONS[targetLang] ?? "");
+          }
+        }
+      } catch (error) {
+        setNotFound(true);
+      } finally {
+        setLoading(false);
+        setIsInitializing(false);
+      }
+    };
+
+    initWorkspace();
   }, [problemId]);
 
-  // 3. 錯誤處理：如果題目不存在，跳回列表頁
-  if (loading) return <div style={{ padding: "40px", color: "#d4d4d4" }}>Loading...</div>;
+  // 4. debouncedCode 改變時，自動寫入 LocalStorage（過濾掉初始化階段）
+ // 4. 🌟 當 debouncedCode 改變時，自動寫入 LocalStorage（過濾掉初始化階段與時間差）
+  useEffect(() => {
+    // 💡 新增 code === debouncedCode 的判斷
+    // 這樣可以確保 debouncedCode 已經「追上」最新的 code，避免把延遲的舊狀態寫入覆蓋掉
+    if (!loading && !isInitializing && problemId && code === debouncedCode) {
+      localStorage.setItem(`smc_draft_${problemId}_${language}`, debouncedCode);
+    }
+  }, [debouncedCode, code, language, problemId, loading, isInitializing]);
+
+  // 5. 錯誤處理：如果題目不存在，跳回列表頁
+  if (loading || isInitializing) {
+    return (
+      <div style={{ padding: "40px", color: "#d4d4d4", display: "flex", alignItems: "center", gap: "10px" }}>
+        <div className="animate-spin">⏳</div>
+        <span>正在載入工作區並回復程式碼狀態...</span>
+      </div>
+    );
+  }
+  
   if (notFound || !currentProblem) {
     return <Navigate to="/problems" replace />;
   }
 
+  // 6. 切換語言時的處理：優先找尋該語言是否有 LocalStorage 草稿
   const handleLanguageChange = (newLang: Language) => {
     setLanguage(newLang);
-    setCode(SKELETONS[newLang] ?? "");
+    localStorage.setItem(`smc_lang_${problemId}`, newLang);
+
+    const existingDraft = localStorage.getItem(`smc_draft_${problemId}_${newLang}`);
+    setCode(existingDraft || SKELETONS[newLang] || "");
   };
 
   const handleThemeToggle = () => {
