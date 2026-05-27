@@ -97,3 +97,8 @@ func randomID() (string, error) {
 func (s *SubmissionService) List() []domain.Submission {
 	return s.repo.List()
 }
+
+// 獲取題目最新提交紀錄
+func (s *SubmissionService) GetLatestByProblem(problemID string) (domain.Submission, bool) {
+	return s.repo.GetLatestByProblem(problemID)
+}
