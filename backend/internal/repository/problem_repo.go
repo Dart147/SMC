@@ -31,7 +31,11 @@ func (r *ProblemRepo) CreateProblem(ctx context.Context, p domain.Problem) error
 	}
 
 	// 確保發生任何錯誤或 panic 時，一定能 rollback (避免資料卡在一半)
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			fmt.Printf("failed to rollback transaction: %v\n", err)
+		}
+	}()
 
 	// 2. 利用 sqlc 的 WithTx 將本來的 queries 綁定到這個 Transaction 上
 	qtx := r.queries.WithTx(tx)
@@ -100,7 +104,6 @@ func (r *ProblemRepo) List() []domain.Problem {
 func (r *ProblemRepo) GetByID(id string) (domain.Problem, bool) {
 	ctx := context.Background()
 	row, err := r.queries.GetProblemByID(ctx, id)
-	
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return domain.Problem{}, false
