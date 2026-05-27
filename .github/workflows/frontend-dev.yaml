@@ -81,4 +81,57 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
-  #Deploy: WIP
+  Deploy:
+    needs: [Build-and-Push]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build deploy payload
+        id: payload
+        env:
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          jq -n \
+            --arg repo "$REPO" \
+            --arg branch "$BRANCH" \
+            --arg commit "$COMMIT" \
+            '{
+              source: {
+                title:  "SMC",
+                repo:   $repo,
+                branch: $branch,
+                commit: $commit
+              },
+              method: "deploy",
+              metadata: {
+                project_name: "SMC",
+                environment:  "dev",
+                component:    "frontend"
+              },
+              setup: {
+                inject_secret: { enable: false }
+              },
+              post: {
+                setup_domain: {
+                  enable: false,
+                  title:  "Endpoint",
+                  name:   "showmeyourcode.online",
+                  value:  ""
+                },
+                notify_discord: {
+                  enable:      true,
+                  notify_only: true,
+                  channel:     "smc-activity"
+                }
+              }
+            }' > payload.json
+          echo "Payload:"
+          cat payload.json
+
+      - name: Trigger SMC-CD webhook
+        run: |
+          curl --location --fail-with-body --request POST "${{ secrets.SMC_WEBHOOK_URL }}" \
+            --header 'Content-Type: application/json' \
+            --header "x-deploy-token: ${{ secrets.SMC_DEPLOY_TOKEN }}" \
+            --data @payload.json

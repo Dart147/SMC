@@ -38,8 +38,8 @@ export interface SubmissionResponse {
 // 1. 建立全局共用的 Axios 實例
 // ==========================================
 export const apiClient = axios.create({
-  // 這裡對應你 Go 後端 Docker 開放的 port 與基礎路由
-  baseURL: "http://localhost:8081/api",
+  // Same-origin; Traefik routes /api/* to the backend.
+  baseURL: "/api",
   headers: {
     "Content-Type": "application/json",
   },

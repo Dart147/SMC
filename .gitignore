@@ -1,6 +1,7 @@
 .env
 .secrets
 bin/
+ref/
 
 # Logs
 logs

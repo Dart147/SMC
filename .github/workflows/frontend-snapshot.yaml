@@ -8,6 +8,7 @@ on:
   pull_request:
     branches:
       - main
+    types: [opened, reopened, ready_for_review]
 
 concurrency: # 
   group: smc-preview-${{ github.event.number }}-frontend # Groups these jobs by the PR number
@@ -51,7 +52,7 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
-  Push-Image:
+  Build-and-Push:
     name: Build and push Docker image
     runs-on: ubuntu-latest
     needs: [Frontend]
@@ -113,4 +114,77 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
-  #Deploy: WIP
+  Deploy:
+    needs: [Build-and-Push]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build deploy payload
+        id: payload
+        env:
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          COMMIT: ${{ github.sha }}
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          jq -n \
+            --arg repo "$REPO" \
+            --arg branch "$BRANCH" \
+            --arg commit "$COMMIT" \
+            --arg pr_number "$PR_NUMBER" \
+            '{
+              source: {
+                title:     "SMC",
+                repo:      $repo,
+                branch:    $branch,
+                commit:    $commit,
+                pr_number: $pr_number
+              },
+              method: "deploy",
+              metadata: {
+                project_name: "SMC",
+                environment:  "snapshot",
+                component:    "frontend"
+              },
+              setup: {
+                inject_secret: { enable: false }
+              },
+              post: {
+                setup_domain: {
+                  enable: false,
+                  title:  "Endpoint",
+                  name:   "pr-${{ github.event.number }}.showmeyourcode.online",
+                  value:  ""
+                },
+                notify_discord: {
+                  enable:      true,
+                  notify_only: true,
+                  channel:     "smc-activity"
+                }
+              }
+            }' > payload.json
+          echo "Payload:"
+          cat payload.json
+
+      - name: Trigger SMC-CD webhook
+        run: |
+          curl --location --fail-with-body --request POST "${{ secrets.SMC_WEBHOOK_URL }}" \
+            --header 'Content-Type: application/json' \
+            --header "x-deploy-token: ${{ secrets.SMC_DEPLOY_TOKEN }}" \
+            --data @payload.json
+
+      - name: Comment preview URL on PR
+        if: success() && github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v3.0.4
+        with:
+          header: snapshot-preview
+          message: |
+            ## ✅ Snapshot Deployment Ready
+
+            | Item | Value |
+            | --- | --- |
+            | Status | ![Status](https://img.shields.io/badge/Snapshot-Success-22c55e?style=flat-square) |
+            | Preview | [https://pr-${{ github.event.pull_request.number }}.showmeyourcode.online](https://pr-${{ github.event.pull_request.number }}.showmeyourcode.online) |
+            | Commit | `${{ github.sha }}` |
+            | Triggered by | @${{ github.actor }} |
+
+            [![Open Preview](https://img.shields.io/badge/Open-Preview-0ea5e9?style=for-the-badge)](https://pr-${{ github.event.pull_request.number }}.showmeyourcode.online)

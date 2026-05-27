@@ -16,11 +16,11 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/Dart147/SMC/backend/internal/config"
-	internaldb "github.com/Dart147/SMC/backend/internal/db"
 	"github.com/Dart147/SMC/backend/internal/handler"
 	"github.com/Dart147/SMC/backend/internal/judge"
 	"github.com/Dart147/SMC/backend/internal/middleware"
 	"github.com/Dart147/SMC/backend/internal/repository"
+	"github.com/Dart147/SMC/backend/internal/seed"
 	"github.com/Dart147/SMC/backend/internal/service"
 	"github.com/Dart147/SMC/backend/internal/utils"
 )
@@ -58,7 +58,13 @@ func main() {
 	// 修正 3: 檢查 db.Close 錯誤
 	defer func() { _ = db.Close() }()
 
-	internaldb.SeedAdminUser(db)
+	// 測試連線是否真的成功
+	if err := db.Ping(); err != nil {
+		logger.Fatal("failed to ping database", zap.Error(err))
+	}
+	logger.Info("Successfully connected to PostgreSQL!")
+
+	seed.AdminUser(db)
 
 	userRepo := repository.NewUserRepository(db)
 	problemRepo := repository.NewProblemRepo(db)
@@ -80,6 +86,12 @@ func main() {
 	submissionH := handler.NewSubmissionHandler(submissionSvc)
 
 	mux := http.NewServeMux()
+
+	// Health check used by docker-compose healthcheck and Traefik.
+	mux.HandleFunc("GET /api/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		_, _ = w.Write([]byte("ok\n"))
+	})
 
 	// 修正 4: 註冊所有路由，解決「declared but not used」問題
 	// Auth 相關
