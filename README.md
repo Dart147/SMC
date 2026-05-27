@@ -1,26 +1,57 @@
 # SMC
 
-## What this is
+## Show Me your Code (SMC)
 
-Show Me your Code (SMC) is an Online Code Test platform: interviewees take coding tests in the browser, and hiring managers create tests, manage candidates, and review results.
+ An Online Code Test platform: interviewees take coding tests in the browser, and hiring managers create tests, manage candidates, and review results.
 
 ## Quick start
 
-```bash
-# Build and start everything (postgres + backend + frontend)
-docker compose up -d --build
+You need `backend/.env` first
 
-# Seed problems and test cases (first run only)
+```bash
+make smc-up      # build + start postgres → backend → frontend
+make ps          # confirm containers are healthy
+make healthz     # probe http://localhost:8080/api/healthz
+```
+
+Frontend at `http://localhost:8080`, backend reachable at `http://localhost:8080/api/*` via nginx proxy (same-origin, no CORS).
+
+Seed problems on first run:
+
+```bash
 docker exec -i smc-postgres psql -U admin -d smcdb < backend/db/test_data.sql
 ```
 
-The root `docker-compose.yaml` builds and starts all three services in order: postgres → backend → frontend. The backend waits for postgres to be healthy, and the frontend waits for the backend healthcheck to pass.
+### Make targets
 
-To reset the database:
+| Command | What it does |
+|---|---|
+| `make smc-up` | Build images, start the stack, probe `/api/healthz`. |
+| `make smc-down` | Stop the stack. Keeps the `smc-postgres-data` volume. |
+| `make smc-restart` | `smc-down` then `smc-up`. Use after editing a Dockerfile or source. |
+| `make logs SERVICE=backend` | Tail one service's logs (omit `SERVICE=` for all). |
+| `make ps` | Show container status. |
+| `make healthz` | Curl `localhost:8080/api/healthz` with 5 retries. |
+| `make help` | List every target with one-line descriptions. |
+
+Wipe the database (named volume):
 
 ```bash
-docker compose down -v && docker compose up -d --build
+make smc-down
+docker compose --env-file backend/.env -f docker-compose.yaml down -v
+make smc-up
 ```
+
+### Deploy targets
+
+The `make deploy*` targets pull prebuilt images from Docker Hub and run them via `.deploy/dev/`. They are intended for the host that fronts the public domain, not for laptops. Local dev uses `make smc-up` exclusively.
+
+| Command | What it does |
+|---|---|
+| `make deploy` | Pull `lovetsmc/{frontend,backend}:dev`, recreate any service whose image changed. |
+| `make deploy-frontend` | Same, but only the frontend. |
+| `make deploy-backend` | Same, but only the backend. |
+| `make deploy-down` | Stop the deployed stack. |
 
 ## Repository layout
 
@@ -31,8 +62,7 @@ SMC/
 │   ├── internal/judge/   # Runner interface, ProcessRunner, DockerRunner
 │   ├── db/               # PostgreSQL schema + seed data
 │   └── ...
-├── docker-compose.yaml   # Full stack: postgres + backend + frontend
-└── infra/             # Temporal / CD-service / observability — TBD
+└── docker-compose.yaml   # Full stack: postgres + backend + frontend
 ```
 
 ### Ports
@@ -50,10 +80,10 @@ config.
 | `smc-frontend` | `80` | `8080` | root `docker-compose.yaml` |
 | Vite dev server (local only) | `5173` | `5173` | `npm run dev` |
 | Temporal server (gRPC) | `7233` | `7233` | `infra/deploy/docker-compose.temporal.yaml` |
-| **Temporal UI** | `7080` | `7080` | `infra/deploy/docker-compose.temporal.yaml` |
-| **Temporal Postgres** | `5432` | **(unpublished)** | `infra/deploy/docker-compose.temporal.yaml` |
-| **Elasticsearch (Temporal visibility)** | `9200` | **(unpublished)** | `infra/deploy/docker-compose.temporal.yaml` |
-| **CD-service API** | `7082` | `7082` | `infra/deploy/docker-compose.yaml` |
+| Temporal UI | `7080` | `7080` | `infra/deploy/docker-compose.temporal.yaml` |
+| Temporal Postgres | `5432` | (unpublished) | `infra/deploy/docker-compose.temporal.yaml` |
+| Elasticsearch (Temporal visibility) | `9200` | (unpublished) | `infra/deploy/docker-compose.temporal.yaml` |
+| CD-service API | `7082` | `7082` | `infra/deploy/docker-compose.yaml` |
 | CD-service Worker | — | — | `infra/deploy/docker-compose.yaml` |
 
 **Quick host-port reference:**
@@ -83,6 +113,13 @@ Results (Accepted / Wrong Answer / TLE / MLE / Runtime Error / Compile Error) ar
 
 Port: **8081**. See [`backend/README.md`](backend/README.md) for the full API reference, judge design, sandbox flags, and run instructions.
 
-## Infra
+### `sqlc-verify` Guard
 
-**TBD.** Will hold the unified `docker-compose` / Traefik / observability configuration that ties the frontend, backend, and supporting services together for the single-host deployment.
+The backend CI runs an `sqlc-verify` stage as a drift guard: it runs `sqlc generate` from scratch and diffs the result against the committed `internal/db/*.go`. If anyone edits `schema.sql` or `queries/*.sql` without re-running `sqlc generate` locally and committing the regenerated `internal/db/*.go`, this check fails and blocks the PR.
+
+To fix: 
+```bash
+cd backend/
+docker run --rm -v "$(pwd):/src" -w /src sqlc/sqlc generate
+```
+then commit the updated `internal/db/` files.
