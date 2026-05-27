@@ -62,7 +62,7 @@ export function Workspace() {
           // 第二道防線：LocalStorage 被清空，向後端 DB 請求最後一次的 Submission 紀錄
           try {
             const response = await apiClient.get(`/submissions/latest`, {
-              params: { problemId }
+              params: { problemId },
             });
             const latestSub = response.data;
 
@@ -95,7 +95,7 @@ export function Workspace() {
   }, [problemId]);
 
   // 4. debouncedCode 改變時，自動寫入 LocalStorage（過濾掉初始化階段）
- // 4. 🌟 當 debouncedCode 改變時，自動寫入 LocalStorage（過濾掉初始化階段與時間差）
+  // 4. 🌟 當 debouncedCode 改變時，自動寫入 LocalStorage（過濾掉初始化階段與時間差）
   useEffect(() => {
     // 💡 新增 code === debouncedCode 的判斷
     // 這樣可以確保 debouncedCode 已經「追上」最新的 code，避免把延遲的舊狀態寫入覆蓋掉
@@ -107,13 +107,21 @@ export function Workspace() {
   // 5. 錯誤處理：如果題目不存在，跳回列表頁
   if (loading || isInitializing) {
     return (
-      <div style={{ padding: "40px", color: "#d4d4d4", display: "flex", alignItems: "center", gap: "10px" }}>
+      <div
+        style={{
+          padding: "40px",
+          color: "#d4d4d4",
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+        }}
+      >
         <div className="animate-spin">⏳</div>
         <span>正在載入工作區並回復程式碼狀態...</span>
       </div>
     );
   }
-  
+
   if (notFound || !currentProblem) {
     return <Navigate to="/problems" replace />;
   }

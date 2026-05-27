@@ -77,6 +77,6 @@ func (h *SubmissionHandler) GetLatest(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "no submission found for this problem")
 		return
 	}
-	
+
 	writeJSON(w, http.StatusOK, sub)
 }

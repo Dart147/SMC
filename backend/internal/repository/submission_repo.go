@@ -119,7 +119,7 @@ func (r *SubmissionRepo) List() []domain.Submission {
 // 5. 獲取特定題目的最新一次提交紀錄 (供前端草稿復原使用)
 func (r *SubmissionRepo) GetLatestByProblem(problemID string) (domain.Submission, bool) {
 	ctx := context.Background()
-	
+
 	// 注意：這裡呼叫的是你 sqlc generate 出來的方法名稱 (GetLatestSubmissionByProblem)
 	row, err := r.queries.GetLatestSubmissionByProblem(ctx, sql.NullString{String: problemID, Valid: problemID != ""})
 

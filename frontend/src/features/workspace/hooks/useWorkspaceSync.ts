@@ -34,16 +34,16 @@ export const useWorkspaceSync = ({ problemId, defaultLang, skeletons }: UseWorks
 
         //  第二道防線：LocalStorage 沒東西，向 DB 請求最後一次的 Submission
         const response = await apiClient.get(`/submissions/latest`, {
-          params: { problemId }
+          params: { problemId },
         });
-        
+
         const latestSub = response.data;
 
         if (latestSub && latestSub.code) {
           // DB 有紀錄！覆寫語言與程式碼
           setLanguage(latestSub.language);
           setCode(latestSub.code);
-          
+
           // 順手存回 LocalStorage，下次重新整理就不用再打 API 了
           localStorage.setItem(`smc_lang_${problemId}`, latestSub.language);
           localStorage.setItem(`smc_draft_${problemId}_${latestSub.language}`, latestSub.code);
@@ -82,11 +82,11 @@ export const useWorkspaceSync = ({ problemId, defaultLang, skeletons }: UseWorks
     }
   }, [debouncedCode, language, problemId, isInitializing]);
 
-  return { 
-    language, 
-    handleLanguageChange, 
-    code, 
-    setCode, 
-    isInitializing 
+  return {
+    language,
+    handleLanguageChange,
+    code,
+    setCode,
+    isInitializing,
   };
 };
