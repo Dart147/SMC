@@ -50,7 +50,7 @@ const InterviewerDashboard: React.FC = () => {
   // 2. 獲取題庫清單
   const fetchProblems = async () => {
     try {
-      const response = await fetch("http://localhost:8081/api/problems");
+      const response = await fetch("http://localhost:8080/api/problems");
       if (response.ok) {
         const data = await response.json();
         setProblems(data || []);
@@ -75,7 +75,7 @@ const InterviewerDashboard: React.FC = () => {
     };
 
     try {
-      const response = await fetch("http://localhost:8081/api/problems", {
+      const response = await fetch("http://localhost:8080/api/problems", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(problemData),
