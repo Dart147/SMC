@@ -1,0 +1,15 @@
+# Default: normalize all text files to LF in the repo
+* text=auto eol=lf
+
+# Explicit overrides for files that MUST be LF (shell, Makefile)
+*.sh        text eol=lf
+*.bash      text eol=lf
+Makefile    text eol=lf
+*.mk        text eol=lf
+
+# Binary files
+*.png       binary
+*.jpg       binary
+*.ico       binary
+*.woff      binary
+*.woff2     binary
