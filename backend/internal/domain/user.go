@@ -11,3 +11,13 @@ type User struct {
 	Role          string     `json:"role"`
 	ExamStartedAt *time.Time `json:"exam_started_at"`
 }
+
+// CandidateScore 管理台報表：每位考生的得分彙總
+type CandidateScore struct {
+	UserID            string     `json:"userId"`
+	Username          string     `json:"username"`
+	ExamStartedAt     *time.Time `json:"examStartedAt"`
+	TotalScore        int        `json:"totalScore"`
+	ProblemsAttempted int        `json:"problemsAttempted"`
+	ProblemsAccepted  int        `json:"problemsAccepted"`
+}

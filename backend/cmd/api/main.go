@@ -69,8 +69,10 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	problemRepo := repository.NewProblemRepo(db)
 	submissionRepo := repository.NewSubmissionRepo(db)
+	reportRepo := repository.NewReportRepo(db)
 	authSvc := service.NewAuthService(userRepo, os.Getenv("JWT_SECRET"))
 	problemSvc := service.NewProblemService(problemRepo)
+	reportSvc := service.NewReportService(reportRepo)
 
 	var runner judge.Runner
 	if os.Getenv("JUDGE_BACKEND") == "docker" {
@@ -80,10 +82,10 @@ func main() {
 	}
 	submissionSvc := service.NewSubmissionService(submissionRepo, problemRepo, judge.NewJudge(runner, logger), logger)
 
-	// 這裡宣告了三個 Handler
 	authH := handler.NewAuthHandler(authSvc)
 	problemH := handler.NewProblemHandler(problemSvc)
 	submissionH := handler.NewSubmissionHandler(submissionSvc)
+	reportH := handler.NewReportHandler(reportSvc)
 
 	mux := http.NewServeMux()
 
@@ -93,7 +95,6 @@ func main() {
 		_, _ = w.Write([]byte("ok\n"))
 	})
 
-	// 修正 4: 註冊所有路由，解決「declared but not used」問題
 	// Auth 相關
 	mux.HandleFunc("POST /api/auth/login", authH.Login)
 	mux.HandleFunc("POST /api/users", authH.CreateCandidate)
@@ -108,6 +109,10 @@ func main() {
 	mux.HandleFunc("GET /api/submissions/{id}", submissionH.GetByID)
 	mux.HandleFunc("GET /api/submissions/latest", submissionH.GetLatest)
 	mux.HandleFunc("POST /api/submissions", submissionH.Create)
+
+	// 管理台報表
+	mux.HandleFunc("GET /api/admin/submissions", submissionH.ListByUserID)
+	mux.HandleFunc("GET /api/admin/candidates/scores", reportH.GetCandidateScores)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Port),

@@ -143,3 +143,28 @@ func (r *SubmissionRepo) GetLatestByProblem(problemID string) (domain.Submission
 		Error:           row.Error,
 	}, true
 }
+
+// 6. 獲取特定用戶的所有提交紀錄 (供管理台報表使用)
+func (r *SubmissionRepo) ListByUserID(userID string) []domain.Submission {
+	ctx := context.Background()
+	rows, err := r.queries.ListSubmissionsByUserID(ctx, sql.NullString{String: userID, Valid: userID != ""})
+	if err != nil {
+		fmt.Printf("failed to query submissions by user: %v\n", err)
+		return []domain.Submission{}
+	}
+	var submissions []domain.Submission
+	for _, row := range rows {
+		submissions = append(submissions, domain.Submission{
+			ID:              row.ID,
+			ProblemID:       row.ProblemID.String,
+			Language:        row.Language,
+			Status:          row.Status.String,
+			PassedTestCases: int(row.PassedTestCases.Int32),
+			TotalTestCases:  int(row.TotalTestCases.Int32),
+		})
+	}
+	if submissions == nil {
+		return []domain.Submission{}
+	}
+	return submissions
+}

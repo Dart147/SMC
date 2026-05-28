@@ -98,7 +98,12 @@ func (s *SubmissionService) List() []domain.Submission {
 	return s.repo.List()
 }
 
-// 獲取題目最新提交紀錄
+// GetLatestByProblem 獲取題目最新提交紀錄
 func (s *SubmissionService) GetLatestByProblem(problemID string) (domain.Submission, bool) {
 	return s.repo.GetLatestByProblem(problemID)
+}
+
+// ListByUserID 獲取特定用戶的所有提交紀錄 (管理台用)
+func (s *SubmissionService) ListByUserID(userID string) []domain.Submission {
+	return s.repo.ListByUserID(userID)
 }

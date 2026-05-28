@@ -39,3 +39,32 @@ FROM submissions
 WHERE problem_id = $1
 ORDER BY created_at DESC
 LIMIT 1;
+
+-- name: CreateProblem :one
+INSERT INTO problems (id, title, difficulty, description, time_limit_ms, memory_limit_kb)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id;
+
+-- name: CreateTestCase :exec
+INSERT INTO test_cases (id, problem_id, input, expected_output, is_hidden)
+VALUES ($1, $2, $3, $4, $5);
+
+-- name: ListSubmissionsByUserID :many
+SELECT id, problem_id, language, status, passed_test_cases, total_test_cases, score, created_at
+FROM submissions
+WHERE user_id = $1
+ORDER BY created_at DESC;
+
+-- name: GetCandidateScores :many
+SELECT
+    u.id        AS user_id,
+    u.username,
+    u.exam_started_at,
+    COALESCE(SUM(s.score), 0)::int                                                AS total_score,
+    COUNT(DISTINCT s.problem_id)::int                                             AS problems_attempted,
+    COUNT(DISTINCT CASE WHEN s.status = 'Accepted' THEN s.problem_id END)::int   AS problems_accepted
+FROM users u
+LEFT JOIN submissions s ON u.id = s.user_id
+WHERE u.role = 'candidate'
+GROUP BY u.id, u.username, u.exam_started_at
+ORDER BY total_score DESC;
