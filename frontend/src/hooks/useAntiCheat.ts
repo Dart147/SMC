@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 export const useAntiCheat = (onCheatDetected: () => void) => {
   // 用 useRef 確保短時間內不會重複觸發 (Cooldown 機制)
@@ -8,7 +8,7 @@ export const useAntiCheat = (onCheatDetected: () => void) => {
     const trigger = (reason: string) => {
       if (isTriggering.current) return;
       console.log(`🚨 [防弊系統] 違規原因: ${reason}`);
-      
+
       isTriggering.current = true;
       onCheatDetected();
 
@@ -41,7 +41,7 @@ export const useAntiCheat = (onCheatDetected: () => void) => {
       "fullscreenchange",
       "webkitfullscreenchange",
       "mozfullscreenchange",
-      "MSFullscreenChange"
+      "MSFullscreenChange",
     ];
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -50,7 +50,7 @@ export const useAntiCheat = (onCheatDetected: () => void) => {
     document.addEventListener("copy", preventDefaultAction);
     document.addEventListener("paste", preventDefaultAction);
 
-    fullscreenEvents.forEach(evt => document.addEventListener(evt, handleFullscreenChange));
+    fullscreenEvents.forEach((evt) => document.addEventListener(evt, handleFullscreenChange));
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -58,7 +58,7 @@ export const useAntiCheat = (onCheatDetected: () => void) => {
       document.removeEventListener("contextmenu", preventDefaultAction);
       document.removeEventListener("copy", preventDefaultAction);
       document.removeEventListener("paste", preventDefaultAction);
-      fullscreenEvents.forEach(evt => document.removeEventListener(evt, handleFullscreenChange));
+      fullscreenEvents.forEach((evt) => document.removeEventListener(evt, handleFullscreenChange));
     };
   }, [onCheatDetected]);
 };

@@ -7,7 +7,7 @@ export function ExamLayout() {
   const navigate = useNavigate();
   const token = useAuth((state) => state.token);
   const logout = useAuth((state) => state.logout);
-  
+
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
   const [warningCount, setWarningCount] = useState(0);
 
@@ -23,26 +23,26 @@ export function ExamLayout() {
     try {
       const res = await fetch("/api/exams/warn", {
         method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         setWarningCount(data.warning_count); // 這裡設定為 3
-        
+
         if (data.warning_count >= 3) {
-          isExitingRef.current = true; 
-          
+          isExitingRef.current = true;
+
           // 🌟 加上 setTimeout，給 React 100 毫秒的時間更新畫面
           setTimeout(async () => {
             // 這時候畫面已經變成 3/3 了，再跳出 alert
             alert("🚨 系統偵測您已嚴重違規達 3 次！系統已自動交卷並將您強制登出。");
-            
+
             if (document.fullscreenElement) {
               await document.exitFullscreen().catch(() => {});
             }
-            
-            logout(); 
+
+            logout();
             navigate("/login", { replace: true });
           }, 100); // 延遲 0.1 秒
         }
@@ -65,18 +65,18 @@ export function ExamLayout() {
     try {
       const res = await fetch("/api/exams/end", {
         method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.ok) {
         alert("✅ 交卷成功！感謝您的參與。");
-        
+
         // 2. 這裡解除全螢幕觸發的事件，將會被上面 if (isExitingRef.current) 完美擋下！
         if (document.fullscreenElement) {
           await document.exitFullscreen().catch(() => {});
         }
 
-        logout(); 
+        logout();
         navigate("/login", { replace: true });
       } else {
         // 如果後端交卷失敗（例如網路斷線），要把防護盾關掉，繼續監控防弊
@@ -95,7 +95,7 @@ export function ExamLayout() {
       const element = document.documentElement;
       if (element.requestFullscreen) {
         await element.requestFullscreen();
-        setIsWarningModalOpen(false); 
+        setIsWarningModalOpen(false);
       }
     } catch (err) {
       alert("必須同意進入全螢幕才能繼續考試！");
