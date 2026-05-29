@@ -7,12 +7,12 @@ import (
 )
 
 type User struct {
-    ID            string
-    Username      string
-    Password      string // 對應 db 的 PasswordHash
-    Role          string
-    ExamStartedAt *time.Time 
-    ExamEndedAt   *time.Time 
+	ID            string
+	Username      string
+	Password      string // 對應 db 的 PasswordHash
+	Role          string
+	ExamStartedAt *time.Time
+	ExamEndedAt   *time.Time
 }
 
 type UserRepository struct {

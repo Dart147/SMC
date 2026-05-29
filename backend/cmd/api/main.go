@@ -64,7 +64,7 @@ func main() {
 	}
 	logger.Info("Successfully connected to PostgreSQL!")
 
-	jwtSecret := []byte(os.Getenv("JWT_SECRET")) 
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	authMiddleware := middleware.RequireAuth(jwtSecret)
 
 	seed.AdminUser(db)
