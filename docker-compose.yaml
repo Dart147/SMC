@@ -4,7 +4,7 @@ services:
     container_name: smc-postgres
     restart: unless-stopped
     env_file:
-      - ./backend/.env
+      - ./.env
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -26,7 +26,7 @@ services:
     container_name: smc-backend
     restart: unless-stopped
     env_file:
-      - ./backend/.env
+      - ./.env
     environment:
       - DB_HOST=postgres
       - JUDGE_BACKEND=docker

@@ -4,7 +4,7 @@ RED   = \033[0;31m
 NC    = \033[0m
 
 LOCAL_COMPOSE  = docker-compose.yaml
-LOCAL_ENV_FILE = backend/.env
+LOCAL_ENV_FILE = .env
 DEV_DEPLOY     = .deploy/dev
 
 COMPOSE_LOCAL = docker compose --env-file $(LOCAL_ENV_FILE) -f $(LOCAL_COMPOSE)

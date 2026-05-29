@@ -9,9 +9,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-ENV_FILE="../../backend/.env"
+ENV_FILE="../../.env"
 if [[ ! -f "$ENV_FILE" ]]; then
-  echo "==> missing $ENV_FILE — copy backend/.env to this host before deploying" >&2
+  echo "==> missing $ENV_FILE — copy .env to this host before deploying" >&2
   exit 1
 fi
 
