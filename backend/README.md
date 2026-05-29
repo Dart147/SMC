@@ -19,10 +19,9 @@ REST API server for the **Show Me your Code** online coding interview platform. 
 
 Designed with zero-trust principles and enterprise-grade security in mind:
 
-* **Zero-Trust Anti-Cheat System:** Features a robust anti-cheat mechanism. Frontend strictly monitors `fullscreenchange`, `visibilitychange` (tab switching), and `resize` events. The backend acts as the ultimate authority—if a candidate triggers 3 violations, the server automatically records their `exam_ended_at` timestamp and permanently revokes their exam access, rendering client-side bypass attempts futile.
 * **Blind Indexing:** Usernames are deterministically hashed using HMAC-SHA256 before being stored in the database. This prevents username enumeration and protects identity privacy even in the event of a data breach.
 * **Salted Password Hashing:** Passwords are never stored in plaintext. We utilize `Bcrypt` to defend against rainbow table attacks.
-* **Time-Bound Exam Sessions:** Candidate accounts are strictly limited to a 3-hour testing window starting from their first successful login. Expiration and submission states are enforced server-side via PostgreSQL timestamps (`exam_started_at`, `exam_ended_at`) to prevent client-side time manipulation. Admin accounts bypass this restriction.
+* **Time-Bound Exam Sessions:** Candidate accounts are strictly limited to a 3-hour testing window starting from their first successful login. Expiration logic is enforced server-side via PostgreSQL timestamps (`exam_started_at`) to prevent client-side time manipulation. Admin accounts bypass this restriction.
 * **Auto-Seeding & Separation of Concerns:** Admin credentials and cryptographic keys are strictly managed via `.env` files and injected into the database via automatic seeding upon server startup, keeping secrets completely out of the source code.
 
 ## Project Layout
@@ -36,7 +35,7 @@ backend/
 │   ├── config/       # YAML + env config loading
 │   ├── db/           # Database initialization & Admin auto-seeding
 │   ├── domain/       # Core types: User, Problem, TestCase, Submission
-│   ├── handler/      # HTTP handlers (Auth, Exam, Problem, Submission)
+│   ├── handler/      # HTTP handlers (Auth, Problem, Submission)
 │   ├── judge/        # Runner interface, ProcessRunner, DockerRunner, semaphore coordinator
 │   ├── middleware/   # CORS & JWT Protection
 │   ├── repository/   # PostgreSQL data access layer
@@ -49,6 +48,7 @@ backend/
 ├── Dockerfile.dev    # Development build with Air (Hot Reload)
 └── .env.example      # Example environment variables (secrets)
 
+
 ```
 
 ## API
@@ -60,9 +60,6 @@ Base URL: `http://localhost:8081/api`
 | `GET` | `/healthz` | Health check |
 | `GET` | `/version` | Returns the commit ID and build version |
 | `POST` | `/auth/login` | Authenticate user and receive JWT token |
-| `POST` | `/exams/start` | (Protected) Acknowledge rules and start exam timer |
-| `POST` | `/exams/warn` | (Protected) Report anti-cheat violation (auto-submits on 3rd strike) |
-| `POST` | `/exams/end` | (Protected) Submit exam manually |
 | `GET` | `/problems` | List all problems from PostgreSQL |
 | `GET` | `/problems/{id}` | Get a problem by ID from PostgreSQL |
 | `GET` | `/submissions` | List all submissions history |
@@ -101,15 +98,6 @@ Response (401 Unauthorized) — *Invalid credentials:*
 
 ```
 
-Response (403 Forbidden) — *Triggered when a candidate has already submitted their exam (`exam_ended_at` is set):*
-
-```json
-{
-  "error": "您已完成交卷，無法再次登入系統。"
-}
-
-```
-
 Response (403 Forbidden) — *Triggered when a candidate's 3-hour exam window has expired:*
 
 ```json
@@ -130,6 +118,7 @@ Request body:
   "language": "python"
 }
 
+
 ```
 
 Supported `language` values: `python`, `javascript`, `go`
@@ -146,6 +135,7 @@ Response (201) — immediately returns `"Pending"`:
   "passedTestCases": 0,
   "totalTestCases": 3
 }
+
 
 ```
 
@@ -326,6 +316,7 @@ curl -s http://localhost:8081/api/healthz
 curl -s http://localhost:8081/api/version
 # → {"commit":"dev","version":"dev"}
 
+
 ```
 
 ### 2. Authentication (Login)
@@ -336,6 +327,7 @@ curl -X POST http://localhost:8081/api/auth/login \
   -d '{"username": "sys_admin_99", "password": "admin123"}'
 # → {"token": "eyJhbGciOiJIUzI1NiIs..."}
 
+
 ```
 
 ### 3. Problems
@@ -343,6 +335,7 @@ curl -X POST http://localhost:8081/api/auth/login \
 ```bash
 curl -s http://localhost:8081/api/problems | jq .
 curl -s http://localhost:8081/api/problems/1 | jq .
+
 
 ```
 
@@ -366,12 +359,14 @@ docker buildx build --progress=plain --target format . # gofmt -l . (fails if an
 docker buildx build --progress=plain --target test .   # go test ./...
 docker buildx build --progress=plain --target runtime -t smc-backend:local .  # final image
 
+
 ```
 
 ### Auto-fix Golang formatting
 
 ```bash
 docker run --rm -v "$PWD":/app -w /app golang:1.26-alpine gofmt -w .
+
 
 ```
 
