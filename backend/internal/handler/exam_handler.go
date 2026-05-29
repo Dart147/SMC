@@ -93,7 +93,7 @@ func (h *ExamHandler) StartExam(w http.ResponseWriter, r *http.Request) {
 
 	// 回傳過期時間戳記給前端的 Zustand Store
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"message":         "考試已正式開始",
 		"exam_expires_at": expiresAt,
 	})
@@ -119,7 +119,7 @@ func (h *ExamHandler) ReportWarning(w http.ResponseWriter, r *http.Request) {
 
 	// 將最新的違規次數回傳給前端判斷是否要強制交卷
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"message":       "違規事件已記錄",
 		"warning_count": warningCount,
 	})
@@ -143,7 +143,7 @@ func (h *ExamHandler) EndExam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"message":       "考試已結束",
 		"exam_ended_at": endedAt,
 	})
