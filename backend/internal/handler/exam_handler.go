@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Dart147/SMC/backend/internal/service"
+	"github.com/Dart147/SMC/backend/internal/middleware"
 )
 
 // POST /api/exams/startpackage repository
@@ -78,7 +79,7 @@ func (h *ExamHandler) StartExam(w http.ResponseWriter, r *http.Request) {
 
 	// 🌟 從 JWT Middleware 取得當前考生的 ID
 	// (這裡請依照你們專案實際在 middleware 解析 JWT 的 key 來取值)
-	userID, ok := r.Context().Value("userID").(string)
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
 	if !ok || userID == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -104,7 +105,7 @@ func (h *ExamHandler) ReportWarning(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	userID, ok := r.Context().Value("userID").(string)
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
 	if !ok || userID == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -130,7 +131,7 @@ func (h *ExamHandler) EndExam(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	userID, ok := r.Context().Value("userID").(string)
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
 	if !ok || userID == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return

@@ -8,6 +8,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+type contextKey string
+const UserIDKey contextKey = "userID"
+
 // RequireAuth 是一個 Middleware，負責攔截請求、驗證 JWT，並將 userID 注入 Context
 func RequireAuth(secretKey []byte) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -57,7 +60,7 @@ func RequireAuth(secretKey []byte) func(http.Handler) http.Handler {
 
 			// 🌟 6. 最重要的一步：將 userID 放入 Request Context 供後續的 Handler 使用
 			// 注意這裡的 key "userID" 必須與 exam_handler.go 裡取出的字串完全一致！
-			ctx := context.WithValue(r.Context(), "userID", userID)
+			ctx := context.WithValue(r.Context(), UserIDKey, userID)
 
 			// 帶著新的 Context 繼續執行下一個 Handler
 			next.ServeHTTP(w, r.WithContext(ctx))
