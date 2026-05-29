@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Dart147/SMC/backend/internal/service"
 	"github.com/Dart147/SMC/backend/internal/middleware"
+	"github.com/Dart147/SMC/backend/internal/service"
 )
 
 // POST /api/exams/startpackage repository
