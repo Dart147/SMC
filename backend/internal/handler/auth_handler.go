@@ -43,16 +43,23 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 
-		// 狀況 A：如果是 3 小時考試時間到了
-		if err.Error() == "EXAM_EXPIRED" {
+		// 狀況 A1：已經交卷了 (我們剛剛新增的)
+		if err.Error() == "EXAM_ALREADY_SUBMITTED" {
 			w.WriteHeader(http.StatusForbidden) // 403 Forbidden
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": "考試時間已結束，帳號已失效"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "您已完成交卷，無法再次登入系統。"})
 			return
 		}
 
-		// 狀況 B：密碼打錯或帳號不存在（維持 401，符合資安防猜測原則）
+		// 狀況 A2：如果是 3 小時考試時間到了
+		if err.Error() == "EXAM_EXPIRED" {
+			w.WriteHeader(http.StatusForbidden) // 403 Forbidden
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "考試時間已結束，帳號已失效。"})
+			return
+		}
+
+		// 狀況 B：密碼打錯或帳號不存在
 		w.WriteHeader(http.StatusUnauthorized) // 401 Unauthorized
-		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Invalid username or password"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "帳號或密碼錯誤"})
 		return
 	}
 

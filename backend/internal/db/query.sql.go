@@ -91,6 +91,20 @@ func (q *Queries) CreateTestCase(ctx context.Context, arg CreateTestCaseParams) 
 	return err
 }
 
+const endExam = `-- name: EndExam :one
+UPDATE users 
+SET exam_ended_at = NOW() 
+WHERE id = $1 
+RETURNING exam_ended_at
+`
+
+func (q *Queries) EndExam(ctx context.Context, id string) (sql.NullTime, error) {
+	row := q.db.QueryRowContext(ctx, endExam, id)
+	var exam_ended_at sql.NullTime
+	err := row.Scan(&exam_ended_at)
+	return exam_ended_at, err
+}
+
 const getCandidateScores = `-- name: GetCandidateScores :many
 SELECT
     u.id        AS user_id,
@@ -279,6 +293,20 @@ func (q *Queries) GetTestCasesByProblemID(ctx context.Context, problemID sql.Nul
 	return items, nil
 }
 
+const incrementWarning = `-- name: IncrementWarning :one
+UPDATE users 
+SET warning_count = warning_count + 1, is_suspicious = TRUE 
+WHERE id = $1 
+RETURNING warning_count
+`
+
+func (q *Queries) IncrementWarning(ctx context.Context, id string) (int32, error) {
+	row := q.db.QueryRowContext(ctx, incrementWarning, id)
+	var warning_count int32
+	err := row.Scan(&warning_count)
+	return warning_count, err
+}
+
 const listProblems = `-- name: ListProblems :many
 SELECT id, title, difficulty, description FROM problems ORDER BY id ASC
 `
@@ -420,6 +448,20 @@ func (q *Queries) ListSubmissionsByUserID(ctx context.Context, userID sql.NullSt
 		return nil, err
 	}
 	return items, nil
+}
+
+const startExam = `-- name: StartExam :one
+UPDATE users 
+SET exam_started_at = COALESCE(exam_started_at, NOW()) 
+WHERE id = $1 
+RETURNING exam_started_at
+`
+
+func (q *Queries) StartExam(ctx context.Context, id string) (sql.NullTime, error) {
+	row := q.db.QueryRowContext(ctx, startExam, id)
+	var exam_started_at sql.NullTime
+	err := row.Scan(&exam_started_at)
+	return exam_started_at, err
 }
 
 const updateSubmission = `-- name: UpdateSubmission :execrows

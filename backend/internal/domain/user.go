@@ -10,6 +10,8 @@ type User struct {
 	PasswordHash  string     `json:"-"`
 	Role          string     `json:"role"`
 	ExamStartedAt *time.Time `json:"exam_started_at"`
+	WarningCount  int        `json:"warning_count"`
+	IsSuspicious  bool       `json:"is_suspicious"`
 }
 
 // CandidateScore 管理台報表：每位考生的得分彙總
