@@ -6,6 +6,8 @@ NC    = \033[0m
 LOCAL_COMPOSE  = docker-compose.yaml
 LOCAL_ENV_FILE = .env
 DEV_DEPLOY     = .deploy/dev
+# Default deploy env file is the repo's root .env. If it's somewhere else, override with SMC_ENV_FILE=/path make deploy.
+SMC_ENV_FILE  ?= $(CURDIR)/.env
 
 COMPOSE_LOCAL = docker compose --env-file $(LOCAL_ENV_FILE) -f $(LOCAL_COMPOSE)
 
@@ -36,20 +38,18 @@ smc-down: ## Stop the local stack (keeps the postgres volume)
 smc-restart: smc-down smc-up ## Stop then start the local stack
 
 # ---------------------------------------------------------------------------
-# Operator targets (run on S2 against .deploy/dev). Joins smc-traefik so
-# Traefik fronts the frontend on https://${DOMAIN}.
-# ---------------------------------------------------------------------------
+# Operator targets (run on Server against .deploy/dev)
 
-deploy: ## Rebuild + roll all SMC services on S2 (dev env)
-	@$(DEV_DEPLOY)/deploy.sh
+deploy: ## Rebuild + roll all SMC services on Server (dev env)
+	@SMC_ENV_FILE=$(SMC_ENV_FILE) $(DEV_DEPLOY)/deploy.sh
 
 deploy-frontend: ## Rebuild + roll only the frontend (dev env)
-	@$(DEV_DEPLOY)/deploy.sh frontend
+	@SMC_ENV_FILE=$(SMC_ENV_FILE) $(DEV_DEPLOY)/deploy.sh frontend
 
 deploy-backend: ## Rebuild + roll only the backend (dev env)
-	@$(DEV_DEPLOY)/deploy.sh backend
+	@SMC_ENV_FILE=$(SMC_ENV_FILE) $(DEV_DEPLOY)/deploy.sh backend
 
-deploy-down: ## Stop the dev env stack on S2 (keeps the postgres volume)
+deploy-down: ## Stop the dev env stack on Server (keeps the postgres volume)
 	@$(DEV_DEPLOY)/cleanup.sh
 
 # ---------------------------------------------------------------------------
