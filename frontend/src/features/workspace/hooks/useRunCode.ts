@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { submitCode } from "../api"; 
+import { submitCode } from "../api";
 import { useWorkspaceStore } from "../store";
 
 export const useRunCode = (problemId: string) => {
