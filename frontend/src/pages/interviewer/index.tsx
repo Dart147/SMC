@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { createCandidate } from "../../services/api";
+import { createCandidate, apiClient } from "../../services/api";
 
 // --- 定義資料型別 ---
 interface TestCase {
@@ -50,14 +50,13 @@ const InterviewerDashboard: React.FC = () => {
   // 2. 獲取題庫清單
   const fetchProblems = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/problems");
-      if (response.ok) {
-        const data = await response.json();
-        setProblems(data || []);
-        setActiveTab("list");
-      }
+      const response = await apiClient.get("/problems");
+      // axios 自動幫你把 JSON 轉好放在 response.data 裡了
+      setProblems(response.data || []);
+      setActiveTab("list");
+      
     } catch (error) {
-      alert("❌ 無法獲取題庫，請確認後端 8081 是否啟動");
+      alert("❌ 無法獲取題庫，請確認權限或後端狀態");
     }
   };
 
@@ -75,23 +74,16 @@ const InterviewerDashboard: React.FC = () => {
     };
 
     try {
-      const response = await fetch("http://localhost:8080/api/problems", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(problemData),
-      });
-
-      if (response.ok) {
-        alert(`🎉 題目儲存成功！`);
-        setTitle("");
-        setDescription("");
-        setTestCases([{ input: "", output: "" }]);
-        fetchProblems(); // 儲存完自動刷新並切換到列表
-      } else {
-        alert("❌ 儲存失敗，請檢查後端報錯");
-      }
+      await apiClient.post("/problems", problemData);
+      
+      alert(`🎉 題目儲存成功！`);
+      setTitle("");
+      setDescription("");
+      setTestCases([{ input: "", output: "" }]);
+      fetchProblems(); // 儲存完自動刷新並切換到列表
+      
     } catch (error) {
-      alert("❌ 連線後端失敗");
+      alert("❌ 儲存失敗，請檢查後端報錯或權限");
     }
   };
 
