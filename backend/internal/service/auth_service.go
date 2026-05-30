@@ -37,13 +37,19 @@ func (s *AuthService) Login(username, password string) (string, error) {
 	}
 
 	// 4. 🌟 考試時間邏輯
+	// 4. 🌟 考試時間與交卷狀態邏輯
 	var examExpiresAt int64
 	now := time.Now()
-	// examDuration := 1 * time.Minute
-	examDuration := 3 * time.Hour
+	examDuration := 3 * time.Hour // 3 小時
 
-	// 只有一般考生 (candidate) 需要計算 3 小時限制，admin 不需要
+	// 只有一般考生 (candidate) 需要計算時間與狀態，admin 不需要
 	if user.Role == "candidate" {
+		// 🚨 終極防線：先檢查他是不是已經交卷了？
+		// (確保你的 User struct 裡有 ExamEndedAt 這個欄位，通常 sqlc 更新後會有)
+		if user.ExamEndedAt != nil {
+			return "", errors.New("EXAM_ALREADY_SUBMITTED") // 傳遞給 Handler 轉成 403
+		}
+
 		if user.ExamStartedAt != nil {
 			// 已經登入過了，檢查是否超時
 			if now.After(user.ExamStartedAt.Add(examDuration)) {

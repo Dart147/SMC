@@ -54,5 +54,8 @@ type User struct {
 	Role          sql.NullString
 	TotpSecret    sql.NullString
 	ExamStartedAt sql.NullTime
+	ExamEndedAt   sql.NullTime
+	WarningCount  int32
+	IsSuspicious  bool
 	CreatedAt     sql.NullTime
 }

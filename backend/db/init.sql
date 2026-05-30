@@ -7,7 +7,10 @@ CREATE TABLE users (
     email VARCHAR(100) UNIQUE,
     role VARCHAR(20) DEFAULT 'candidate', -- 'candidate' or 'admin'
     totp_secret VARCHAR(255),             -- 為了之後的兩步驟驗證 (MFA) 預留
-    exam_started_at TIMESTAMP WITH TIME ZONE DEFAULT NULL, -- 🌟 新增：記錄考生第一次登入（開始考試）的時間
+    exam_started_at TIMESTAMP DEFAULT NULL, -- 記錄考生第一次登入（開始考試）的時間
+    exam_ended_at TIMESTAMP DEFAULT NULL,   -- 記錄交卷時間 (Anti-Cheat)
+    warning_count INT NOT NULL DEFAULT 0,   -- 防弊違規次數 (Anti-Cheat)
+    is_suspicious BOOLEAN NOT NULL DEFAULT FALSE, -- 是否標記為作弊嫌疑 (Anti-Cheat)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

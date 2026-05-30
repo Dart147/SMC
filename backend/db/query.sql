@@ -68,3 +68,21 @@ LEFT JOIN submissions s ON u.id = s.user_id
 WHERE u.role = 'candidate'
 GROUP BY u.id, u.username, u.exam_started_at
 ORDER BY total_score DESC;
+
+-- name: StartExam :one
+UPDATE users 
+SET exam_started_at = COALESCE(exam_started_at, NOW()) 
+WHERE id = $1 
+RETURNING exam_started_at;
+
+-- name: IncrementWarning :one
+UPDATE users 
+SET warning_count = warning_count + 1, is_suspicious = TRUE 
+WHERE id = $1 
+RETURNING warning_count;
+
+-- name: EndExam :one
+UPDATE users 
+SET exam_ended_at = NOW() 
+WHERE id = $1 
+RETURNING exam_ended_at;

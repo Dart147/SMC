@@ -9,9 +9,10 @@ import (
 type User struct {
 	ID            string
 	Username      string
-	Password      string
+	Password      string // 對應 db 的 PasswordHash
 	Role          string
-	ExamStartedAt *time.Time // 🌟 修正 1：補上這個欄位！(用指標是因為還沒考過試的人會是 NULL)
+	ExamStartedAt *time.Time
+	ExamEndedAt   *time.Time
 }
 
 type UserRepository struct {
@@ -25,16 +26,25 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 func (r *UserRepository) GetUserByUsername(username string) (*User, error) {
 	user := &User{}
 
-	// 🌟 修正 2：SQL 語句必須把 exam_started_at 也 SELECT 出來
-	query := `SELECT id, username, password_hash, role, exam_started_at FROM users WHERE username = $1`
+	// 修正 1：建立中介變數，用來接住資料庫裡「可能為 NULL」的時間
+	var dbStartedAt sql.NullTime
+	var dbEndedAt sql.NullTime
 
-	// 🌟 修正 3：Scan 時要把值對應塞進 &user.ExamStartedAt
+	// 修正 2：SQL 語句必須把 exam_ended_at 也 SELECT 出來，總共 6 個欄位
+	query := `
+		SELECT id, username, password_hash, role, exam_started_at, exam_ended_at 
+		FROM users 
+		WHERE username = $1
+	`
+
+	// 修正 3：Scan 時，把時間塞進剛剛宣告的 sql.NullTime 中介變數
 	err := r.db.QueryRow(query, username).Scan(
 		&user.ID,
 		&user.Username,
 		&user.Password,
 		&user.Role,
-		&user.ExamStartedAt,
+		&dbStartedAt, // 🛡️ 安全緩衝
+		&dbEndedAt,   // 🛡️ 安全緩衝
 	)
 
 	if err != nil {
@@ -43,6 +53,15 @@ func (r *UserRepository) GetUserByUsername(username string) (*User, error) {
 		}
 		return nil, err
 	}
+
+	// 修正 4：手動「翻譯」。如果資料庫拿出來的時間不是 NULL，才賦值給我們的乾淨指標
+	if dbStartedAt.Valid {
+		user.ExamStartedAt = &dbStartedAt.Time
+	}
+	if dbEndedAt.Valid {
+		user.ExamEndedAt = &dbEndedAt.Time
+	}
+
 	return user, nil
 }
 

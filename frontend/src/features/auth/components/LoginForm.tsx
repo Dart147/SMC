@@ -26,9 +26,7 @@ export const LoginForm = () => {
     try {
       // 🌟 等待 API 回應 (注意：傳入的是一個物件)
       await login({ username, password });
-
-      // 走到這裡代表沒報錯，登入成功！
-      navigate("/problems");
+      navigate("/");
     } catch (err: any) {
       // 攔截 axios 拋出的錯誤，精準判斷狀態碼
       if (err.response?.status === 401) {
