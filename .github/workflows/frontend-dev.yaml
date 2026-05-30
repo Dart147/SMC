@@ -121,7 +121,7 @@ jobs:
                 },
                 notify_discord: {
                   enable:      true,
-                  notify_only: true,
+                  notify_only: false,
                   channel:     "smc-activity"
                 }
               }
