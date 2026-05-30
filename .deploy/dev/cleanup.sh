@@ -5,6 +5,6 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-ENV_FILE="../../backend/.env"
+ENV_FILE="../../.env"
 docker compose --env-file "$ENV_FILE" down
 echo "==> SMC dev stack stopped"

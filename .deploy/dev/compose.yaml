@@ -28,7 +28,7 @@ services:
     container_name: smc-backend
     restart: unless-stopped
     env_file:
-      - ../../backend/.env
+      - ../../.env
     environment:
       - DB_HOST=postgres
       - JUDGE_BACKEND=docker
