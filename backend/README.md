@@ -55,16 +55,18 @@ backend/
 
 Base URL: `http://localhost:8081/api`
 
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/healthz` | Health check |
-| `GET` | `/version` | Returns the commit ID and build version |
-| `POST` | `/auth/login` | Authenticate user and receive JWT token |
-| `GET` | `/problems` | List all problems from PostgreSQL |
-| `GET` | `/problems/{id}` | Get a problem by ID from PostgreSQL |
-| `GET` | `/submissions` | List all submissions history |
-| `POST` | `/submissions` | Submit code for judging |
-| `GET` | `/submissions/{id}` | Poll submission result |
+| Method | Path | Description | Auth Requirement |
+| --- | --- | --- | --- |
+| `GET` | `/healthz` | Health check | None |
+| `GET` | `/version` | Get Commit ID and version info | None |
+| `POST` | `/auth/login` | Authenticate and get JWT Token | None |
+| `GET` | `/problems` | List all problems | JWT |
+| `GET` | `/problems/{id}` | Get details of a single problem | JWT |
+| `GET` | `/submissions` | List submission history for current user | JWT (Candidate) |
+| `POST` | `/submissions` | Submit code for evaluation | JWT (Candidate) |
+| `GET` | `/submissions/{id}` | Get detailed verdict of a single submission | JWT (Owner Only) |
+| `GET` | `/submissions/latest?problemId={id}` | Fetch the latest submission for a problem (Draft recovery) | JWT (Owner Only) |
+| `GET` | `/admin/submissions?userId={id}` | Administrator view of a specific candidate's submissions | JWT (Admin Only) |
 
 ### POST /auth/login
 

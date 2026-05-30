@@ -115,10 +115,10 @@ func main() {
 	mux.HandleFunc("POST /api/problems", problemH.Create)
 
 	// 提交相關
-	mux.HandleFunc("GET /api/submissions", submissionH.List)
-	mux.HandleFunc("GET /api/submissions/{id}", submissionH.GetByID)
-	mux.HandleFunc("GET /api/submissions/latest", submissionH.GetLatest)
-	mux.HandleFunc("POST /api/submissions", submissionH.Create)
+	mux.Handle("GET /api/submissions", authMiddleware(http.HandlerFunc(submissionH.List)))
+	mux.Handle("GET /api/submissions/{id}", authMiddleware(http.HandlerFunc(submissionH.GetByID)))
+	mux.Handle("GET /api/submissions/latest", authMiddleware(http.HandlerFunc(submissionH.GetLatest)))
+	mux.Handle("POST /api/submissions", authMiddleware(http.HandlerFunc(submissionH.Create)))
 
 	// 管理台報表
 	mux.HandleFunc("GET /api/admin/submissions", submissionH.ListByUserID)

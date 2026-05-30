@@ -13,17 +13,17 @@ type SubmissionRepo struct {
 	queries *sqlcdb.Queries
 }
 
-// ⚠️ 確保建構函式有接收並注入 *sql.DB
 func NewSubmissionRepo(db *sql.DB) *SubmissionRepo {
 	return &SubmissionRepo{queries: sqlcdb.New(db)}
 }
 
-// 1. 當前端發送 POST 時，立刻寫入一筆真實的 Pending 資料到 PostgreSQL
+// 1. 寫入一筆真實的 Pending 資料到 PostgreSQL
 func (r *SubmissionRepo) Save(s domain.Submission) error {
 	ctx := context.Background()
 	err := r.queries.CreateSubmission(ctx, sqlcdb.CreateSubmissionParams{
 		ID:              s.ID,
 		ProblemID:       sql.NullString{String: s.ProblemID, Valid: s.ProblemID != ""},
+		UserID:          sql.NullString{String: s.UserID, Valid: s.UserID != ""}, // 🌟 新增：寫入 UserID
 		Code:            s.Code,
 		Language:        s.Language,
 		Status:          sql.NullString{String: s.Status, Valid: s.Status != ""},
@@ -36,7 +36,7 @@ func (r *SubmissionRepo) Save(s domain.Submission) error {
 	return nil
 }
 
-// 2. 當前端 Polling 輪詢發送 GET 時，從 PostgreSQL 撈出最新狀態
+// 2. 從 PostgreSQL 撈出最新狀態
 func (r *SubmissionRepo) GetByID(id string) (domain.Submission, bool) {
 	ctx := context.Background()
 	row, err := r.queries.GetSubmissionByID(ctx, id)
@@ -51,6 +51,7 @@ func (r *SubmissionRepo) GetByID(id string) (domain.Submission, bool) {
 	return domain.Submission{
 		ID:              row.ID,
 		ProblemID:       row.ProblemID.String,
+		UserID:          row.UserID.String, // 🌟 新增：讀取 UserID
 		Code:            row.Code,
 		Language:        row.Language,
 		Status:          row.Status.String,
@@ -62,7 +63,7 @@ func (r *SubmissionRepo) GetByID(id string) (domain.Submission, bool) {
 	}, true
 }
 
-// 3. 當背景 Sandbox 評測完畢，將最終結果更新回 PostgreSQL
+// 3. 將最終結果更新回 PostgreSQL (Update 通常不會改動 UserID，保持原樣)
 func (r *SubmissionRepo) Update(s domain.Submission) error {
 	ctx := context.Background()
 
@@ -85,19 +86,20 @@ func (r *SubmissionRepo) Update(s domain.Submission) error {
 	return nil
 }
 
-// 4. 獲取所有提交紀錄 (供前端歷史列表顯示)
+// 4. 獲取所有提交紀錄
 func (r *SubmissionRepo) List() []domain.Submission {
 	ctx := context.Background()
 	rows, err := r.queries.ListSubmissions(ctx)
 	if err != nil {
 		fmt.Printf("failed to query submissions: %v\n", err)
-		return []domain.Submission{} // 發生錯誤時回傳空陣列，避免前端炸掉
+		return []domain.Submission{}
 	}
 	var submissions []domain.Submission
 	for _, row := range rows {
 		submissions = append(submissions, domain.Submission{
 			ID:              row.ID,
 			ProblemID:       row.ProblemID.String,
+			UserID:          row.UserID.String, // 🌟 新增：讀取 UserID
 			Code:            row.Code,
 			Language:        row.Language,
 			Status:          row.Status.String,
@@ -116,11 +118,10 @@ func (r *SubmissionRepo) List() []domain.Submission {
 	return submissions
 }
 
-// 5. 獲取特定題目的最新一次提交紀錄 (供前端草稿復原使用)
+// 5. 獲取特定題目的最新一次提交紀錄
 func (r *SubmissionRepo) GetLatestByProblem(problemID string) (domain.Submission, bool) {
 	ctx := context.Background()
 
-	// 注意：這裡呼叫的是你 sqlc generate 出來的方法名稱 (GetLatestSubmissionByProblem)
 	row, err := r.queries.GetLatestSubmissionByProblem(ctx, sql.NullString{String: problemID, Valid: problemID != ""})
 
 	if err != nil {
@@ -133,6 +134,7 @@ func (r *SubmissionRepo) GetLatestByProblem(problemID string) (domain.Submission
 	return domain.Submission{
 		ID:              row.ID,
 		ProblemID:       row.ProblemID.String,
+		UserID:          row.UserID.String, // 🌟 新增：讀取 UserID
 		Code:            row.Code,
 		Language:        row.Language,
 		Status:          row.Status.String,
@@ -144,7 +146,7 @@ func (r *SubmissionRepo) GetLatestByProblem(problemID string) (domain.Submission
 	}, true
 }
 
-// 6. 獲取特定用戶的所有提交紀錄 (供管理台報表使用)
+// 6. 獲取特定用戶的所有提交紀錄
 func (r *SubmissionRepo) ListByUserID(userID string) []domain.Submission {
 	ctx := context.Background()
 	rows, err := r.queries.ListSubmissionsByUserID(ctx, sql.NullString{String: userID, Valid: userID != ""})
@@ -157,10 +159,12 @@ func (r *SubmissionRepo) ListByUserID(userID string) []domain.Submission {
 		submissions = append(submissions, domain.Submission{
 			ID:              row.ID,
 			ProblemID:       row.ProblemID.String,
+			UserID:          userID, // 🌟 新增：因為已經是找特定 User，可以直接塞進去
 			Language:        row.Language,
 			Status:          row.Status.String,
 			PassedTestCases: int(row.PassedTestCases.Int32),
 			TotalTestCases:  int(row.TotalTestCases.Int32),
+			// 注意：如果在 query.sql 裡面 ListSubmissionsByUserID 也有查出 Code, Output, Error 等欄位，請一併在這裡補上
 		})
 	}
 	if submissions == nil {

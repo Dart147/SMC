@@ -29,7 +29,8 @@ func NewSubmissionService(
 	return &SubmissionService{repo: repo, problemRepo: problemRepo, judge: j, logger: logger}
 }
 
-func (s *SubmissionService) Create(problemID, code, language string) (domain.Submission, error) {
+// 🌟 1. 參數多加一個 userID string
+func (s *SubmissionService) Create(problemID, code, language string, userID string) (domain.Submission, error) {
 	prob, ok := s.problemRepo.GetByID(problemID)
 	if !ok {
 		return domain.Submission{}, fmt.Errorf("problem %q not found", problemID)
@@ -42,6 +43,7 @@ func (s *SubmissionService) Create(problemID, code, language string) (domain.Sub
 
 	sub := domain.Submission{
 		ID:             id,
+		UserID:         userID, // 2. 記得在考卷上寫名字！把 userID 存起來
 		ProblemID:      problemID,
 		Code:           code,
 		Language:       language,

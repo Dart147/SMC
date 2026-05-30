@@ -40,13 +40,14 @@ func (q *Queries) CreateProblem(ctx context.Context, arg CreateProblemParams) (s
 }
 
 const createSubmission = `-- name: CreateSubmission :exec
-INSERT INTO submissions (id, problem_id, code, language, status, passed_test_cases, total_test_cases)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO submissions (id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 `
 
 type CreateSubmissionParams struct {
 	ID              string
 	ProblemID       sql.NullString
+	UserID          sql.NullString
 	Code            string
 	Language        string
 	Status          sql.NullString
@@ -58,6 +59,7 @@ func (q *Queries) CreateSubmission(ctx context.Context, arg CreateSubmissionPara
 	_, err := q.db.ExecContext(ctx, createSubmission,
 		arg.ID,
 		arg.ProblemID,
+		arg.UserID,
 		arg.Code,
 		arg.Language,
 		arg.Status,
@@ -160,7 +162,7 @@ func (q *Queries) GetCandidateScores(ctx context.Context) ([]GetCandidateScoresR
 }
 
 const getLatestSubmissionByProblem = `-- name: GetLatestSubmissionByProblem :one
-SELECT id, problem_id, code, language, status, passed_test_cases, total_test_cases, 
+SELECT id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases, 
        COALESCE(output, '') as output, COALESCE(expected_output, '') as expected_output, COALESCE(error, '') as error
 FROM submissions
 WHERE problem_id = $1
@@ -171,6 +173,7 @@ LIMIT 1
 type GetLatestSubmissionByProblemRow struct {
 	ID              string
 	ProblemID       sql.NullString
+	UserID          sql.NullString
 	Code            string
 	Language        string
 	Status          sql.NullString
@@ -187,6 +190,7 @@ func (q *Queries) GetLatestSubmissionByProblem(ctx context.Context, problemID sq
 	err := row.Scan(
 		&i.ID,
 		&i.ProblemID,
+		&i.UserID,
 		&i.Code,
 		&i.Language,
 		&i.Status,
@@ -223,7 +227,7 @@ func (q *Queries) GetProblemByID(ctx context.Context, id string) (GetProblemByID
 }
 
 const getSubmissionByID = `-- name: GetSubmissionByID :one
-SELECT id, problem_id, code, language, status, passed_test_cases, total_test_cases, 
+SELECT id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases, 
        COALESCE(output, '') as output, COALESCE(expected_output, '') as expected_output, COALESCE(error, '') as error
 FROM submissions
 WHERE id = $1
@@ -232,6 +236,7 @@ WHERE id = $1
 type GetSubmissionByIDRow struct {
 	ID              string
 	ProblemID       sql.NullString
+	UserID          sql.NullString
 	Code            string
 	Language        string
 	Status          sql.NullString
@@ -248,6 +253,7 @@ func (q *Queries) GetSubmissionByID(ctx context.Context, id string) (GetSubmissi
 	err := row.Scan(
 		&i.ID,
 		&i.ProblemID,
+		&i.UserID,
 		&i.Code,
 		&i.Language,
 		&i.Status,
@@ -347,7 +353,7 @@ func (q *Queries) ListProblems(ctx context.Context) ([]ListProblemsRow, error) {
 }
 
 const listSubmissions = `-- name: ListSubmissions :many
-SELECT id, problem_id, code, language, status, passed_test_cases, total_test_cases, 
+SELECT id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases, 
        COALESCE(output, '') as output, COALESCE(expected_output, '') as expected_output, COALESCE(error, '') as error
 FROM submissions
 ORDER BY created_at DESC
@@ -356,6 +362,7 @@ ORDER BY created_at DESC
 type ListSubmissionsRow struct {
 	ID              string
 	ProblemID       sql.NullString
+	UserID          sql.NullString
 	Code            string
 	Language        string
 	Status          sql.NullString
@@ -378,6 +385,7 @@ func (q *Queries) ListSubmissions(ctx context.Context) ([]ListSubmissionsRow, er
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProblemID,
+			&i.UserID,
 			&i.Code,
 			&i.Language,
 			&i.Status,

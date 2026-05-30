@@ -12,27 +12,33 @@ export const useRunCode = (problemId: string) => {
     setIsRunning(true);
     setResult(null);
     try {
-      // 1. 呼叫後端 POST /api/submissions
-      const submission = await submitCode({ problemId, code, language });
+      // 2. 呼叫 submitCode
+      // 這裡會觸發 POST，並且在內部每 1.5 秒自動 GET 輪詢，直到沙盒評測結束才會往下走！
+      const submission = await submitCode({
+        problemId,
+        code,
+        language,
+      });
+
       setResult(submission);
 
-      // 2. 【關鍵修改】帶著熱騰騰的 submission.id 跳轉到結果頁！
+      // 帶著熱騰騰的 submission.id 跳轉到結果頁
       if (submission && submission.id) {
         navigate("/submissions", { state: { submissionId: submission.id } });
       }
-    } catch {
+    } catch (error: any) {
       setResult({
         id: "",
         problemId,
         code,
         language,
         status: "Runtime Error",
-        error: "Could not reach the backend. Is it running on port 8081?",
+        error: error.response?.data?.error || error.message || "連線失敗或伺服器發生異常",
         passedTestCases: 0,
         totalTestCases: 0,
       });
     } finally {
-      setIsRunning(false);
+      setIsRunning(false); // 評測結束，關閉載入狀態
     }
   };
 
