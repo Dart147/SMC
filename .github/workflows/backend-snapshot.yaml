@@ -60,10 +60,43 @@ jobs:
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 
+  Integration-Test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: password123
+          POSTGRES_DB: smcdb_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Run integration tests
+        working-directory: backend
+        env:
+          TEST_DB_URL: postgres://admin:password123@localhost:5432/smcdb_test?sslmode=disable
+        run: go test -race -tags=integration -count=1 ./...
+
   Build-and-Push:
     name: Build and push Docker image
     runs-on: ubuntu-latest
-    needs: [Backend]
+    needs: [Backend, Integration-Test]
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout code
