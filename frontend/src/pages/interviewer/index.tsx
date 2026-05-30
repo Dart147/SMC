@@ -54,7 +54,6 @@ const InterviewerDashboard: React.FC = () => {
       // axios 自動幫你把 JSON 轉好放在 response.data 裡了
       setProblems(response.data || []);
       setActiveTab("list");
-      
     } catch (error) {
       alert("❌ 無法獲取題庫，請確認權限或後端狀態");
     }
@@ -75,13 +74,12 @@ const InterviewerDashboard: React.FC = () => {
 
     try {
       await apiClient.post("/problems", problemData);
-      
+
       alert(`🎉 題目儲存成功！`);
       setTitle("");
       setDescription("");
       setTestCases([{ input: "", output: "" }]);
       fetchProblems(); // 儲存完自動刷新並切換到列表
-      
     } catch (error) {
       alert("❌ 儲存失敗，請檢查後端報錯或權限");
     }
