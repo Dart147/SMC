@@ -13,6 +13,7 @@ const (
 type Submission struct {
 	ID              string `json:"id"`
 	ProblemID       string `json:"problemId"`
+	UserID          string `json:"userId"`
 	Code            string `json:"code"`
 	Language        string `json:"language"`
 	Status          string `json:"status"`

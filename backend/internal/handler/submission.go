@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Dart147/SMC/backend/internal/domain"
+	"github.com/Dart147/SMC/backend/internal/middleware"
 	"github.com/Dart147/SMC/backend/internal/service"
 )
 
@@ -22,6 +23,7 @@ type createSubmissionRequest struct {
 	Language  string `json:"language"`
 }
 
+// 1. POST /api/submissions - 建立新的程式碼提交
 func (h *SubmissionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req createSubmissionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -33,7 +35,15 @@ func (h *SubmissionHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sub, err := h.svc.Create(req.ProblemID, req.Code, req.Language)
+	// 🌟 從 Context 把當前登入者的 UserID 抓出來
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || userID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// 把 userID 傳遞給 Service 層，確保寫入 DB 時有關聯
+	sub, err := h.svc.Create(req.ProblemID, req.Code, req.Language, userID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to create submission")
 		return
@@ -41,18 +51,43 @@ func (h *SubmissionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, sub)
 }
 
+// 2. GET /api/submissions/{id} - 查詢單筆詳細評測結果 (前端輪詢用)
 func (h *SubmissionHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	// 🌟 安全防線：從 Context 取得當前登入者 ID
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || userID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	id := r.PathValue("id")
 	sub, ok := h.svc.GetByID(id)
 	if !ok {
 		writeError(w, http.StatusNotFound, "submission not found")
 		return
 	}
+
+	// 🌟 越權安全檢查 (Aledor Cross-User Data Access Prevention)
+	// 確保一般考生絕對不能透過猜測 UUID/ID 去查看其他考生的程式碼與結果
+	if sub.UserID != userID {
+		http.Error(w, "Forbidden", http.StatusForbidden) // 403 拒絕存取
+		return
+	}
+
 	writeJSON(w, http.StatusOK, sub)
 }
 
+// 3. GET /api/submissions - 獲取當前用戶的所有歷史提交紀錄
 func (h *SubmissionHandler) List(w http.ResponseWriter, r *http.Request) {
-	submissions := h.svc.List()
+	// 從 JWT Middleware 設定好的 Context 中取出 UserID
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || userID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// 呼叫 Service 獲取該考生專屬的資料
+	submissions := h.svc.ListByUserID(userID)
 
 	// 如果回傳是 nil，確保給前端一個空的 JSON 陣列 []，而不是 null
 	if submissions == nil {
@@ -62,8 +97,15 @@ func (h *SubmissionHandler) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, submissions)
 }
 
-// 獲取該題目的最新提交 (URL 範例: /api/submissions/latest?problemId=1)
+// 4. GET /api/submissions/latest - 獲取特定題目的最新一次提交紀錄 (工作區草稿復原用)
 func (h *SubmissionHandler) GetLatest(w http.ResponseWriter, r *http.Request) {
+	// 🌟 安全防線：從 Context 取得當前登入者 ID
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || userID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	// 從 Query String 抓取 problemId
 	problemID := r.URL.Query().Get("problemId")
 	if problemID == "" {
@@ -78,10 +120,16 @@ func (h *SubmissionHandler) GetLatest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 🌟 越權安全檢查：避免多個考生寫同一題時，最新提交撈到別人的程式碼草稿
+	if sub.UserID != userID {
+		writeError(w, http.StatusNotFound, "no submission found for this problem")
+		return
+	}
+
 	writeJSON(w, http.StatusOK, sub)
 }
 
-// GET /api/admin/submissions?userId=xxx — 管理台查詢特定考生的提交紀錄
+// 5. GET /api/admin/submissions - 管理台查詢特定考生的提交紀錄 (僅供後台使用)
 func (h *SubmissionHandler) ListByUserID(w http.ResponseWriter, r *http.Request) {
 	userID := r.URL.Query().Get("userId")
 	if userID == "" {
