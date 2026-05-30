@@ -52,7 +52,7 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     // 從 localStorage 拿出你在 useAuth.ts 存進去的 Token
-    const token = localStorage.getItem("smc_token"); 
+    const token = localStorage.getItem("smc_token");
 
     // 如果有 Token，就把它塞進 Header 的 Authorization 裡
     if (token) {
@@ -63,7 +63,7 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // ==========================================
