@@ -2,6 +2,7 @@ package domain
 
 const (
 	StatusPending             = "Pending"
+	StatusJudging             = "Judging"
 	StatusAccepted            = "Accepted"
 	StatusWrongAnswer         = "Wrong Answer"
 	StatusTimeLimitExceeded   = "Time Limit Exceeded"

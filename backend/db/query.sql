@@ -69,6 +69,33 @@ WHERE u.role = 'candidate'
 GROUP BY u.id, u.username, u.exam_started_at
 ORDER BY total_score DESC;
 
+-- name: ClaimNextPendingSubmission :one
+WITH next_job AS (
+  SELECT id FROM submissions
+  WHERE status = 'Pending'
+  ORDER BY created_at ASC
+  LIMIT 1
+  FOR UPDATE SKIP LOCKED
+)
+UPDATE submissions
+SET status = 'Judging'
+FROM next_job
+WHERE submissions.id = next_job.id
+RETURNING submissions.id,
+          submissions.problem_id,
+          submissions.user_id,
+          submissions.code,
+          submissions.language,
+          submissions.status,
+          submissions.passed_test_cases,
+          submissions.total_test_cases,
+          COALESCE(submissions.output, '') as output,
+          COALESCE(submissions.expected_output, '') as expected_output,
+          COALESCE(submissions.error, '') as error;
+
+-- name: RecoverStalledSubmissions :exec
+UPDATE submissions SET status = 'Pending' WHERE status = 'Judging';
+
 -- name: StartExam :one
 UPDATE users 
 SET exam_started_at = COALESCE(exam_started_at, NOW()) 
