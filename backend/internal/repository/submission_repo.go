@@ -164,7 +164,7 @@ func (r *SubmissionRepo) ListByUserID(userID string) []domain.Submission {
 			Status:          row.Status.String,
 			PassedTestCases: int(row.PassedTestCases.Int32),
 			TotalTestCases:  int(row.TotalTestCases.Int32),
-            // 注意：如果在 query.sql 裡面 ListSubmissionsByUserID 也有查出 Code, Output, Error 等欄位，請一併在這裡補上
+			// 注意：如果在 query.sql 裡面 ListSubmissionsByUserID 也有查出 Code, Output, Error 等欄位，請一併在這裡補上
 		})
 	}
 	if submissions == nil {
