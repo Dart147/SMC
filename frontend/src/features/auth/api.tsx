@@ -8,6 +8,6 @@ export const login = async (credentials: { username: string; password: string })
 };
 
 export const logout = async () => {
-  localStorage.removeItem("auth_token");
+  localStorage.removeItem("smc_token");
   return Promise.resolve({ success: true });
 };
