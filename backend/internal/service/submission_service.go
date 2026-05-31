@@ -55,9 +55,35 @@ func (s *SubmissionService) Create(problemID, code, language string, userID stri
 		return domain.Submission{}, err
 	}
 
-	go s.judgeAsync(sub, prob)
-
 	return sub, nil
+}
+
+// RunNext claims the next Pending submission, judges it, and persists the result.
+// Returns true if a job was processed, false if the queue was empty.
+func (s *SubmissionService) RunNext(ctx context.Context) bool {
+	sub, err := s.repo.ClaimNext(ctx)
+	if err != nil {
+		s.logger.Error("failed to claim submission", zap.Error(err))
+		return false
+	}
+	if sub == nil {
+		return false
+	}
+
+	prob, ok := s.problemRepo.GetByID(sub.ProblemID)
+	if !ok {
+		s.logger.Error("problem not found for claimed submission",
+			zap.String("submission_id", sub.ID),
+			zap.String("problem_id", sub.ProblemID),
+		)
+		sub.Status = domain.StatusRuntimeError
+		sub.Error = "problem not found"
+		_ = s.repo.Update(*sub)
+		return true
+	}
+
+	s.judgeAsync(*sub, prob)
+	return true
 }
 
 func (s *SubmissionService) GetByID(id string) (domain.Submission, bool) {

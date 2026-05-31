@@ -10,6 +10,64 @@ import (
 	"database/sql"
 )
 
+const claimNextPendingSubmission = `-- name: ClaimNextPendingSubmission :one
+WITH next_job AS (
+  SELECT id FROM submissions
+  WHERE status = 'Pending'
+  ORDER BY created_at ASC
+  LIMIT 1
+  FOR UPDATE SKIP LOCKED
+)
+UPDATE submissions
+SET status = 'Judging'
+FROM next_job
+WHERE submissions.id = next_job.id
+RETURNING submissions.id,
+          submissions.problem_id,
+          submissions.user_id,
+          submissions.code,
+          submissions.language,
+          submissions.status,
+          submissions.passed_test_cases,
+          submissions.total_test_cases,
+          COALESCE(submissions.output, '') as output,
+          COALESCE(submissions.expected_output, '') as expected_output,
+          COALESCE(submissions.error, '') as error
+`
+
+type ClaimNextPendingSubmissionRow struct {
+	ID              string
+	ProblemID       sql.NullString
+	UserID          sql.NullString
+	Code            string
+	Language        string
+	Status          sql.NullString
+	PassedTestCases sql.NullInt32
+	TotalTestCases  sql.NullInt32
+	Output          string
+	ExpectedOutput  string
+	Error           string
+}
+
+func (q *Queries) ClaimNextPendingSubmission(ctx context.Context) (ClaimNextPendingSubmissionRow, error) {
+	row := q.db.QueryRowContext(ctx, claimNextPendingSubmission)
+	var i ClaimNextPendingSubmissionRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProblemID,
+		&i.UserID,
+		&i.Code,
+		&i.Language,
+		&i.Status,
+		&i.PassedTestCases,
+		&i.TotalTestCases,
+		&i.Output,
+		&i.ExpectedOutput,
+		&i.Error,
+	)
+	return i, err
+}
+
 const createProblem = `-- name: CreateProblem :one
 INSERT INTO problems (id, title, difficulty, description, time_limit_ms, memory_limit_kb)
 VALUES ($1, $2, $3, $4, $5, $6)
@@ -456,6 +514,15 @@ func (q *Queries) ListSubmissionsByUserID(ctx context.Context, userID sql.NullSt
 		return nil, err
 	}
 	return items, nil
+}
+
+const recoverStalledSubmissions = `-- name: RecoverStalledSubmissions :exec
+UPDATE submissions SET status = 'Pending' WHERE status = 'Judging'
+`
+
+func (q *Queries) RecoverStalledSubmissions(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, recoverStalledSubmissions)
+	return err
 }
 
 const startExam = `-- name: StartExam :one

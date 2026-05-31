@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	sqlcdb "github.com/Dart147/SMC/backend/internal/db"
@@ -144,6 +145,37 @@ func (r *SubmissionRepo) GetLatestByProblem(problemID string) (domain.Submission
 		ExpectedOutput:  row.ExpectedOutput,
 		Error:           row.Error,
 	}, true
+}
+
+// ClaimNext atomically claims the oldest Pending submission and marks it Judging.
+// Returns nil, nil when the queue is empty.
+func (r *SubmissionRepo) ClaimNext(ctx context.Context) (*domain.Submission, error) {
+	row, err := r.queries.ClaimNextPendingSubmission(ctx)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("claim next submission: %w", err)
+	}
+	sub := domain.Submission{
+		ID:              row.ID,
+		ProblemID:       row.ProblemID.String,
+		UserID:          row.UserID.String,
+		Code:            row.Code,
+		Language:        row.Language,
+		Status:          row.Status.String,
+		PassedTestCases: int(row.PassedTestCases.Int32),
+		TotalTestCases:  int(row.TotalTestCases.Int32),
+		Output:          row.Output,
+		ExpectedOutput:  row.ExpectedOutput,
+		Error:           row.Error,
+	}
+	return &sub, nil
+}
+
+// RecoverStalled resets any Judging submissions back to Pending on startup.
+func (r *SubmissionRepo) RecoverStalled(ctx context.Context) error {
+	return r.queries.RecoverStalledSubmissions(ctx)
 }
 
 // 6. 獲取特定用戶的所有提交紀錄

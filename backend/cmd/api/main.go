@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/Dart147/SMC/backend/internal/seed"
 	"github.com/Dart147/SMC/backend/internal/service"
 	"github.com/Dart147/SMC/backend/internal/utils"
+	"github.com/Dart147/SMC/backend/internal/worker"
 )
 
 func main() {
@@ -129,21 +131,36 @@ func main() {
 		Handler: middleware.CORS(mux),
 	}
 
+	// Reset any submissions left in Judging state from a previous crash
+	if err := submissionRepo.RecoverStalled(context.Background()); err != nil {
+		logger.Warn("failed to recover stalled submissions", zap.Error(err))
+	}
+
+	// Worker pool — context cancels on SIGINT/SIGTERM so workers exit cleanly
+	workerCtx, stopWorkers := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stopWorkers()
+
+	workerCount := 4
+	if v := os.Getenv("WORKER_COUNT"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			workerCount = n
+		}
+	}
+	pool := worker.NewPool(submissionSvc, workerCount)
+	pool.Start(workerCtx)
+
 	go func() {
-		// 修正 5: 檢查 ListenAndServe 錯誤
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("server error", zap.Error(err))
 		}
 	}()
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	<-workerCtx.Done()
+	stopWorkers()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	// 修正 6: 檢查 Shutdown 錯誤
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(shutCtx); err != nil {
 		logger.Error("shutdown error", zap.Error(err))
 	}
 }

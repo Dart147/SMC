@@ -58,3 +58,5 @@ CREATE TABLE submissions (
 
 CREATE INDEX idx_submissions_user_id ON submissions(user_id);
 CREATE INDEX idx_submissions_problem_id ON submissions(problem_id);
+CREATE INDEX idx_submissions_queue ON submissions(status, created_at ASC)
+  WHERE status IN ('Pending', 'Judging');
