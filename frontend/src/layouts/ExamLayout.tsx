@@ -146,6 +146,6 @@ export function ExamLayout() {
   }
 
   // 要啟動防作弊把下面一行註解掉
-  return <Outlet />;
+  // return <Outlet />;
   return <CandidateExamLayout />;
 }
