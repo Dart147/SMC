@@ -1,0 +1,61 @@
+name: SonarQube Monorepo Analysis
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sonarqube:
+    name: Build, Test and Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 確保完整 Git 歷史紀錄以利 Sonar 判斷程式碼變更
+
+      # ==========================================
+      # 步驟一：後端 Go 環境設定與測試
+      # ==========================================
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21' # 請更換為你後端實際使用的 Go 版本
+
+      - name: Run Go Tests with coverage
+        run: |
+          cd backend
+          go test ./... -coverprofile=coverage.out
+
+      # ==========================================
+      # 步驟二：前端 Node.js 環境設定與測試 (Vitest)
+      # ==========================================
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # 請更換為你前端實際使用的 Node 版本
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json # 確保快取正確定位
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Run Frontend Tests with coverage
+        run: |
+          cd frontend
+          npm run test:coverage
+
+      # ==========================================
+      # 步驟三：執行總體 SonarQube 掃描
+      # ==========================================
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}

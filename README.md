@@ -42,6 +42,29 @@ docker compose --env-file backend/.env -f docker-compose.yaml down -v
 make smc-up
 ```
 
+Standard Testing Commands (Vitest Suite)
+
+```bash
+# Run all unit/integration tests in headless watch mode
+npm run test:unit    
+
+# Launch the interactive Vitest UI dashboard in your browser
+npm run test:unit:ui 
+
+# Execute test suites and calculate codebase coverage metrics
+npm run test:coverage
+```
+
+End-to-End Testing Commands (Playwright Suite)
+```bash
+# Run all E2E user-journey tests in headless mode (background execution)
+npx playwright test
+
+# Launch Playwright's Interactive UI Mode (Visual step-by-step playback)
+npx playwright test --ui
+```
+
+
 ### Deploy targets
 
 The `make deploy*` targets pull prebuilt images from Docker Hub and run them via `.deploy/dev/`. They are intended for the host that fronts the public domain, not for laptops. Local dev uses `make smc-up` exclusively.
@@ -56,13 +79,47 @@ The `make deploy*` targets pull prebuilt images from Docker Hub and run them via
 ## Repository layout
 
 ```
-SMC/
-├── frontend/          # Vite + React SPA (nginx on :8080)
-├── backend/           # Go REST API + judge engine (:8081)
-│   ├── internal/judge/   # Runner interface, ProcessRunner, DockerRunner
-│   ├── db/               # PostgreSQL schema + seed data
-│   └── ...
-└── docker-compose.yaml   # Full stack: postgres + backend + frontend
+SMC/frontend/
+├── README.md              # this file (handover)
+├── docker-compose.yaml    # one service: `frontend`, builds ., exposes :8080
+├── Dockerfile             # multi-stage: depends → source → lint/test/build → runtime
+├── nginx.conf             # /assets cache, /healthz
+├── package.json
+├── vite.config.ts         # Vite & Vitest configuration (jsdom, setup files, test exclusions)
+├── vitest.setup.ts        # Testing environment setup (jest-dom, global mocks)
+├── playwright.config.ts   # Playwright automation suite parameters (testDir: './tests')
+├── tailwind.config.js     # Tailwind CSS configuration
+├── coverage/              # Local destination directory for HTML Test Coverage reports
+├── tests/                 # Dedicated Playwright E2E Test Suite
+│   └── anti-cheat.spec.ts # Automated test runner for 3-Strike infraction verification
+└── src/
+    ├── main.tsx           # React root, <StrictMode>
+    ├── App.tsx            # Router root (React Router v7)
+    ├── components/Common/ # Dumb UI atoms (Button, Modal, ResizeHandle, …)
+    ├── contexts/          # Global Context Providers (e.g., ThemeContext)
+    ├── tests/             # Dedicated Vitest Unit/Integration Test Suite
+    │   └── authFlow.spec.tsx # Integration test suite for Login-to-Problem-List routing
+    ├── features/          # Vertical slices — the heart of SMC
+    │   ├── auth/          # LoginForm, useAuth, api.ts (+ .spec.ts tests)
+    │   ├── problems/      # ProblemDescription, ProblemList UI (+ .spec.ts tests)
+    │   ├── submissions/   # Accordion history table and status badges (+ .spec.ts tests)
+    │   └── workspace/     # CodeEditor, EditorToolbar, ConsolePanel, hooks/
+    ├── pages/             # Route-level shells
+    │   ├── Login/         # Route: /login
+    │   ├── DisclaimerPage/# Route: /disclaimer (Full-screen entry gateway)
+    │   ├── Home/          # Route: / (Redirect logic)
+    │   ├── interviewer/   # Route: /interviewer
+    │   ├── ProblemList/   # Route: /problems
+    │   ├── Submissions/   # Route: /submissions
+    │   └── Workspace/     # Route: /workspace/:problemId
+    ├── layouts/           # Shared chrome wrappers
+    │   ├── MainLayout.tsx # Navigation bar and global layout
+    │   └── ExamLayout.tsx # Anti-cheat wrapper, blocking modals, and early submit logic
+    ├── services/          # apiClient.ts — single shared Axios instance (API Base: /api)
+    ├── store/             # globalStore.ts — cross-feature Zustand state
+    ├── hooks/             # Cross-feature global hooks (useAntiCheat, useDebounce, …)
+    ├── types/             # TS interfaces mapped strictly to Go backend structs
+    └── styles/globals.css # Global CSS & Tailwind directives
 ```
 
 ### Ports
