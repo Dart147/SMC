@@ -154,6 +154,7 @@ func (r *SubmissionRepo) ClaimNext(ctx context.Context) (*domain.Submission, err
 		ProblemID: row.ProblemID.String,
 		Code:      row.Code,
 		Language:  row.Language,
+		Status:    row.Status.String,
 	}, nil
 }
 
