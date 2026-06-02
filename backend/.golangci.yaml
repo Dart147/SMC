@@ -1,0 +1,39 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: none
+  enable:
+    - errcheck       # unchecked errors
+    - govet          # official go vet checks
+    - ineffassign    # assignments whose value is never used
+    - staticcheck    # broad static analysis
+    - unused         # unused constants, variables, functions, types
+    - misspell       # typos in comments and strings
+
+  exclusions:
+    rules:
+      # Tests are allowed to ignore errors freely (t.Setenv, defer file.Close, etc.).
+      - path: _test\.go
+        linters:
+          - errcheck
+
+      # Skip generated code (sqlc / mockery output) once those land.
+      - path: (^|/)mocks?/
+        linters:
+          - unused
+          - staticcheck
+      - path: \.sqlc\.go$
+        linters:
+          - unused
+          - staticcheck
+
+formatters:
+  enable:
+    - gofmt
+  settings:
+    gofmt:
+      simplify: true

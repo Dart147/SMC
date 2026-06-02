@@ -1,0 +1,59 @@
+{
+  "name": "ide-poc-v0",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "format:check": "prettier . --check",
+    "format:write": "prettier . --write",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\"",
+    "lock": "docker run --rm -v \"$PWD\":/w -w /w node:22-alpine sh -c 'npm install --package-lock-only --ignore-scripts'"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "axios": "^1.16.0",
+    "jwt-decode": "^4.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
+    "react-resizable-panels": "^4.11.0",
+    "react-router-dom": "^7.15.0",
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "zustand": "^5.0.13"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.19",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^6.0.1",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.14",
+    "prettier": "^3.3.3",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.6.3",
+    "vite": "^8.0.11"
+  },
+  "overrides": {
+    "dompurify": "^3.3.4"
+  },
+  "supportedArchitectures": {
+    "os": [
+      "darwin",
+      "linux",
+      "win32"
+    ],
+    "cpu": [
+      "x64",
+      "arm64"
+    ],
+    "libc": [
+      "glibc",
+      "musl"
+    ]
+  }
+}

@@ -1,0 +1,75 @@
+name: smc-dev
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: smc-postgres
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - smc-postgres-data:/var/lib/postgresql/data
+      - ../../backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - smc-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+
+  backend:
+    image: lovetsmc/backend:dev
+    container_name: smc-backend
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    environment:
+      - DB_HOST=postgres
+      - JUDGE_BACKEND=docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - smc-internal
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/api/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
+  frontend:
+    image: lovetsmc/frontend:dev
+    container_name: smc-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - smc-internal
+      - smc-traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=smc-traefik"
+      - "traefik.http.routers.smc-frontend-dev.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.smc-frontend-dev.entrypoints=websecure"
+      - "traefik.http.routers.smc-frontend-dev.tls=true"
+      - "traefik.http.routers.smc-frontend-dev.tls.certresolver=cloudflare"
+      - "traefik.http.services.smc-frontend-dev.loadbalancer.server.port=80"
+
+networks:
+  smc-internal:
+    driver: bridge
+  smc-traefik:
+    external: true
+
+volumes:
+  smc-postgres-data:
