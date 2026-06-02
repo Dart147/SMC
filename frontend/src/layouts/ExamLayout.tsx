@@ -24,9 +24,9 @@ function CandidateExamLayout() {
     try {
       const res = await fetch("/api/exams/warn", {
         method: "POST",
-        headers: { 
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 
@@ -63,9 +63,9 @@ function CandidateExamLayout() {
     try {
       const res = await fetch("/api/exams/end", {
         method: "POST",
-        headers: { 
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json" 
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 

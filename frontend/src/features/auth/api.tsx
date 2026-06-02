@@ -8,10 +8,6 @@ export const login = async (credentials: { username: string; password: string })
 };
 
 export const logout = async () => {
-<<<<<<< HEAD
-  localStorage.removeItem("auth_token");
-=======
   localStorage.removeItem("smc_token");
->>>>>>> feat/SonarQube-code-check
   return Promise.resolve({ success: true });
 };

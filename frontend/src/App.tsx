@@ -19,7 +19,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/disclaimer" element={<DisclaimerPage />} />
-          
+
           <Route element={<MainLayout />}>
             <Route path="/interviewer" element={<InterviewerPage />} />
             <Route path="/submissions" element={<CandidateList />} />
