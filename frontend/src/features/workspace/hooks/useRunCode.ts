@@ -24,7 +24,7 @@ export const useRunCode = (problemId: string) => {
 
       // 帶著熱騰騰的 submission.id 跳轉到結果頁
       if (submission && submission.id) {
-        navigate("/submissions", { state: { submissionId: submission.id } });
+        navigate("/results", { state: { submissionId: submission.id } });
       }
     } catch (error: any) {
       setResult({
