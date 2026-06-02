@@ -94,7 +94,7 @@ func (s *SubmissionService) judgeAsync(sub domain.Submission, prob domain.Proble
 	sub.ExpectedOutput = result.ExpectedOutput
 	sub.Error = result.Error
 	sub.PassedTestCases = result.PassedTestCases
-	
+
 	// 🌟 關鍵修正：讓前端拿得到 "1/1" 字串
 	sub.TestCases = fmt.Sprintf("%d/%d", result.PassedTestCases, sub.TotalTestCases)
 
@@ -144,7 +144,9 @@ func (s *SubmissionService) calculateAdvancedScore(code string, baseScore int) i
 		}
 		return true
 	})
-	if finalScore < 0 { finalScore = 0 }
+	if finalScore < 0 {
+		finalScore = 0
+	}
 	return finalScore
 }
 
@@ -160,6 +162,7 @@ func (s *SubmissionService) List() []domain.Submission {
 	return s.repo.List()
 }
 
+// GetLatestByProblem 獲取題目最新提交紀錄
 func (s *SubmissionService) GetLatestByProblem(problemID string) (domain.Submission, bool) {
 	return s.repo.GetLatestByProblem(problemID)
 }

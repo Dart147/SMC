@@ -109,7 +109,7 @@ const InterviewerDashboard: React.FC = () => {
                 📈 監控面板
               </h2>
               <button
-                onClick={() => navigate('/submissions')}
+                onClick={() => navigate("/submissions")}
                 className="w-full font-bold py-3 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-lg shadow-indigo-900/40 flex items-center justify-center gap-2"
               >
                 📊 查看考生提交報告

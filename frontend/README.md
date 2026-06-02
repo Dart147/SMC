@@ -8,6 +8,7 @@ The frontend for **SMC**'s Online Code Test system. Vite + React 18 + TypeScript
 
 **Done**
 
+- **Comprehensive Unit Testing 🧪**: Integrated `Vitest` and `React Testing Library` for lightning-fast, DOM-aware testing. Implemented isolated test suites for UI components, custom hooks, and API services using advanced techniques like Axios mocking, Zustand state resets, and Fake Timers (`vi.useFakeTimers`).
 - **Enterprise-Grade Authentication 🔐**: Replaced all static mock data and insecure `localStorage` credential generation. The frontend is now fully wired to the Go REST API using **JWT (JSON Web Tokens)** for secure, session-based authentication.
 - **Strict Anti-Cheat System & 3-Strike Rule 🚨**: Implemented a global `useAntiCheat` hook that strictly monitors candidate behavior. It detects tab switching, window resizing, and exits from full-screen mode across all major browsers. Violations trigger an immediate blocking overlay. If a candidate reaches **3 violations**, the frontend forces an automatic exam submission, purges the local token, and permanently kicks the user out.
 - **Secure Exam Flow & Fullscreen Enforcement 🖥️**: Candidates must read and accept a pre-exam disclaimer to enter a forced full-screen mode. All exam routes are wrapped inside an `ExamLayout` that guarantees the anti-cheat listeners and the blocking modal are always active during the test.
@@ -46,6 +47,17 @@ The application uses **React Router v7** with a robust, nested layout strategy t
 
 ---
 
+## Testing Strategy
+
+We utilize **Vitest** and **React Testing Library (jsdom)** to ensure application stability and logic correctness without needing a live backend.
+
+- **Component Tests**: Validates UI rendering, accessibility (roles), conditional logic, and user interactions (e.g., Accordion toggles).
+- **Custom Hooks & Store Tests**: Uses `renderHook` to isolate and test React lifecycle logic and global Zustand state, enforcing clean state resets (`setState`) between runs to prevent test leakage.
+- **API Mocking**: Intercepts Axios via `vi.mock()` to validate outgoing payload correctness and simulate server errors (401, 403, 500) for edge-case UI handling.
+- **Fake Timers**: Employs Vitest's `vi.useFakeTimers()` to instantly validate complex async polling behaviors (e.g., fetching execution results every 1.5 seconds) without actual delays.
+
+---
+
 ## How to run
 
 > **Prerequisite:** Ensure the Go backend and PostgreSQL database are running via Docker Compose (`localhost:8081`) before starting the frontend to fetch real data and authenticate successfully.
@@ -68,6 +80,10 @@ npx tsc --noEmit     # type-check the project (must pass clean)
 npm run build        # produce a production bundle in dist/
 npm run preview      # serve dist/ locally
 npm run format:check # prettier check
+
+# 🧪 Testing Commands
+npm run test:unit    # Run all unit tests in watch mode
+npm run test:unit:ui # Launch the interactive Vitest UI dashboard in the browser
 
 ```
 
@@ -103,7 +119,8 @@ SMC/frontend/
 ├── Dockerfile             # multi-stage: depends → source → lint/test/build → runtime
 ├── nginx.conf             # /assets cache, /healthz
 ├── package.json
-├── vite.config.ts
+├── vite.config.ts         # Vite & Vitest configuration (jsdom, setup files)
+├── vitest.setup.ts        # Testing environment setup (jest-dom, global mocks)
 ├── tailwind.config.js     # Tailwind CSS configuration
 └── src/
     ├── main.tsx           # React root, <StrictMode>
@@ -111,9 +128,9 @@ SMC/frontend/
     ├── components/Common/ # Dumb UI atoms (Button, Modal, ResizeHandle, …)
     ├── contexts/          # Global Context Providers (e.g., ThemeContext)
     ├── features/          # Vertical slices — the heart of SMC
-    │   ├── auth/          # LoginForm + useAuth (JWT parsing, Auth & Timer state)
-    │   ├── problems/      # ProblemDescription, ProblemList UI (Wired to DB)
-    │   ├── submissions/   # Accordion history table and status badges (Wired to DB)
+    │   ├── auth/          # LoginForm, useAuth, api.ts (+ .spec.ts tests)
+    │   ├── problems/      # ProblemDescription, ProblemList UI (+ .spec.ts tests)
+    │   ├── submissions/   # Accordion history table and status badges (+ .spec.ts tests)
     │   └── workspace/     # CodeEditor, EditorToolbar, ConsolePanel, hooks/
     ├── pages/             # Route-level shells
     │   ├── Login/         # Route: /login
@@ -138,9 +155,11 @@ SMC/frontend/
 
 The system has moved from a monolithic component to a modular, decoupled architecture:
 
-* **Component Decoupling**: The UI is split into **Dumb Components** (UI-only in `src/components`) and **Smart Components** (logic-heavy in `src/features`).
-* **Feature-based Hooks**: Hooks specific to a domain (like editor execution logic) are co-located within `src/features/*/hooks/`, maintaining high cohesion and avoiding global hook clutter.
-* **State Management**: Uses **Zustand** for lightweight and robust state management instead of complex Prop drilling. Contexts (`src/contexts`) are used for pure UI-state like Themes.
-* **Backend Ready**: Interfaces in `src/types/` are designed to exactly match the **Go backend** structs, ensuring type safety from the database all the way to the browser DOM. API requests are routed through a centralized `apiClient.ts` to seamlessly handle base URLs and authentication tokens.
+- **Component Decoupling**: The UI is split into **Dumb Components** (UI-only in `src/components`) and **Smart Components** (logic-heavy in `src/features`).
+- **Feature-based Hooks**: Hooks specific to a domain (like editor execution logic) are co-located within `src/features/*/hooks/`, maintaining high cohesion and avoiding global hook clutter.
+- **State Management**: Uses **Zustand** for lightweight and robust state management instead of complex Prop drilling. Contexts (`src/contexts`) are used for pure UI-state like Themes.
+- **Backend Ready**: Interfaces in `src/types/` are designed to exactly match the **Go backend** structs, ensuring type safety from the database all the way to the browser DOM. API requests are routed through a centralized `apiClient.ts` to seamlessly handle base URLs and authentication tokens.
+
+```
 
 ```

@@ -145,16 +145,16 @@ func (h *SubmissionHandler) ListByUserID(w http.ResponseWriter, r *http.Request)
 
 // 6. GET /api/submissions/{id}/report - 面試官查看考生的詳細表現報告
 func (h *SubmissionHandler) GetReport(w http.ResponseWriter, r *http.Request) {
-    // 從網址拿到提交 ID
-    id := r.PathValue("id")
-    
-    // 呼叫 Service 拿到完整報告 (包含 username, warning_count 等)
-    // 這裡我們先假設 Service 層已經準備好 GetReportByID 了
-    report, err := h.svc.GetReportByID(id)
-    if err != nil {
-        writeError(w, http.StatusNotFound, "submission report not found")
-        return
-    }
+	// 從網址拿到提交 ID
+	id := r.PathValue("id")
 
-    writeJSON(w, http.StatusOK, report)
+	// 呼叫 Service 拿到完整報告 (包含 username, warning_count 等)
+	// 這裡我們先假設 Service 層已經準備好 GetReportByID 了
+	report, err := h.svc.GetReportByID(id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "submission report not found")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, report)
 }

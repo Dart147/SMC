@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAntiCheat } from "../hooks/useAntiCheat";
 import { useAuth } from "../features/auth/hooks/useAuth";
@@ -24,9 +24,9 @@ function CandidateExamLayout() {
     try {
       const res = await fetch("/api/exams/warn", {
         method: "POST",
-        headers: { 
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 
@@ -63,9 +63,9 @@ function CandidateExamLayout() {
     try {
       const res = await fetch("/api/exams/end", {
         method: "POST",
-        headers: { 
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json" 
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 
@@ -146,6 +146,7 @@ export function ExamLayout() {
     return <Outlet />;
   }
 
-  // 考生則掛載防弊外殼
+  // 要啟動防作弊把下面一行註解掉
+  // return <Outlet />;
   return <CandidateExamLayout />;
 }

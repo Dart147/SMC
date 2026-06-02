@@ -5,7 +5,6 @@ interface ProblemRendererProps {
 }
 
 export const ProblemRenderer: React.FC<ProblemRendererProps> = ({ content }) => {
-  
   useEffect(() => {
     // 這裡我們直接使用原生的 window 物件，不依賴任何外部 API
     const handleBlur = () => {
