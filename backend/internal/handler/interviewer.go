@@ -26,11 +26,11 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// 🌟 SQL 增加 s.total_test_cases 的抓取
 	query := `
-		SELECT 
-			u.id, 
-			u.username, 
+		SELECT
+			u.id,
+			u.username,
+			u.role,
 			u.created_at,
 			COALESCE(sub_data.total_score, 0) as overall_score,
 			COALESCE(s.id::text, '') as sub_id,
@@ -41,13 +41,13 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 			COALESCE(s.total_test_cases, 0) as total
 		FROM users u
 		LEFT JOIN (
-			SELECT user_id, SUM(score) as total_score 
-			FROM submissions 
+			SELECT user_id, SUM(score) as total_score
+			FROM submissions
 			GROUP BY user_id
 		) sub_data ON u.id = sub_data.user_id
 		LEFT JOIN submissions s ON u.id = s.user_id
 		LEFT JOIN problems p ON s.problem_id = p.id
-		WHERE u.role = 'candidate'
+		WHERE u.role IN ('candidate', 'admin')
 		ORDER BY s.created_at DESC`
 
 	rows, err := h.db.Query(query)
@@ -63,23 +63,22 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 	var order []string
 
 	for rows.Next() {
-		var id, username, createdAt, subID, pTitle, subStatus string
+		var id, username, role, createdAt, subID, pTitle, subStatus string
 		var overallScore, codeStyleScore, passed, total int
-		if err := rows.Scan(&id, &username, &createdAt, &overallScore, &subID, &pTitle, &subStatus, &codeStyleScore, &passed, &total); err != nil {
-			// 這裡通常是記錄錯誤並跳出，假設你們的 Handler 有 logger，請依據上下文調整
-			// 例如：
-			// logger.Error("failed to scan row", zap.Error(err))
-			// http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			// return
-
-			// 或者如果你只想最簡單地繞過 linter 檢查 (不建議，但可編譯通過)：
+		if err := rows.Scan(&id, &username, &role, &createdAt, &overallScore, &subID, &pTitle, &subStatus, &codeStyleScore, &passed, &total); err != nil {
 			_ = err
+			continue
+		}
+
+		displayName := username
+		if role == "admin" {
+			displayName = "Admin"
 		}
 
 		if _, ok := candidateMap[id]; !ok {
 			candidateMap[id] = &map[string]interface{}{
 				"id":           id,
-				"username":     username,
+				"username":     displayName,
 				"createdAt":    createdAt,
 				"warningCount": 0,
 				"overallScore": overallScore,

@@ -10,6 +10,7 @@ export type SubmissionStatus =
 export interface Submission {
   id: string;
   problemId: string;
+  problemTitle?: string;
   code: string;
   language: string;
   status: SubmissionStatus;
@@ -18,4 +19,6 @@ export interface Submission {
   error?: string;
   passedTestCases: number;
   totalTestCases: number;
+  score?: number;
+  executionTimeMs?: number;
 }

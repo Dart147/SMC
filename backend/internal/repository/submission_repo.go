@@ -163,25 +163,45 @@ func (r *SubmissionRepo) RecoverStalled(ctx context.Context) error {
 	return r.queries.RecoverStalledSubmissions(ctx)
 }
 
-// 🌟 融合版 ListByUserID：保留你的詳細資料 Mapping
 func (r *SubmissionRepo) ListByUserID(userID string) []domain.Submission {
-	ctx := context.Background()
-	rows, err := r.queries.ListSubmissionsByUserID(ctx, sql.NullString{String: userID, Valid: userID != ""})
+	query := `
+		SELECT s.id,
+		       COALESCE(p.title, '') AS problem_title,
+		       COALESCE(s.problem_id, '') AS problem_id,
+		       s.language,
+		       COALESCE(s.status, '') AS status,
+		       COALESCE(s.passed_test_cases, 0) AS passed_test_cases,
+		       COALESCE(s.total_test_cases, 0) AS total_test_cases,
+		       COALESCE(s.score, 0) AS score,
+		       COALESCE(s.execution_time_ms, 0) AS execution_time_ms,
+		       COALESCE(s.output, '') AS output,
+		       COALESCE(s.expected_output, '') AS expected_output,
+		       COALESCE(s.error, '') AS error
+		FROM submissions s
+		LEFT JOIN problems p ON s.problem_id = p.id
+		WHERE s.user_id = $1
+		ORDER BY s.created_at DESC`
+
+	rows, err := r.db.QueryContext(context.Background(), query, userID)
 	if err != nil {
 		fmt.Printf("failed to query submissions by user: %v\n", err)
 		return []domain.Submission{}
 	}
+	defer rows.Close()
+
 	var submissions []domain.Submission
-	for _, row := range rows {
-		submissions = append(submissions, domain.Submission{
-			ID:              row.ID,
-			ProblemID:       row.ProblemID.String,
-			UserID:          userID,
-			Language:        row.Language,
-			Status:          row.Status.String,
-			PassedTestCases: int(row.PassedTestCases.Int32),
-			TotalTestCases:  int(row.TotalTestCases.Int32),
-		})
+	for rows.Next() {
+		var s domain.Submission
+		s.UserID = userID
+		if err := rows.Scan(
+			&s.ID, &s.ProblemTitle, &s.ProblemID, &s.Language, &s.Status,
+			&s.PassedTestCases, &s.TotalTestCases, &s.Score,
+			&s.ExecutionTimeMs, &s.Output, &s.ExpectedOutput, &s.Error,
+		); err != nil {
+			fmt.Printf("failed to scan submission row: %v\n", err)
+			continue
+		}
+		submissions = append(submissions, s)
 	}
 	if submissions == nil {
 		return []domain.Submission{}
