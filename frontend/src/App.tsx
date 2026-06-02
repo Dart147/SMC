@@ -11,6 +11,7 @@ import { ExamLayout } from "./layouts/ExamLayout";
 import { CandidateList } from "./pages/CandidateList";
 import { RequireAuth } from "./components/RequireAuth";
 import { RequireRole } from "./components/RequireRole";
+import { SubmissionsPage } from "./pages/Submissions";
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
               <Route element={<ExamLayout />}>
                 <Route path="/problems" element={<ProblemList />} />
                 <Route path="/workspace/:problemId" element={<Workspace />} />
+                <Route path="/my-submissions" element={<SubmissionsPage />} />
               </Route>
 
               <Route element={<RequireRole role="admin" />}>
