@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	MaxConcurrent    = 4
 	ExecutionTimeout = 5 * time.Second
 	MemoryLimitBytes = 256 * 1024 * 1024 // 256 MB
 )
@@ -23,16 +24,23 @@ type Result struct {
 	TotalTestCases  int
 }
 
-// Judge delegates execution to a Runner. Concurrency is controlled by the worker pool.
+// Judge wraps a Runner with a semaphore to cap concurrent executions.
 type Judge struct {
+	sem    chan struct{}
 	runner Runner
 	logger *zap.Logger
 }
 
 func NewJudge(runner Runner, logger *zap.Logger) *Judge {
-	return &Judge{runner: runner, logger: logger}
+	return &Judge{
+		sem:    make(chan struct{}, MaxConcurrent),
+		runner: runner,
+		logger: logger,
+	}
 }
 
 func (j *Judge) Run(ctx context.Context, prob domain.Problem, code, language string) Result {
+	j.sem <- struct{}{}
+	defer func() { <-j.sem }()
 	return j.runner.Run(ctx, prob, code, language)
 }

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAntiCheat } from "../hooks/useAntiCheat";
 import { useAuth } from "../features/auth/hooks/useAuth";
@@ -146,6 +146,7 @@ export function ExamLayout() {
     return <Outlet />;
   }
 
-  // 考生則掛載防弊外殼
+  // 要啟動防作弊把下面一行註解掉
+  // return <Outlet />;
   return <CandidateExamLayout />;
 }

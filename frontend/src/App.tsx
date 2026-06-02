@@ -4,6 +4,7 @@ import { MainLayout } from "./layouts/MainLayout";
 import { Home } from "./pages/Home";
 import { ProblemList } from "./pages/ProblemList";
 import { Workspace } from "./pages/Workspace";
+import { SubmissionsPage } from "./pages/Submissions";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { Login } from "./pages/Login";
 import { DisclaimerPage } from "./pages/DisclaimerPage";
