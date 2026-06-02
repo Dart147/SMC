@@ -56,7 +56,7 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	defer func() {
-    _ = rows.Close()
+		_ = rows.Close()
 	}()
 
 	candidateMap := make(map[string]*map[string]interface{})
@@ -71,9 +71,9 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 			// logger.Error("failed to scan row", zap.Error(err))
 			// http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			// return
-			
+
 			// 或者如果你只想最簡單地繞過 linter 檢查 (不建議，但可編譯通過)：
-			_ = err 
+			_ = err
 		}
 
 		if _, ok := candidateMap[id]; !ok {
