@@ -9,23 +9,27 @@ import { Login } from "./pages/Login";
 import { DisclaimerPage } from "./pages/DisclaimerPage";
 import { ExamLayout } from "./layouts/ExamLayout";
 import { CandidateList } from "./pages/CandidateList";
+import { RequireAuth } from "./components/RequireAuth";
 
 export default function App() {
   return (
     <ThemeProvider defaultTheme="dark">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/disclaimer" element={<DisclaimerPage />} />
 
-          <Route element={<MainLayout />}>
-            <Route path="/interviewer" element={<InterviewerPage />} />
-            <Route path="/submissions" element={<CandidateList />} />
+          <Route element={<RequireAuth />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/disclaimer" element={<DisclaimerPage />} />
 
-            <Route element={<ExamLayout />}>
-              <Route path="/problems" element={<ProblemList />} />
-              <Route path="/workspace/:problemId" element={<Workspace />} />
+            <Route element={<MainLayout />}>
+              <Route path="/interviewer" element={<InterviewerPage />} />
+              <Route path="/submissions" element={<CandidateList />} />
+
+              <Route element={<ExamLayout />}>
+                <Route path="/problems" element={<ProblemList />} />
+                <Route path="/workspace/:problemId" element={<Workspace />} />
+              </Route>
             </Route>
           </Route>
         </Routes>
