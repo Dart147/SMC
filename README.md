@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # SMC
 
 ## Show Me your Code (SMC)
@@ -123,3 +124,6 @@ cd backend/
 docker run --rm -v "$(pwd):/src" -w /src sqlc/sqlc generate
 ```
 then commit the updated `internal/db/` files.
+=======
+# SMC-test
+>>>>>>> aa4a05f966ef2250d8faff46371e6b378c202ed1
