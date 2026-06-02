@@ -28,7 +28,7 @@ export default function App() {
               <Route element={<ExamLayout />}>
                 <Route path="/problems" element={<ProblemList />} />
                 <Route path="/workspace/:problemId" element={<Workspace />} />
-                <Route path="/my-submissions" element={<SubmissionsPage />} />
+                <Route path="/results" element={<SubmissionsPage />} />
               </Route>
 
               <Route element={<RequireRole role="admin" />}>

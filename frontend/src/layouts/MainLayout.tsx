@@ -74,10 +74,10 @@ export const MainLayout: React.FC = () => {
               Problems
             </Link>
             <Link
-              to={user.role === "admin" ? "/submissions" : "/my-submissions"}
+              to={user.role === "admin" ? "/submissions" : "/results"}
               className="hover:text-gray-300 transition-colors"
             >
-              Submissions
+              {user.role === "admin" ? "Submissions" : "Results"}
             </Link>
           </>
         )}

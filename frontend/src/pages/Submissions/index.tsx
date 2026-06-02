@@ -30,8 +30,8 @@ export function SubmissionsPage() {
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">All Submissions</h1>
-        <p className="text-gray-500">View recent code executions and results.</p>
+        <h1 className="text-2xl font-bold">Results</h1>
+        <p className="text-gray-500">View your code executions and results.</p>
       </div>
 
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow border dark:border-gray-700">
