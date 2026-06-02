@@ -1,12 +1,8 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> feat/SonarQube-code-check
 # SMC
 
 ## Show Me your Code (SMC)
 
- An Online Code Test platform: interviewees take coding tests in the browser, and hiring managers create tests, manage candidates, and review results.
+An Online Code Test platform: interviewees take coding tests in the browser, and hiring managers create tests, manage candidates, and review results.
 
 ## Quick start
 
@@ -17,8 +13,6 @@ make smc-up      # build + start postgres → backend → frontend
 make ps          # confirm containers are healthy
 make healthz     # probe http://localhost:8080/api/healthz
 ```
-
-Frontend at `http://localhost:8080`, backend reachable at `http://localhost:8080/api/*` via nginx proxy (same-origin, no CORS).
 
 Seed problems on first run:
 
@@ -46,9 +40,7 @@ docker compose --env-file backend/.env -f docker-compose.yaml down -v
 make smc-up
 ```
 
-<<<<<<< HEAD
-=======
-Standard Testing Commands (Vitest Suite)
+Standard Testing Commands
 
 ```bash
 # Run all unit/integration tests in headless watch mode
@@ -70,8 +62,6 @@ npx playwright test
 npx playwright test --ui
 ```
 
-
->>>>>>> feat/SonarQube-code-check
 ### Deploy targets
 
 The `make deploy*` targets pull prebuilt images from Docker Hub and run them via `.deploy/dev/`. They are intended for the host that fronts the public domain, not for laptops. Local dev uses `make smc-up` exclusively.
@@ -86,7 +76,6 @@ The `make deploy*` targets pull prebuilt images from Docker Hub and run them via
 ## Repository layout
 
 ```
-<<<<<<< HEAD
 SMC/
 ├── frontend/          # Vite + React SPA (nginx on :8080)
 ├── backend/           # Go REST API + judge engine (:8081)
@@ -94,58 +83,10 @@ SMC/
 │   ├── db/               # PostgreSQL schema + seed data
 │   └── ...
 └── docker-compose.yaml   # Full stack: postgres + backend + frontend
-=======
-SMC/frontend/
-├── README.md              # this file (handover)
-├── docker-compose.yaml    # one service: `frontend`, builds ., exposes :8080
-├── Dockerfile             # multi-stage: depends → source → lint/test/build → runtime
-├── nginx.conf             # /assets cache, /healthz
-├── package.json
-├── vite.config.ts         # Vite & Vitest configuration (jsdom, setup files, test exclusions)
-├── vitest.setup.ts        # Testing environment setup (jest-dom, global mocks)
-├── playwright.config.ts   # Playwright automation suite parameters (testDir: './tests')
-├── tailwind.config.js     # Tailwind CSS configuration
-├── coverage/              # Local destination directory for HTML Test Coverage reports
-├── tests/                 # Dedicated Playwright E2E Test Suite
-│   └── anti-cheat.spec.ts # Automated test runner for 3-Strike infraction verification
-└── src/
-    ├── main.tsx           # React root, <StrictMode>
-    ├── App.tsx            # Router root (React Router v7)
-    ├── components/Common/ # Dumb UI atoms (Button, Modal, ResizeHandle, …)
-    ├── contexts/          # Global Context Providers (e.g., ThemeContext)
-    ├── tests/             # Dedicated Vitest Unit/Integration Test Suite
-    │   └── authFlow.spec.tsx # Integration test suite for Login-to-Problem-List routing
-    ├── features/          # Vertical slices — the heart of SMC
-    │   ├── auth/          # LoginForm, useAuth, api.ts (+ .spec.ts tests)
-    │   ├── problems/      # ProblemDescription, ProblemList UI (+ .spec.ts tests)
-    │   ├── submissions/   # Accordion history table and status badges (+ .spec.ts tests)
-    │   └── workspace/     # CodeEditor, EditorToolbar, ConsolePanel, hooks/
-    ├── pages/             # Route-level shells
-    │   ├── Login/         # Route: /login
-    │   ├── DisclaimerPage/# Route: /disclaimer (Full-screen entry gateway)
-    │   ├── Home/          # Route: / (Redirect logic)
-    │   ├── interviewer/   # Route: /interviewer
-    │   ├── ProblemList/   # Route: /problems
-    │   ├── Submissions/   # Route: /submissions
-    │   └── Workspace/     # Route: /workspace/:problemId
-    ├── layouts/           # Shared chrome wrappers
-    │   ├── MainLayout.tsx # Navigation bar and global layout
-    │   └── ExamLayout.tsx # Anti-cheat wrapper, blocking modals, and early submit logic
-    ├── services/          # apiClient.ts — single shared Axios instance (API Base: /api)
-    ├── store/             # globalStore.ts — cross-feature Zustand state
-    ├── hooks/             # Cross-feature global hooks (useAntiCheat, useDebounce, …)
-    ├── types/             # TS interfaces mapped strictly to Go backend structs
-    └── styles/globals.css # Global CSS & Tailwind directives
->>>>>>> feat/SonarQube-code-check
 ```
 
 ### Ports
 
-**Rule of thumb.** Frontend uses the `8xxx` range (currently just `8080`).
-Everything in the Temporal / CD-service family uses the `7xxx` range to stay
-visually distinct and avoid collisions. Where possible, **host port equals
-container port** so there is no host/container confusion when reading logs or
-config.
 
 | Service | Container port | Host port | Source compose |
 |---|---|---|---|
@@ -196,11 +137,3 @@ To fix:
 cd backend/
 docker run --rm -v "$(pwd):/src" -w /src sqlc/sqlc generate
 ```
-<<<<<<< HEAD
-then commit the updated `internal/db/` files.
-=======
-# SMC-test
->>>>>>> aa4a05f966ef2250d8faff46371e6b378c202ed1
-=======
-then commit the updated `internal/db/` files.
->>>>>>> feat/SonarQube-code-check

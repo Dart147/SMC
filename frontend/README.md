@@ -70,7 +70,6 @@ There are two ways to run the editor: a fast dev loop (Vite HMR) and a productio
 cd SMC/frontend
 npm install
 npm run dev          # http://localhost:5173
-
 ```
 
 Useful checks while editing:
@@ -84,7 +83,6 @@ npm run format:check # prettier check
 # 🧪 Testing Commands
 npm run test:unit    # Run all unit tests in watch mode
 npm run test:unit:ui # Launch the interactive Vitest UI dashboard in the browser
-
 ```
 
 ### 2. Docker
@@ -95,7 +93,6 @@ Run from `SMC/frontend/` (the folder that contains `docker-compose.yaml`):
 cd SMC/frontend
 docker compose up --build      # builds the image, starts nginx on :8080
 # open http://localhost:8080
-
 ```
 
 Other handy commands:
@@ -107,7 +104,6 @@ curl -sI http://localhost:8080         # 200 OK, Server: nginx
 curl -s  http://localhost:8080/healthz # "ok"
 docker compose down                    # stop + remove the container
 docker images smc-frontend:dev         # built image (~50 MB)
-
 ```
 
 ## File map
@@ -159,7 +155,3 @@ The system has moved from a monolithic component to a modular, decoupled archite
 - **Feature-based Hooks**: Hooks specific to a domain (like editor execution logic) are co-located within `src/features/*/hooks/`, maintaining high cohesion and avoiding global hook clutter.
 - **State Management**: Uses **Zustand** for lightweight and robust state management instead of complex Prop drilling. Contexts (`src/contexts`) are used for pure UI-state like Themes.
 - **Backend Ready**: Interfaces in `src/types/` are designed to exactly match the **Go backend** structs, ensuring type safety from the database all the way to the browser DOM. API requests are routed through a centralized `apiClient.ts` to seamlessly handle base URLs and authentication tokens.
-
-```
-
-```

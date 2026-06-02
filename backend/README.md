@@ -15,9 +15,7 @@ REST API server for the **Show Me your Code** online coding interview platform. 
 | Containerization | Docker & Docker Compose |
 | Code execution | Pluggable `Runner` interface — `ProcessRunner` (dev) or `DockerRunner` (isolated containers) |
 
-## Enterprise Security Features 🛡️
-
-Designed with zero-trust principles and enterprise-grade security in mind:
+## Enterprise Security Features
 
 * **Blind Indexing:** Usernames are deterministically hashed using HMAC-SHA256 before being stored in the database. This prevents username enumeration and protects identity privacy even in the event of a data breach.
 * **Salted Password Hashing:** Passwords are never stored in plaintext. We utilize `Bcrypt` to defend against rainbow table attacks.
@@ -200,8 +198,6 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin123
 
 ```
-
-> **Warning:** `ProcessRunner` has no filesystem or network isolation. Submitted code can read server files and make network requests. Use only in development.
 
 ### DockerRunner — sandbox model
 
