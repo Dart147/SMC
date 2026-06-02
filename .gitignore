@@ -42,3 +42,4 @@ test-results/
 *.sw?
 
 postgres_data/
+docs/
