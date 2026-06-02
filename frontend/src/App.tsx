@@ -10,6 +10,7 @@ import { DisclaimerPage } from "./pages/DisclaimerPage";
 import { ExamLayout } from "./layouts/ExamLayout";
 import { CandidateList } from "./pages/CandidateList";
 import { RequireAuth } from "./components/RequireAuth";
+import { RequireRole } from "./components/RequireRole";
 
 export default function App() {
   return (
@@ -23,12 +24,14 @@ export default function App() {
             <Route path="/disclaimer" element={<DisclaimerPage />} />
 
             <Route element={<MainLayout />}>
-              <Route path="/interviewer" element={<InterviewerPage />} />
-              <Route path="/submissions" element={<CandidateList />} />
-
               <Route element={<ExamLayout />}>
                 <Route path="/problems" element={<ProblemList />} />
                 <Route path="/workspace/:problemId" element={<Workspace />} />
+              </Route>
+
+              <Route element={<RequireRole role="admin" />}>
+                <Route path="/interviewer" element={<InterviewerPage />} />
+                <Route path="/submissions" element={<CandidateList />} />
               </Route>
             </Route>
           </Route>
