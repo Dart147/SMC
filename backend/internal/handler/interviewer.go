@@ -80,12 +80,12 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 		if subID != "" {
 			subs := (*candidateMap[id])["submissions"].([]map[string]interface{})
 			(*candidateMap[id])["submissions"] = append(subs, map[string]interface{}{
-				"id":              subID,
-				"problemTitle":    pTitle,
-				"status":          subStatus,
-				"codeStyleScore":  codeStyleScore,
+				"id":             subID,
+				"problemTitle":   pTitle,
+				"status":         subStatus,
+				"codeStyleScore": codeStyleScore,
 				// 🌟 這裡格式化成 "通過數/總數"
-				"testCases":       fmt.Sprintf("%d/%d", passed, total),
+				"testCases": fmt.Sprintf("%d/%d", passed, total),
 			})
 		}
 	}
