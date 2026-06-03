@@ -61,6 +61,15 @@ CREATE INDEX idx_submissions_problem_id ON submissions(problem_id);
 CREATE INDEX idx_submissions_queue ON submissions(status, created_at ASC)
   WHERE status IN ('Pending', 'Judging');
 
+-- 5. User Problem Assignments 表：記錄面試官指派給考生的題目
+CREATE TABLE user_problem_assignments (
+    user_id    VARCHAR(50) REFERENCES users(id) ON DELETE CASCADE,
+    problem_id VARCHAR(50) REFERENCES problems(id) ON DELETE CASCADE,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, problem_id)
+);
+
+CREATE INDEX idx_assignments_user_id ON user_problem_assignments(user_id);
 -- Seed problems (admin user is seeded by the backend on first startup)
 INSERT INTO problems (id, title, difficulty, description) VALUES
 ('1', 'Two Sum', 'Easy', 'Given a list of integers and a target, print the two indices (0-based, in ascending order) that add up to the target. Each input has exactly one solution.

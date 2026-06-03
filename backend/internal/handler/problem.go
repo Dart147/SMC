@@ -2,9 +2,11 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/Dart147/SMC/backend/internal/domain"
-	"github.com/Dart147/SMC/backend/internal/service"
 	"net/http"
+
+	"github.com/Dart147/SMC/backend/internal/domain"
+	"github.com/Dart147/SMC/backend/internal/middleware"
+	"github.com/Dart147/SMC/backend/internal/service"
 )
 
 type ProblemHandler struct{ svc *service.ProblemService }
@@ -44,6 +46,68 @@ func (h *ProblemHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = json.NewEncoder(w).Encode(p.ForDisplay())
+}
+
+// ListMyProblems 考生專用：只回傳被指派給自己的題目 (需要 JWT Auth)
+func (h *ProblemHandler) ListMyProblems(w http.ResponseWriter, r *http.Request) {
+	setHeaders(w)
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || userID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	problems := h.svc.ListAssigned(userID)
+	_ = json.NewEncoder(w).Encode(problems)
+}
+
+// AssignProblem 面試官指派題目給考生 (POST /api/admin/assign-problem)
+func (h *ProblemHandler) AssignProblem(w http.ResponseWriter, r *http.Request) {
+	setHeaders(w)
+	var req struct {
+		UserID    string `json:"userId"`
+		ProblemID string `json:"problemId"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.UserID == "" || req.ProblemID == "" {
+		http.Error(w, "userId 和 problemId 為必填", http.StatusBadRequest)
+		return
+	}
+	if err := h.svc.AssignProblem(req.UserID, req.ProblemID); err != nil {
+		http.Error(w, "指派失敗", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "指派成功"})
+}
+
+// UnassignProblem 面試官取消題目指派 (DELETE /api/admin/assign-problem)
+func (h *ProblemHandler) UnassignProblem(w http.ResponseWriter, r *http.Request) {
+	setHeaders(w)
+	var req struct {
+		UserID    string `json:"userId"`
+		ProblemID string `json:"problemId"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.UserID == "" || req.ProblemID == "" {
+		http.Error(w, "userId 和 problemId 為必填", http.StatusBadRequest)
+		return
+	}
+	if err := h.svc.UnassignProblem(req.UserID, req.ProblemID); err != nil {
+		http.Error(w, "取消指派失敗", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "已取消指派"})
+}
+
+// GetCandidateAssignments 查詢某考生被指派的題目 ID 清單 (GET /api/admin/candidate-assignments?userId=xxx)
+func (h *ProblemHandler) GetCandidateAssignments(w http.ResponseWriter, r *http.Request) {
+	setHeaders(w)
+	userID := r.URL.Query().Get("userId")
+	if userID == "" {
+		http.Error(w, "userId 為必填", http.StatusBadRequest)
+		return
+	}
+	ids := h.svc.GetAssignedProblemIDs(userID)
+	_ = json.NewEncoder(w).Encode(ids)
 }
 
 func setHeaders(w http.ResponseWriter) {

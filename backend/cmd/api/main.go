@@ -124,6 +124,14 @@ func main() {
 	mux.HandleFunc("GET /api/problems/{id}", problemH.GetByID)
 	mux.Handle("POST /api/problems", adminOnly(http.HandlerFunc(problemH.Create)))
 
+	// 考生專用：取得自己被指派的題目 (需登入)
+	mux.Handle("GET /api/my-problems", authMiddleware(http.HandlerFunc(problemH.ListMyProblems)))
+
+	// 管理者/面試官：題目指派管理
+	mux.HandleFunc("POST /api/admin/assign-problem", problemH.AssignProblem)
+	mux.HandleFunc("DELETE /api/admin/assign-problem", problemH.UnassignProblem)
+	mux.HandleFunc("GET /api/admin/candidate-assignments", problemH.GetCandidateAssignments)
+
 	// 提交路由 (需登入)
 	mux.Handle("POST /api/run", authMiddleware(http.HandlerFunc(submissionH.RunSample)))
 	mux.Handle("GET /api/submissions", authMiddleware(http.HandlerFunc(submissionH.List)))

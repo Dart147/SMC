@@ -1,5 +1,10 @@
 import React, { useState } from "react";
 import { createCandidate, apiClient } from "../../services/api";
+import {
+  assignProblem,
+  unassignProblem,
+  fetchCandidateAssignments,
+} from "../../features/problems/api";
 // 引入跳轉工具
 import { useNavigate } from "react-router-dom";
 
@@ -18,9 +23,14 @@ interface Problem {
   test_cases?: TestCase[]; // 兼容後端底線命名
 }
 
+interface Candidate {
+  id: string;
+  username: string;
+}
+
 const InterviewerDashboard: React.FC = () => {
   const navigate = useNavigate(); // 用於跳轉頁面
-  const [activeTab, setActiveTab] = useState<"create" | "list">("create");
+  const [activeTab, setActiveTab] = useState<"create" | "list" | "assign">("create");
   const [problems, setProblems] = useState<Problem[]>([]);
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,6 +43,13 @@ const InterviewerDashboard: React.FC = () => {
     { input: "", output: "" },
   ]);
   const [candidateCreds, setCandidateCreds] = useState<{ acc: string; pw: string } | null>(null);
+
+  // 指派題目相關狀態
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const [assignedProblemIds, setAssignedProblemIds] = useState<Set<string>>(new Set());
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [allProblemsForAssign, setAllProblemsForAssign] = useState<Problem[]>([]);
 
   // 1. 生成面試者帳密
   const generateCredentials = async () => {
@@ -58,6 +75,74 @@ const InterviewerDashboard: React.FC = () => {
       setActiveTab("list");
     } catch (error) {
       alert("❌ 無法獲取題庫，請確認權限或後端狀態");
+    }
+  };
+
+  // 5. 進入「指派題目」頁簽時載入資料
+  const openAssignTab = async () => {
+    setActiveTab("assign");
+    setAssignLoading(true);
+    try {
+      const [candidatesRes, problemsRes] = await Promise.all([
+        apiClient.get<Candidate[]>("/interviewer/candidates"),
+        apiClient.get<Problem[]>("/problems"),
+      ]);
+      // /interviewer/candidates 回傳的是陣列，每個元素有 id 和 username
+      const cands: Candidate[] = (candidatesRes.data as any[]).map((c: any) => ({
+        id: c.id,
+        username: c.username,
+      }));
+      setCandidates(cands);
+      setAllProblemsForAssign(problemsRes.data || []);
+      // 若之前有選過考生，重新拉最新指派清單
+      if (selectedCandidateId) {
+        const ids = await fetchCandidateAssignments(selectedCandidateId);
+        setAssignedProblemIds(new Set(ids.map(String)));
+      }
+    } catch {
+      alert("❌ 無法載入候選人或題庫資料");
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
+  // 6. 選擇考生後載入其指派清單
+  const selectCandidate = async (candidateId: string) => {
+    setSelectedCandidateId(candidateId || null);
+    if (!candidateId) {
+      setAssignedProblemIds(new Set());
+      return;
+    }
+    setAssignLoading(true);
+    try {
+      const ids = await fetchCandidateAssignments(candidateId);
+      setAssignedProblemIds(new Set(ids.map(String)));
+    } catch {
+      alert("❌ 無法載入指派清單");
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
+  // 7. 切換題目指派狀態
+  const toggleAssignment = async (problemId: string) => {
+    if (!selectedCandidateId) return;
+    const pidStr = String(problemId);
+    const isAssigned = assignedProblemIds.has(pidStr);
+    try {
+      if (isAssigned) {
+        await unassignProblem(selectedCandidateId, pidStr);
+        setAssignedProblemIds((prev) => {
+          const next = new Set(prev);
+          next.delete(pidStr);
+          return next;
+        });
+      } else {
+        await assignProblem(selectedCandidateId, pidStr);
+        setAssignedProblemIds((prev) => new Set([...prev, pidStr]));
+      }
+    } catch {
+      alert("❌ 操作失敗，請確認後端狀態");
     }
   };
 
@@ -150,12 +235,103 @@ const InterviewerDashboard: React.FC = () => {
               >
                 📚 題庫清單
               </div>
+              <div
+                onClick={openAssignTab}
+                className={`p-3 rounded-lg cursor-pointer transition ${activeTab === "assign" ? "bg-indigo-950/30 text-indigo-300 font-medium" : "text-gray-500 hover:bg-[#222]"}`}
+              >
+                🎯 指派題目
+              </div>
             </div>
           </div>
 
           {/* 右側內容區 */}
           <div className="w-3/4">
-            {activeTab === "create" ? (
+            {activeTab === "assign" ? (
+              <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800 shadow-2xl">
+                <h2 className="text-3xl font-bold text-gray-100 mb-6">🎯 指派題目給考生</h2>
+
+                {/* 選擇考生 */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-400 mb-2">選擇考生</label>
+                  <select
+                    value={selectedCandidateId ?? ""}
+                    onChange={(e) => selectCandidate(e.target.value)}
+                    className="w-full bg-[#222] border border-gray-700 rounded-lg p-3 text-gray-100 focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">-- 請選擇考生 --</option>
+                    {candidates.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.username}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 題目指派清單 */}
+                {selectedCandidateId ? (
+                  assignLoading ? (
+                    <div className="text-gray-500 text-center py-8">載入中...</div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-xs text-gray-500 mb-4">
+                        已指派 {assignedProblemIds.size} / {allProblemsForAssign.length} 道題目
+                      </p>
+                      {allProblemsForAssign.map((p) => {
+                        const pid = String(p.id);
+                        const isAssigned = assignedProblemIds.has(pid);
+                        return (
+                          <div
+                            key={`assign-${pid}`}
+                            className={`flex items-center justify-between p-4 rounded-xl border transition ${
+                              isAssigned
+                                ? "bg-indigo-950/20 border-indigo-500/50"
+                                : "bg-[#222] border-gray-800"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span
+                                className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                                  isAssigned ? "bg-indigo-400" : "bg-gray-600"
+                                }`}
+                              />
+                              <div>
+                                <p className="text-gray-100 font-medium">{p.title}</p>
+                                <span
+                                  className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
+                                    p.difficulty === "Easy"
+                                      ? "bg-green-900/40 text-green-400"
+                                      : p.difficulty === "Medium"
+                                        ? "bg-yellow-900/40 text-yellow-400"
+                                        : "bg-red-900/40 text-red-400"
+                                  }`}
+                                >
+                                  {p.difficulty}
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => toggleAssignment(pid)}
+                              className={`text-sm font-bold px-4 py-2 rounded-lg transition ${
+                                isAssigned
+                                  ? "bg-red-900/30 text-red-400 hover:bg-red-900/50"
+                                  : "bg-indigo-600 text-white hover:bg-indigo-500"
+                              }`}
+                            >
+                              {isAssigned ? "取消指派" : "指派"}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )
+                ) : (
+                  <div className="text-center py-12 text-gray-600">
+                    <p className="text-4xl mb-3">👆</p>
+                    <p>請先選擇一位考生</p>
+                  </div>
+                )}
+              </div>
+            ) : activeTab === "create" ? (
               <form
                 onSubmit={handleSubmitProblem}
                 className="bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800 shadow-2xl space-y-6"

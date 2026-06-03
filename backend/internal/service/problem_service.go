@@ -31,3 +31,23 @@ func (s *ProblemService) List() []domain.Problem {
 func (s *ProblemService) GetByID(id string) (domain.Problem, bool) {
 	return s.repo.GetByID(id)
 }
+
+// ListAssigned 取得指派給特定考生的題目列表
+func (s *ProblemService) ListAssigned(userID string) []domain.Problem {
+	return s.repo.ListAssigned(userID)
+}
+
+// AssignProblem 將一道題目指派給考生
+func (s *ProblemService) AssignProblem(userID, problemID string) error {
+	return s.repo.Assign(userID, problemID)
+}
+
+// UnassignProblem 取消考生的題目指派
+func (s *ProblemService) UnassignProblem(userID, problemID string) error {
+	return s.repo.Unassign(userID, problemID)
+}
+
+// GetAssignedProblemIDs 取得考生被指派的題目 ID 清單
+func (s *ProblemService) GetAssignedProblemIDs(userID string) []string {
+	return s.repo.GetAssignedProblemIDs(userID)
+}

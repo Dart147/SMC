@@ -59,3 +59,9 @@ type User struct {
 	IsSuspicious  bool
 	CreatedAt     sql.NullTime
 }
+
+type UserProblemAssignment struct {
+	UserID     string
+	ProblemID  string
+	AssignedAt sql.NullTime
+}

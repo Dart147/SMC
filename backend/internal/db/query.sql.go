@@ -10,6 +10,22 @@ import (
 	"database/sql"
 )
 
+const assignProblem = `-- name: AssignProblem :exec
+INSERT INTO user_problem_assignments (user_id, problem_id)
+VALUES ($1, $2)
+ON CONFLICT (user_id, problem_id) DO NOTHING
+`
+
+type AssignProblemParams struct {
+	UserID    string
+	ProblemID string
+}
+
+func (q *Queries) AssignProblem(ctx context.Context, arg AssignProblemParams) error {
+	_, err := q.db.ExecContext(ctx, assignProblem, arg.UserID, arg.ProblemID)
+	return err
+}
+
 const claimNextPendingSubmission = `-- name: ClaimNextPendingSubmission :one
 WITH next_job AS (
   SELECT id FROM submissions
@@ -166,6 +182,79 @@ func (q *Queries) EndExam(ctx context.Context, id string) (sql.NullTime, error) 
 	var exam_ended_at sql.NullTime
 	err := row.Scan(&exam_ended_at)
 	return exam_ended_at, err
+}
+
+const getAssignedProblemIDs = `-- name: GetAssignedProblemIDs :many
+SELECT problem_id
+FROM user_problem_assignments
+WHERE user_id = $1
+ORDER BY problem_id ASC
+`
+
+func (q *Queries) GetAssignedProblemIDs(ctx context.Context, userID string) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, getAssignedProblemIDs, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var problem_id string
+		if err := rows.Scan(&problem_id); err != nil {
+			return nil, err
+		}
+		items = append(items, problem_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAssignedProblems = `-- name: GetAssignedProblems :many
+SELECT p.id, p.title, p.difficulty, p.description
+FROM problems p
+INNER JOIN user_problem_assignments upa ON p.id = upa.problem_id
+WHERE upa.user_id = $1
+ORDER BY p.id ASC
+`
+
+type GetAssignedProblemsRow struct {
+	ID          string
+	Title       string
+	Difficulty  sql.NullString
+	Description string
+}
+
+func (q *Queries) GetAssignedProblems(ctx context.Context, userID string) ([]GetAssignedProblemsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAssignedProblems, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAssignedProblemsRow
+	for rows.Next() {
+		var i GetAssignedProblemsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Difficulty,
+			&i.Description,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getCandidateScores = `-- name: GetCandidateScores :many
@@ -606,6 +695,21 @@ func (q *Queries) StartExam(ctx context.Context, id string) (sql.NullTime, error
 	var exam_started_at sql.NullTime
 	err := row.Scan(&exam_started_at)
 	return exam_started_at, err
+}
+
+const unassignProblem = `-- name: UnassignProblem :exec
+DELETE FROM user_problem_assignments
+WHERE user_id = $1 AND problem_id = $2
+`
+
+type UnassignProblemParams struct {
+	UserID    string
+	ProblemID string
+}
+
+func (q *Queries) UnassignProblem(ctx context.Context, arg UnassignProblemParams) error {
+	_, err := q.db.ExecContext(ctx, unassignProblem, arg.UserID, arg.ProblemID)
+	return err
 }
 
 const updateSubmission = `-- name: UpdateSubmission :execrows
