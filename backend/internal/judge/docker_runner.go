@@ -131,16 +131,19 @@ func (r *DockerRunner) Run(ctx context.Context, prob domain.Problem, code, langu
 	}
 
 	passed := 0
+	var lastOutput string
 	for i, tc := range prob.TestCases {
 		result, ok := r.runTestCase(ctx, cfg, tmpFile.Name(), tc, i, passed, total)
 		if !ok {
 			return result
 		}
+		lastOutput = result.Output
 		passed++
 	}
 
 	return Result{
 		Status:          domain.StatusAccepted,
+		Output:          lastOutput,
 		PassedTestCases: passed,
 		TotalTestCases:  total,
 	}
@@ -210,7 +213,7 @@ func (r *DockerRunner) runTestCase(ctx context.Context, cfg dockerLangConfig, fi
 		}, false
 	}
 
-	return Result{}, true
+	return Result{Output: stdout.String()}, true
 }
 
 // dockerArgs builds the argument list for `docker run` with full isolation flags.
