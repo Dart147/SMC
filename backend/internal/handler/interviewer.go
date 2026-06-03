@@ -38,7 +38,8 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 			COALESCE(s.status, 'Ready') as sub_status,
 			COALESCE(s.score, 0) as code_style_score,
 			COALESCE(s.passed_test_cases, 0) as passed,
-			COALESCE(s.total_test_cases, 0) as total
+			COALESCE(s.total_test_cases, 0) as total,
+			COALESCE(s.execution_time_ms, 0) as run_time_ms
 		FROM users u
 		LEFT JOIN (
 			SELECT user_id, SUM(score) as total_score
@@ -64,8 +65,8 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 
 	for rows.Next() {
 		var id, username, role, createdAt, subID, pTitle, subStatus string
-		var overallScore, codeStyleScore, passed, total int
-		if err := rows.Scan(&id, &username, &role, &createdAt, &overallScore, &subID, &pTitle, &subStatus, &codeStyleScore, &passed, &total); err != nil {
+		var overallScore, codeStyleScore, passed, total, runTimeMs int
+		if err := rows.Scan(&id, &username, &role, &createdAt, &overallScore, &subID, &pTitle, &subStatus, &codeStyleScore, &passed, &total, &runTimeMs); err != nil {
 			_ = err
 			continue
 		}
@@ -94,8 +95,8 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 				"problemTitle":   pTitle,
 				"status":         subStatus,
 				"codeStyleScore": codeStyleScore,
-				// 🌟 這裡格式化成 "通過數/總數"
-				"testCases": fmt.Sprintf("%d/%d", passed, total),
+				"runTimeMs":      runTimeMs,
+				"testCases":      fmt.Sprintf("%d/%d", passed, total),
 			})
 		}
 	}
