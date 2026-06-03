@@ -1,41 +1,44 @@
 import { create } from "zustand";
-import { Submission } from "../../types/submission";
-import { fetchSubmission } from "./api";
+import { Submission, TERMINAL_STATUSES } from "../../types/submission";
+import { apiClient } from "../../services/api";
 
 interface SubmissionsState {
-  currentSubmission: Submission | null;
+  history: Submission[];
   isLoading: boolean;
-  pollSubmission: (id: string) => Promise<void>;
-  clearCurrent: () => void;
+  fetchHistory: () => Promise<void>;
+  pollUntilTerminal: (id: string, onDone: () => void) => void;
 }
 
-export const useSubmissionsStore = create<SubmissionsState>((set, _get) => ({
-  currentSubmission: null,
+export const useSubmissionsStore = create<SubmissionsState>((set) => ({
+  history: [],
   isLoading: false,
 
-  pollSubmission: async (id: string) => {
+  fetchHistory: async () => {
     set({ isLoading: true });
-
-    const poll = async () => {
-      try {
-        const data = await fetchSubmission(id);
-        set({ currentSubmission: data });
-
-        // 如果還在 Pending，1.5 秒後再問一次
-        if (data.status === "Pending") {
-          setTimeout(poll, 1500);
-        } else {
-          // 評測結束！
-          set({ isLoading: false });
-        }
-      } catch (error) {
-        console.error("Failed to fetch submission:", error);
-        set({ isLoading: false });
-      }
-    };
-
-    await poll();
+    try {
+      const res = await apiClient.get<Submission[]>("/submissions");
+      set({ history: res.data ?? [] });
+    } catch {
+      set({ history: [] });
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
-  clearCurrent: () => set({ currentSubmission: null }),
+  // Polls a single pending submission until it reaches a terminal status, then
+  // calls onDone so the caller can re-fetch history.
+  pollUntilTerminal: (id: string, onDone: () => void) => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await apiClient.get<Submission>(`/submissions/${id}`);
+        const sub = res.data;
+        if (TERMINAL_STATUSES.has(sub.status)) {
+          clearInterval(interval);
+          onDone();
+        }
+      } catch {
+        clearInterval(interval);
+      }
+    }, 1500);
+  },
 }));

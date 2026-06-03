@@ -17,20 +17,12 @@ func NewInterviewerHandler(db *sql.DB) *InterviewerHandler {
 
 func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	// 🌟 SQL 增加 s.total_test_cases 的抓取
 	query := `
-		SELECT 
-			u.id, 
-			u.username, 
+		SELECT
+			u.id,
+			u.username,
+			u.role,
 			u.created_at,
 			COALESCE(sub_data.total_score, 0) as overall_score,
 			COALESCE(s.id::text, '') as sub_id,
@@ -38,16 +30,17 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 			COALESCE(s.status, 'Ready') as sub_status,
 			COALESCE(s.score, 0) as code_style_score,
 			COALESCE(s.passed_test_cases, 0) as passed,
-			COALESCE(s.total_test_cases, 0) as total
+			COALESCE(s.total_test_cases, 0) as total,
+			COALESCE(s.execution_time_ms, 0) as run_time_ms
 		FROM users u
 		LEFT JOIN (
-			SELECT user_id, SUM(score) as total_score 
-			FROM submissions 
+			SELECT user_id, SUM(score) as total_score
+			FROM submissions
 			GROUP BY user_id
 		) sub_data ON u.id = sub_data.user_id
 		LEFT JOIN submissions s ON u.id = s.user_id
 		LEFT JOIN problems p ON s.problem_id = p.id
-		WHERE u.role = 'candidate'
+		WHERE u.role IN ('candidate', 'admin')
 		ORDER BY s.created_at DESC`
 
 	rows, err := h.db.Query(query)
@@ -63,23 +56,22 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 	var order []string
 
 	for rows.Next() {
-		var id, username, createdAt, subID, pTitle, subStatus string
-		var overallScore, codeStyleScore, passed, total int
-		if err := rows.Scan(&id, &username, &createdAt, &overallScore, &subID, &pTitle, &subStatus, &codeStyleScore, &passed, &total); err != nil {
-			// 這裡通常是記錄錯誤並跳出，假設你們的 Handler 有 logger，請依據上下文調整
-			// 例如：
-			// logger.Error("failed to scan row", zap.Error(err))
-			// http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			// return
-
-			// 或者如果你只想最簡單地繞過 linter 檢查 (不建議，但可編譯通過)：
+		var id, username, role, createdAt, subID, pTitle, subStatus string
+		var overallScore, codeStyleScore, passed, total, runTimeMs int
+		if err := rows.Scan(&id, &username, &role, &createdAt, &overallScore, &subID, &pTitle, &subStatus, &codeStyleScore, &passed, &total, &runTimeMs); err != nil {
 			_ = err
+			continue
+		}
+
+		displayName := username
+		if role == "admin" {
+			displayName = "Admin"
 		}
 
 		if _, ok := candidateMap[id]; !ok {
 			candidateMap[id] = &map[string]interface{}{
 				"id":           id,
-				"username":     username,
+				"username":     displayName,
 				"createdAt":    createdAt,
 				"warningCount": 0,
 				"overallScore": overallScore,
@@ -95,8 +87,8 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 				"problemTitle":   pTitle,
 				"status":         subStatus,
 				"codeStyleScore": codeStyleScore,
-				// 🌟 這裡格式化成 "通過數/總數"
-				"testCases": fmt.Sprintf("%d/%d", passed, total),
+				"runTimeMs":      runTimeMs,
+				"testCases":      fmt.Sprintf("%d/%d", passed, total),
 			})
 		}
 	}

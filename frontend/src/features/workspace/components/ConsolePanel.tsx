@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
 import { Theme, THEME_CONFIG } from "../constants";
 import { useWorkspaceStore } from "../store";
+import { TestCase } from "../../../types/problem";
 
 interface ConsolePanelProps {
   theme: Theme;
+  sampleTestCase?: TestCase;
+  onRun?: () => void;
+  isRunSample?: boolean;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -16,12 +20,11 @@ const STATUS_COLORS: Record<string, string> = {
   Pending: "#9ca3af",
 };
 
-export function ConsolePanel({ theme }: ConsolePanelProps) {
+export function ConsolePanel({ theme, sampleTestCase, onRun, isRunSample }: ConsolePanelProps) {
   const colors = THEME_CONFIG[theme];
   const { result } = useWorkspaceStore();
   const [activeTab, setActiveTab] = useState<"testcases" | "result">("testcases");
 
-  // Switch to result tab automatically when a result arrives
   useEffect(() => {
     if (result) setActiveTab("result");
   }, [result]);
@@ -93,32 +96,67 @@ export function ConsolePanel({ theme }: ConsolePanelProps) {
       <div style={{ padding: "16px", flex: 1, overflowY: "auto" }}>
         {activeTab === "testcases" && (
           <>
-            <div style={{ marginBottom: "12px" }}>
-              <div style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>nums =</div>
-              <div
+            {sampleTestCase ? (
+              <>
+                <div style={{ marginBottom: "12px" }}>
+                  <div style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>
+                    Input (sample)
+                  </div>
+                  <pre
+                    style={{
+                      background: colors.secondaryBg,
+                      padding: "8px",
+                      borderRadius: "4px",
+                      fontFamily: "monospace",
+                      fontSize: "13px",
+                      whiteSpace: "pre-wrap",
+                      margin: 0,
+                    }}
+                  >
+                    {sampleTestCase.input}
+                  </pre>
+                </div>
+                <div style={{ marginBottom: "16px" }}>
+                  <div style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>
+                    Expected output
+                  </div>
+                  <pre
+                    style={{
+                      background: colors.secondaryBg,
+                      padding: "8px",
+                      borderRadius: "4px",
+                      fontFamily: "monospace",
+                      fontSize: "13px",
+                      whiteSpace: "pre-wrap",
+                      margin: 0,
+                    }}
+                  >
+                    {sampleTestCase.expected_output}
+                  </pre>
+                </div>
+              </>
+            ) : (
+              <div style={{ color: "#888", fontSize: "13px" }}>Loading test case...</div>
+            )}
+
+            {onRun && (
+              <button
+                onClick={onRun}
+                disabled={isRunSample}
                 style={{
-                  background: colors.secondaryBg,
-                  padding: "8px",
+                  background: isRunSample ? "#374151" : "#2d2d2d",
+                  color: isRunSample ? "#9ca3af" : "#d1d5db",
+                  padding: "6px 16px",
                   borderRadius: "4px",
-                  fontFamily: "monospace",
+                  border: "1px solid #444",
+                  cursor: isRunSample ? "not-allowed" : "pointer",
+                  fontSize: "12px",
+                  fontWeight: 600,
                 }}
               >
-                [2,7,11,15]
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>target =</div>
-              <div
-                style={{
-                  background: colors.secondaryBg,
-                  padding: "8px",
-                  borderRadius: "4px",
-                  fontFamily: "monospace",
-                }}
-              >
-                9
-              </div>
-            </div>
+                {isRunSample ? "Running..." : "▶ Run sample"}
+              </button>
+            )}
           </>
         )}
 
@@ -128,7 +166,6 @@ export function ConsolePanel({ theme }: ConsolePanelProps) {
 
         {activeTab === "result" && result && (
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {/* Status badge */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <span style={{ fontSize: "18px", fontWeight: "bold", color: statusColor }}>
                 {result.status}
@@ -140,7 +177,6 @@ export function ConsolePanel({ theme }: ConsolePanelProps) {
               )}
             </div>
 
-            {/* Actual vs Expected output */}
             {result.output !== undefined && (
               <div>
                 <div style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>
@@ -161,6 +197,7 @@ export function ConsolePanel({ theme }: ConsolePanelProps) {
                 </pre>
               </div>
             )}
+
             {result.expectedOutput && (
               <div>
                 <div style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>
@@ -182,7 +219,6 @@ export function ConsolePanel({ theme }: ConsolePanelProps) {
               </div>
             )}
 
-            {/* Error message */}
             {result.error && (
               <div>
                 <div style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>Error</div>

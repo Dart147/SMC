@@ -64,6 +64,9 @@ func main() {
 
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	authMiddleware := middleware.RequireAuth(jwtSecret)
+	adminOnly := func(h http.Handler) http.Handler {
+		return authMiddleware(middleware.RequireRole("admin")(h))
+	}
 
 	seed.AdminUser(db)
 
@@ -119,19 +122,20 @@ func main() {
 	// 題目路由
 	mux.HandleFunc("GET /api/problems", problemH.List)
 	mux.HandleFunc("GET /api/problems/{id}", problemH.GetByID)
-	mux.HandleFunc("POST /api/problems", problemH.Create)
+	mux.Handle("POST /api/problems", adminOnly(http.HandlerFunc(problemH.Create)))
 
 	// 提交路由 (需登入)
+	mux.Handle("POST /api/run", authMiddleware(http.HandlerFunc(submissionH.RunSample)))
 	mux.Handle("GET /api/submissions", authMiddleware(http.HandlerFunc(submissionH.List)))
 	mux.Handle("GET /api/submissions/{id}", authMiddleware(http.HandlerFunc(submissionH.GetByID)))
 	mux.Handle("GET /api/submissions/latest", authMiddleware(http.HandlerFunc(submissionH.GetLatest)))
 	mux.Handle("POST /api/submissions", authMiddleware(http.HandlerFunc(submissionH.Create)))
 
-	// 管理者/面試官專用路由
-	mux.HandleFunc("GET /api/admin/submissions", submissionH.ListByUserID)
-	mux.HandleFunc("GET /api/admin/candidates/scores", reportH.GetCandidateScores)
-	mux.HandleFunc("GET /api/submissions/{id}/report", submissionH.GetReport)
-	mux.HandleFunc("GET /api/interviewer/candidates", interviewerH.GetCandidates)
+	// 管理者/面試官專用路由 (需登入 + admin 角色)
+	mux.Handle("GET /api/admin/submissions", adminOnly(http.HandlerFunc(submissionH.ListByUserID)))
+	mux.Handle("GET /api/admin/candidates/scores", adminOnly(http.HandlerFunc(reportH.GetCandidateScores)))
+	mux.Handle("GET /api/submissions/{id}/report", adminOnly(http.HandlerFunc(submissionH.GetReport)))
+	mux.Handle("GET /api/interviewer/candidates", adminOnly(http.HandlerFunc(interviewerH.GetCandidates)))
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Port),

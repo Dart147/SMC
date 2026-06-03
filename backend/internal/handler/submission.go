@@ -23,6 +23,13 @@ type createSubmissionRequest struct {
 	Language  string `json:"language"`
 }
 
+type runSampleResponse struct {
+	Status         string `json:"status"`
+	Output         string `json:"output"`
+	ExpectedOutput string `json:"expectedOutput"`
+	Error          string `json:"error"`
+}
+
 // 1. POST /api/submissions - 建立新的程式碼提交
 func (h *SubmissionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req createSubmissionRequest
@@ -143,7 +150,33 @@ func (h *SubmissionHandler) ListByUserID(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, submissions)
 }
 
-// 6. GET /api/submissions/{id}/report - 面試官查看考生的詳細表現報告
+// 6. POST /api/run - dry-run against the first sample test case; no DB write
+func (h *SubmissionHandler) RunSample(w http.ResponseWriter, r *http.Request) {
+	var req createSubmissionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.ProblemID == "" || req.Code == "" || req.Language == "" {
+		writeError(w, http.StatusBadRequest, "problemId, code, and language are required")
+		return
+	}
+
+	result, err := h.svc.RunSample(r.Context(), req.ProblemID, req.Code, req.Language)
+	if err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, runSampleResponse{
+		Status:         result.Status,
+		Output:         result.Output,
+		ExpectedOutput: result.ExpectedOutput,
+		Error:          result.Error,
+	})
+}
+
+// 7. GET /api/submissions/{id}/report - 面試官查看考生的詳細表現報告
 func (h *SubmissionHandler) GetReport(w http.ResponseWriter, r *http.Request) {
 	// 從網址拿到提交 ID
 	id := r.PathValue("id")

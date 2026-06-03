@@ -9,6 +9,7 @@ import { ProblemDescription } from "../../features/problems/components/ProblemDe
 import { ResizeHandle } from "../../components/Common/ResizeHandle";
 import { Language, Theme, SKELETONS, THEME_CONFIG } from "../../features/workspace/constants";
 import { useRunCode } from "../../features/workspace/hooks/useRunCode";
+import { useRunSample } from "../../features/workspace/hooks/useRunSample";
 import { useWorkspaceStore } from "../../features/workspace/store";
 import { fetchProblemById } from "../../features/problems/api";
 import { Problem } from "../../types/problem";
@@ -22,7 +23,7 @@ export function Workspace() {
   // 1. 取得網址列上的 problemId
   const { problemId } = useParams<{ problemId: string }>();
 
-  const { code, language, setCode, setLanguage } = useWorkspaceStore();
+  const { code, language, setCode, setLanguage, setResult } = useWorkspaceStore();
   const [theme, setTheme] = useState<Theme>("vs-dark");
 
   // 2. 從後端取得對應的題目
@@ -32,6 +33,7 @@ export function Workspace() {
   const [isInitializing, setIsInitializing] = useState(true); // 🌟 新增：控制編輯器草稿載入狀態
 
   const { runCode, isRunning } = useRunCode(problemId ?? "");
+  const { runSample, isRunSample } = useRunSample(problemId ?? "");
   const debouncedCode = useDebounce(code, 500); // 🌟 新增：對程式碼進行防抖動處理
 
   // 3. 初始化題目資料 + 三段式回復機制
@@ -41,6 +43,7 @@ export function Workspace() {
     const initWorkspace = async () => {
       setLoading(true);
       setIsInitializing(true);
+      setResult(null); // clear previous problem's result when switching problems
 
       try {
         // A. 抓取題目基本描述
@@ -165,16 +168,19 @@ export function Workspace() {
         <strong style={{ color: "#fff", fontSize: "18px" }}>SMC Judge</strong>
         <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
           <button
+            onClick={runSample}
+            disabled={isRunSample || isRunning}
             style={{
               background: "#2d2d2d",
-              color: "#fff",
+              color: isRunSample ? "#9ca3af" : "#fff",
               padding: "6px 16px",
               borderRadius: "4px",
               border: "1px solid #444",
-              cursor: "pointer",
+              cursor: isRunSample || isRunning ? "not-allowed" : "pointer",
+              opacity: isRunSample ? 0.6 : 1,
             }}
           >
-            Run
+            {isRunSample ? "Running..." : "Run"}
           </button>
           <button
             onClick={runCode}
@@ -238,7 +244,12 @@ export function Workspace() {
 
               {/* 右下：測試案例與主控台 */}
               <Panel defaultSize={30} minSize={10}>
-                <ConsolePanel theme={theme} />
+                <ConsolePanel
+                  theme={theme}
+                  sampleTestCase={currentProblem?.testCases?.[0]}
+                  onRun={runSample}
+                  isRunSample={isRunSample}
+                />
               </Panel>
             </Group>
           </Panel>

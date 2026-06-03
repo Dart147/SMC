@@ -16,12 +16,14 @@ const (
 )
 
 type Result struct {
-	Status          string
-	Output          string
-	ExpectedOutput  string
-	Error           string
-	PassedTestCases int
-	TotalTestCases  int
+	Status               string
+	Output               string
+	ExpectedOutput       string
+	ExpectedOutputHidden bool // true when the failing test case has is_hidden=true
+	Error                string
+	PassedTestCases      int
+	TotalTestCases       int
+	ExecutionTimeMs      int // total wall-clock time across all executed test cases
 }
 
 // Judge wraps a Runner with a semaphore to cap concurrent executions.
