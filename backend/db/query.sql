@@ -12,7 +12,8 @@ INSERT INTO submissions (id, problem_id, user_id, code, language, status, passed
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
 
 -- name: GetSubmissionByID :one
-SELECT id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases, 
+SELECT id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases,
+       COALESCE(execution_time_ms, 0) as execution_time_ms,
        COALESCE(output, '') as output, COALESCE(expected_output, '') as expected_output, COALESCE(error, '') as error
 FROM submissions
 WHERE id = $1;
@@ -27,13 +28,15 @@ SET status = $1,
 WHERE id = $6;
 
 -- name: ListSubmissions :many
-SELECT id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases, 
+SELECT id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases,
+       COALESCE(execution_time_ms, 0) as execution_time_ms,
        COALESCE(output, '') as output, COALESCE(expected_output, '') as expected_output, COALESCE(error, '') as error
 FROM submissions
 ORDER BY created_at DESC;
 
 -- name: GetLatestSubmissionByProblem :one
-SELECT id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases, 
+SELECT id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases,
+       COALESCE(execution_time_ms, 0) as execution_time_ms,
        COALESCE(output, '') as output, COALESCE(expected_output, '') as expected_output, COALESCE(error, '') as error
 FROM submissions
 WHERE problem_id = $1
@@ -89,6 +92,7 @@ RETURNING submissions.id,
           submissions.status,
           submissions.passed_test_cases,
           submissions.total_test_cases,
+          COALESCE(submissions.execution_time_ms, 0) as execution_time_ms,
           COALESCE(submissions.output, '') as output,
           COALESCE(submissions.expected_output, '') as expected_output,
           COALESCE(submissions.error, '') as error;
