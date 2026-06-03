@@ -1,31 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { Submission } from "../../types/submission";
-import { apiClient } from "../../services/api";
 import ReportModal from "../../components/Common/ReportModal";
 import { useSubmissionsStore } from "../../features/submissions/store";
 
 export function SubmissionsPage() {
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [reportId, setReportId] = useState<string | null>(null);
   const location = useLocation();
-  const { pollUntilTerminal } = useSubmissionsStore();
+  const { history: submissions, isLoading: loading, fetchHistory, pollUntilTerminal } = useSubmissionsStore();
 
   const latestId: string | undefined = location.state?.submissionId;
   const stillPending: boolean = location.state?.stillPending ?? false;
-
-  const fetchHistory = async () => {
-    try {
-      const res = await apiClient.get("/submissions");
-      setSubmissions(res.data || []);
-    } catch {
-      setSubmissions([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Auto-expand the submission that was just navigated from
   const didExpand = useRef(false);

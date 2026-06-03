@@ -21,7 +21,6 @@ func NewSubmissionRepo(db *sql.DB) *SubmissionRepo {
 	}
 }
 
-// 🌟 融合版 Update：使用 Max 的原生 SQL 來支援 score 更新，並加上你的 Error 處理
 func (r *SubmissionRepo) Update(s domain.Submission) error {
 	query := `
         UPDATE submissions
@@ -50,7 +49,6 @@ func (r *SubmissionRepo) Update(s domain.Submission) error {
 	return nil
 }
 
-// 🌟 融合版 Save：寫入包含你加的 UserID
 func (r *SubmissionRepo) Save(s domain.Submission) error {
 	ctx := context.Background()
 	err := r.queries.CreateSubmission(ctx, sqlcdb.CreateSubmissionParams{
@@ -69,7 +67,6 @@ func (r *SubmissionRepo) Save(s domain.Submission) error {
 	return nil
 }
 
-// 🌟 融合版 GetByID：使用你詳細的欄位 Mapping
 func (r *SubmissionRepo) GetByID(id string) (domain.Submission, bool) {
 	ctx := context.Background()
 	row, err := r.queries.GetSubmissionByID(ctx, id)
@@ -94,7 +91,6 @@ func (r *SubmissionRepo) GetByID(id string) (domain.Submission, bool) {
 	}, true
 }
 
-// 🌟 融合版 List：保留你的詳細資料 Mapping 與日誌
 func (r *SubmissionRepo) List() []domain.Submission {
 	ctx := context.Background()
 	rows, err := r.queries.ListSubmissions(ctx)
@@ -125,7 +121,6 @@ func (r *SubmissionRepo) List() []domain.Submission {
 	return submissions
 }
 
-// 🌟 融合版 GetLatestByProblem：保留你的詳細資料 Mapping
 func (r *SubmissionRepo) GetLatestByProblem(problemID string) (domain.Submission, bool) {
 	ctx := context.Background()
 	row, err := r.queries.GetLatestSubmissionByProblem(ctx, sql.NullString{String: problemID, Valid: problemID != ""})
@@ -148,7 +143,6 @@ func (r *SubmissionRepo) GetLatestByProblem(problemID string) (domain.Submission
 	}, true
 }
 
-// 🌟 Max 的新功能：Queue 拿取任務
 func (r *SubmissionRepo) ClaimNext(ctx context.Context) (*domain.Submission, error) {
 	row, err := r.queries.ClaimNextPendingSubmission(ctx)
 	if err != nil {
@@ -163,7 +157,6 @@ func (r *SubmissionRepo) ClaimNext(ctx context.Context) (*domain.Submission, err
 	}, nil
 }
 
-// 🌟 Max 的新功能：Queue 卡死恢復
 func (r *SubmissionRepo) RecoverStalled(ctx context.Context) error {
 	return r.queries.RecoverStalledSubmissions(ctx)
 }
@@ -214,7 +207,6 @@ func (r *SubmissionRepo) ListByUserID(userID string) []domain.Submission {
 	return submissions
 }
 
-// 🌟 Max 的新功能：取得完整報告
 func (r *SubmissionRepo) GetReport(ctx context.Context, id string) (sqlcdb.GetSubmissionReportRow, error) {
 	return r.queries.GetSubmissionReport(ctx, id)
 }

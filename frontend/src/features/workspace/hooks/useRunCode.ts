@@ -2,15 +2,8 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { submitCode, getSubmission } from "../api";
 import { useWorkspaceStore } from "../store";
+import { TERMINAL_STATUSES } from "../../../types/submission";
 
-const TERMINAL_STATUSES = new Set([
-  "Accepted",
-  "Wrong Answer",
-  "Time Limit Exceeded",
-  "Memory Limit Exceeded",
-  "Runtime Error",
-  "Compile Error",
-]);
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 30000;
 

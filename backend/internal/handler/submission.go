@@ -23,6 +23,13 @@ type createSubmissionRequest struct {
 	Language  string `json:"language"`
 }
 
+type runSampleResponse struct {
+	Status         string `json:"status"`
+	Output         string `json:"output"`
+	ExpectedOutput string `json:"expectedOutput"`
+	Error          string `json:"error"`
+}
+
 // 1. POST /api/submissions - 建立新的程式碼提交
 func (h *SubmissionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req createSubmissionRequest
@@ -161,11 +168,11 @@ func (h *SubmissionHandler) RunSample(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"status":         result.Status,
-		"output":         result.Output,
-		"expectedOutput": result.ExpectedOutput,
-		"error":          result.Error,
+	writeJSON(w, http.StatusOK, runSampleResponse{
+		Status:         result.Status,
+		Output:         result.Output,
+		ExpectedOutput: result.ExpectedOutput,
+		Error:          result.Error,
 	})
 }
 

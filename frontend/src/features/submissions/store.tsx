@@ -1,15 +1,6 @@
 import { create } from "zustand";
-import { Submission } from "../../types/submission";
+import { Submission, TERMINAL_STATUSES } from "../../types/submission";
 import { apiClient } from "../../services/api";
-
-const TERMINAL_STATUSES = new Set([
-  "Accepted",
-  "Wrong Answer",
-  "Time Limit Exceeded",
-  "Memory Limit Exceeded",
-  "Runtime Error",
-  "Compile Error",
-]);
 
 interface SubmissionsState {
   history: Submission[];

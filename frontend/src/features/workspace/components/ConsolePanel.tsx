@@ -1,11 +1,7 @@
 import { useState, useEffect } from "react";
 import { Theme, THEME_CONFIG } from "../constants";
 import { useWorkspaceStore } from "../store";
-
-interface TestCase {
-  input: string;
-  expected_output: string;
-}
+import { TestCase } from "../../../types/problem";
 
 interface ConsolePanelProps {
   theme: Theme;

@@ -1,11 +1,21 @@
 export type SubmissionStatus =
   | "Pending"
+  | "Judging"
   | "Accepted"
   | "Wrong Answer"
   | "Time Limit Exceeded"
   | "Memory Limit Exceeded"
   | "Runtime Error"
   | "Compile Error";
+
+export const TERMINAL_STATUSES = new Set<SubmissionStatus>([
+  "Accepted",
+  "Wrong Answer",
+  "Time Limit Exceeded",
+  "Memory Limit Exceeded",
+  "Runtime Error",
+  "Compile Error",
+]);
 
 export interface Submission {
   id: string;

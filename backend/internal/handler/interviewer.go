@@ -17,14 +17,6 @@ func NewInterviewerHandler(db *sql.DB) *InterviewerHandler {
 
 func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
 
 	query := `
 		SELECT
