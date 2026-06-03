@@ -73,12 +73,20 @@ export const MainLayout: React.FC = () => {
             <Link to="/problems" className="hover:text-gray-300 transition-colors">
               Problems
             </Link>
-            <Link
-              to={user.role === "admin" ? "/submissions" : "/results"}
-              className="hover:text-gray-300 transition-colors"
-            >
-              {user.role === "admin" ? "Submissions" : "Results"}
-            </Link>
+            {user.role === "admin" ? (
+              <>
+                <Link to="/submissions" className="hover:text-gray-300 transition-colors">
+                  Submissions
+                </Link>
+                <Link to="/results" className="hover:text-gray-300 transition-colors">
+                  Results
+                </Link>
+              </>
+            ) : (
+              <Link to="/results" className="hover:text-gray-300 transition-colors">
+                Results
+              </Link>
+            )}
           </>
         )}
 
