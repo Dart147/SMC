@@ -24,14 +24,15 @@ func NewSubmissionRepo(db *sql.DB) *SubmissionRepo {
 // 🌟 融合版 Update：使用 Max 的原生 SQL 來支援 score 更新，並加上你的 Error 處理
 func (r *SubmissionRepo) Update(s domain.Submission) error {
 	query := `
-        UPDATE submissions 
-        SET status = $1, 
-            passed_test_cases = $2, 
-            output = $3, 
-            expected_output = $4, 
+        UPDATE submissions
+        SET status = $1,
+            passed_test_cases = $2,
+            output = $3,
+            expected_output = $4,
             error = $5,
-            score = $6
-        WHERE id = $7`
+            score = $6,
+            execution_time_ms = $7
+        WHERE id = $8`
 
 	_, err := r.db.Exec(query,
 		s.Status,
@@ -39,7 +40,8 @@ func (r *SubmissionRepo) Update(s domain.Submission) error {
 		s.Output,
 		s.ExpectedOutput,
 		s.Error,
-		s.Score, // Max 加的分數欄位
+		s.Score,
+		s.ExecutionTimeMs,
 		s.ID,
 	)
 	if err != nil {

@@ -96,6 +96,7 @@ func (s *SubmissionService) judgeAsync(sub domain.Submission, prob domain.Proble
 	}
 	sub.Error = result.Error
 	sub.PassedTestCases = result.PassedTestCases
+	sub.ExecutionTimeMs = result.ExecutionTimeMs
 
 	// 🌟 關鍵修正：讓前端拿得到 "1/1" 字串
 	sub.TestCases = fmt.Sprintf("%d/%d", result.PassedTestCases, sub.TotalTestCases)

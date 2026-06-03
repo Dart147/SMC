@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -97,9 +98,12 @@ func (r *ProcessRunner) Run(ctx context.Context, prob domain.Problem, code, lang
 
 	passed := 0
 	var lastOutput string
+	totalMs := 0
 	for i, tc := range prob.TestCases {
 		result, ok := r.runTestCase(ctx, cfg, tmpFile.Name(), tc, i, passed, total)
+		totalMs += result.ExecutionTimeMs
 		if !ok {
+			result.ExecutionTimeMs = totalMs
 			return result
 		}
 		lastOutput = result.Output
@@ -111,6 +115,7 @@ func (r *ProcessRunner) Run(ctx context.Context, prob domain.Problem, code, lang
 		Output:          lastOutput,
 		PassedTestCases: passed,
 		TotalTestCases:  total,
+		ExecutionTimeMs: totalMs,
 	}
 }
 
@@ -147,7 +152,9 @@ func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, file st
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
+	start := time.Now()
 	runErr := cmd.Run()
+	elapsedMs := int(time.Since(start).Milliseconds())
 
 	if execCtx.Err() == context.DeadlineExceeded {
 		return Result{
@@ -155,6 +162,7 @@ func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, file st
 			Error:           fmt.Sprintf("test case %d timed out", idx+1),
 			PassedTestCases: passed,
 			TotalTestCases:  total,
+			ExecutionTimeMs: elapsedMs,
 		}, false
 	}
 
@@ -164,6 +172,7 @@ func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, file st
 			Error:           fmt.Sprintf("test case %d exceeded memory limit", idx+1),
 			PassedTestCases: passed,
 			TotalTestCases:  total,
+			ExecutionTimeMs: elapsedMs,
 		}, false
 	}
 
@@ -174,6 +183,7 @@ func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, file st
 			Error:           strings.TrimSpace(stderr.String()),
 			PassedTestCases: passed,
 			TotalTestCases:  total,
+			ExecutionTimeMs: elapsedMs,
 		}, false
 	}
 
@@ -188,8 +198,9 @@ func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, file st
 			Error:                fmt.Sprintf("test case %d failed", idx+1),
 			PassedTestCases:      passed,
 			TotalTestCases:       total,
+			ExecutionTimeMs:      elapsedMs,
 		}, false
 	}
 
-	return Result{Output: stdout.String()}, true
+	return Result{Output: stdout.String(), ExecutionTimeMs: elapsedMs}, true
 }

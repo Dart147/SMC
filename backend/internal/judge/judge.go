@@ -23,6 +23,7 @@ type Result struct {
 	Error                string
 	PassedTestCases      int
 	TotalTestCases       int
+	ExecutionTimeMs      int // total wall-clock time across all executed test cases
 }
 
 // Judge wraps a Runner with a semaphore to cap concurrent executions.
