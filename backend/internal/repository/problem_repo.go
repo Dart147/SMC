@@ -128,3 +128,78 @@ func (r *ProblemRepo) getTestCasesByProblemID(pID int) []domain.TestCase {
 	}
 	return tcs
 }
+
+// ListAssigned 回傳指定考生被 assign 的所有題目
+func (r *ProblemRepo) ListAssigned(userID string) []domain.Problem {
+	query := `
+		SELECT p.id, p.title, p.difficulty, p.description
+		FROM problems p
+		INNER JOIN user_problem_assignments upa ON p.id = upa.problem_id
+		WHERE upa.user_id = $1
+		ORDER BY p.id ASC`
+	rows, err := r.db.Query(query, userID)
+	if err != nil {
+		return []domain.Problem{}
+	}
+	defer func() { _ = rows.Close() }()
+
+	var problems []domain.Problem
+	for rows.Next() {
+		var p domain.Problem
+		var diff sql.NullString
+		var idStr string
+		if err := rows.Scan(&idStr, &p.Title, &diff, &p.Description); err != nil {
+			continue
+		}
+		p.ID, _ = strconv.Atoi(idStr)
+		p.Difficulty = diff.String
+		p.TestCases = r.getTestCasesByProblemID(p.ID)
+		problems = append(problems, p)
+	}
+	if problems == nil {
+		return []domain.Problem{}
+	}
+	return problems
+}
+
+// Assign 將一道題目指派給某位考生
+func (r *ProblemRepo) Assign(userID, problemID string) error {
+	_, err := r.db.Exec(
+		`INSERT INTO user_problem_assignments (user_id, problem_id) VALUES ($1, $2) ON CONFLICT (user_id, problem_id) DO NOTHING`,
+		userID, problemID,
+	)
+	return err
+}
+
+// Unassign 取消某位考生的題目指派
+func (r *ProblemRepo) Unassign(userID, problemID string) error {
+	_, err := r.db.Exec(
+		`DELETE FROM user_problem_assignments WHERE user_id = $1 AND problem_id = $2`,
+		userID, problemID,
+	)
+	return err
+}
+
+// GetAssignedProblemIDs 回傳某位考生被指派的所有題目 ID 字串
+func (r *ProblemRepo) GetAssignedProblemIDs(userID string) []string {
+	rows, err := r.db.Query(
+		`SELECT problem_id FROM user_problem_assignments WHERE user_id = $1 ORDER BY problem_id ASC`,
+		userID,
+	)
+	if err != nil {
+		return []string{}
+	}
+	defer func() { _ = rows.Close() }()
+
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err == nil {
+			ids = append(ids, id)
+		}
+	}
+	if ids == nil {
+		return []string{}
+	}
+	return ids
+}

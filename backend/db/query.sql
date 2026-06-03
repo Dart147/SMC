@@ -132,3 +132,25 @@ SELECT
 FROM submissions s
 JOIN users u ON s.user_id = u.id
 WHERE s.id = $1;
+
+-- name: AssignProblem :exec
+INSERT INTO user_problem_assignments (user_id, problem_id)
+VALUES ($1, $2)
+ON CONFLICT (user_id, problem_id) DO NOTHING;
+
+-- name: UnassignProblem :exec
+DELETE FROM user_problem_assignments
+WHERE user_id = $1 AND problem_id = $2;
+
+-- name: GetAssignedProblems :many
+SELECT p.id, p.title, p.difficulty, p.description
+FROM problems p
+INNER JOIN user_problem_assignments upa ON p.id = upa.problem_id
+WHERE upa.user_id = $1
+ORDER BY p.id ASC;
+
+-- name: GetAssignedProblemIDs :many
+SELECT problem_id
+FROM user_problem_assignments
+WHERE user_id = $1
+ORDER BY problem_id ASC;
