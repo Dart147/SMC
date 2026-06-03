@@ -23,7 +23,10 @@ describe("useSubmissionsStore", () => {
 
   it("fetchHistory populates history and clears loading on success", async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
-      data: [{ id: "1", status: "Accepted" }, { id: "2", status: "Wrong Answer" }],
+      data: [
+        { id: "1", status: "Accepted" },
+        { id: "2", status: "Wrong Answer" },
+      ],
     });
 
     const { result } = renderHook(() => useSubmissionsStore());

@@ -7,7 +7,12 @@ export function SubmissionsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [reportId, setReportId] = useState<string | null>(null);
   const location = useLocation();
-  const { history: submissions, isLoading: loading, fetchHistory, pollUntilTerminal } = useSubmissionsStore();
+  const {
+    history: submissions,
+    isLoading: loading,
+    fetchHistory,
+    pollUntilTerminal,
+  } = useSubmissionsStore();
 
   const latestId: string | undefined = location.state?.submissionId;
   const stillPending: boolean = location.state?.stillPending ?? false;
