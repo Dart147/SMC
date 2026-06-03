@@ -22,6 +22,8 @@ dist-ssr
 .claude/settings.local.json
 .gitconfig-temp
 .claude/
+.agents/
+skills-lock.json
 CLAUDE.md
 
 # Test artifacts
@@ -40,3 +42,4 @@ test-results/
 *.sw?
 
 postgres_data/
+docs/

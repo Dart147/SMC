@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -131,18 +132,25 @@ func (r *DockerRunner) Run(ctx context.Context, prob domain.Problem, code, langu
 	}
 
 	passed := 0
+	var lastOutput string
+	totalMs := 0
 	for i, tc := range prob.TestCases {
 		result, ok := r.runTestCase(ctx, cfg, tmpFile.Name(), tc, i, passed, total)
+		totalMs += result.ExecutionTimeMs
 		if !ok {
+			result.ExecutionTimeMs = totalMs
 			return result
 		}
+		lastOutput = result.Output
 		passed++
 	}
 
 	return Result{
 		Status:          domain.StatusAccepted,
+		Output:          lastOutput,
 		PassedTestCases: passed,
 		TotalTestCases:  total,
+		ExecutionTimeMs: totalMs,
 	}
 }
 
@@ -175,7 +183,9 @@ func (r *DockerRunner) runTestCase(ctx context.Context, cfg dockerLangConfig, fi
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
+	start := time.Now()
 	runErr := cmd.Run()
+	elapsedMs := int(time.Since(start).Milliseconds())
 
 	if execCtx.Err() == context.DeadlineExceeded {
 		return Result{
@@ -183,6 +193,7 @@ func (r *DockerRunner) runTestCase(ctx context.Context, cfg dockerLangConfig, fi
 			Error:           fmt.Sprintf("test case %d timed out", idx+1),
 			PassedTestCases: passed,
 			TotalTestCases:  total,
+			ExecutionTimeMs: elapsedMs,
 		}, false
 	}
 
@@ -193,6 +204,7 @@ func (r *DockerRunner) runTestCase(ctx context.Context, cfg dockerLangConfig, fi
 			Error:           strings.TrimSpace(stderr.String()),
 			PassedTestCases: passed,
 			TotalTestCases:  total,
+			ExecutionTimeMs: elapsedMs,
 		}, false
 	}
 
@@ -200,16 +212,18 @@ func (r *DockerRunner) runTestCase(ctx context.Context, cfg dockerLangConfig, fi
 	expected := strings.TrimRight(tc.ExpectedOutput, "\n\r ")
 	if actual != expected {
 		return Result{
-			Status:          domain.StatusWrongAnswer,
-			Output:          stdout.String(),
-			ExpectedOutput:  tc.ExpectedOutput,
-			Error:           fmt.Sprintf("test case %d failed", idx+1),
-			PassedTestCases: passed,
-			TotalTestCases:  total,
+			Status:               domain.StatusWrongAnswer,
+			Output:               stdout.String(),
+			ExpectedOutput:       tc.ExpectedOutput,
+			ExpectedOutputHidden: tc.IsHidden,
+			Error:                fmt.Sprintf("test case %d failed", idx+1),
+			PassedTestCases:      passed,
+			TotalTestCases:       total,
+			ExecutionTimeMs:      elapsedMs,
 		}, false
 	}
 
-	return Result{}, true
+	return Result{Output: stdout.String(), ExecutionTimeMs: elapsedMs}, true
 }
 
 // dockerArgs builds the argument list for `docker run` with full isolation flags.

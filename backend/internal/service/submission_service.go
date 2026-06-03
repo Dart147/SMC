@@ -82,21 +82,21 @@ func (s *SubmissionService) RunNext(ctx context.Context) bool {
 		return true
 	}
 
-	s.judgeAsync(*sub, prob)
+	s.judgeAndUpdate(*sub, prob)
 	return true
 }
 
-func (s *SubmissionService) judgeAsync(sub domain.Submission, prob domain.Problem) {
+func (s *SubmissionService) judgeAndUpdate(sub domain.Submission, prob domain.Problem) {
 	result := s.judge.Run(context.Background(), prob, sub.Code, sub.Language)
 
 	sub.Status = result.Status
 	sub.Output = result.Output
-	sub.ExpectedOutput = result.ExpectedOutput
+	if !result.ExpectedOutputHidden {
+		sub.ExpectedOutput = result.ExpectedOutput
+	}
 	sub.Error = result.Error
 	sub.PassedTestCases = result.PassedTestCases
-
-	// 🌟 關鍵修正：讓前端拿得到 "1/1" 字串
-	sub.TestCases = fmt.Sprintf("%d/%d", result.PassedTestCases, sub.TotalTestCases)
+	sub.ExecutionTimeMs = result.ExecutionTimeMs
 
 	baseScore := 0
 	if sub.TotalTestCases > 0 {
@@ -156,6 +156,29 @@ func randomID() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
+}
+
+// RunSample judges code against the first sample test case only. No DB write.
+func (s *SubmissionService) RunSample(ctx context.Context, problemID, code, language string) (judge.Result, error) {
+	prob, ok := s.problemRepo.GetByID(problemID)
+	if !ok {
+		return judge.Result{}, fmt.Errorf("problem %q not found", problemID)
+	}
+	sample, ok := prob.FirstSample()
+	if !ok {
+		return judge.Result{}, fmt.Errorf("problem %q has no sample test cases", problemID)
+	}
+	// Run against a synthetic problem containing only the sample case.
+	sampleProb := domain.Problem{
+		ID:        prob.ID,
+		TestCases: []domain.TestCase{sample},
+	}
+	result := s.judge.Run(ctx, sampleProb, code, language)
+	// Always carry the expected output so the UI can show it on Accepted too.
+	if result.ExpectedOutput == "" {
+		result.ExpectedOutput = sample.ExpectedOutput
+	}
+	return result, nil
 }
 
 func (s *SubmissionService) List() []domain.Submission {

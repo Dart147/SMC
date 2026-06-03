@@ -6,7 +6,7 @@ An Online Code Test platform: interviewees take coding tests in the browser, and
 
 ## Quick start
 
-You need `backend/.env` first
+Create `.env` at the repo root before starting the stack (`make smc-up` reads it). Copy the same file to `backend/.env` if you also run the Go backend directly without Docker.
 
 ```bash
 make smc-up      # build + start postgres → backend → frontend
@@ -14,11 +14,7 @@ make ps          # confirm containers are healthy
 make healthz     # probe http://localhost:8080/api/healthz
 ```
 
-Seed problems on first run:
-
-```bash
-docker exec -i smc-postgres psql -U admin -d smcdb < backend/db/test_data.sql
-```
+Problems and test cases are seeded automatically on first run via `db/init.sql`.
 
 ### Make targets
 

@@ -11,6 +11,25 @@ import (
 type contextKey string
 
 const UserIDKey contextKey = "userID"
+const RoleKey contextKey = "role"
+
+// RequireRole returns a middleware that allows only requests whose role
+// (injected by RequireAuth) matches one of the given roles.
+// Must be composed after RequireAuth.
+func RequireRole(roles ...string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			role, _ := r.Context().Value(RoleKey).(string)
+			for _, allowed := range roles {
+				if role == allowed {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+			http.Error(w, "Forbidden", http.StatusForbidden)
+		})
+	}
+}
 
 // RequireAuth 是一個 Middleware，負責攔截請求、驗證 JWT，並將 userID 注入 Context
 func RequireAuth(secretKey []byte) func(http.Handler) http.Handler {
@@ -61,9 +80,10 @@ func RequireAuth(secretKey []byte) func(http.Handler) http.Handler {
 
 			// 🌟 6. 最重要的一步：將 userID 放入 Request Context 供後續的 Handler 使用
 			// 注意這裡的 key "userID" 必須與 exam_handler.go 裡取出的字串完全一致！
+			role, _ := claims["role"].(string)
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
+			ctx = context.WithValue(ctx, RoleKey, role)
 
-			// 帶著新的 Context 繼續執行下一個 Handler
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

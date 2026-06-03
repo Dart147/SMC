@@ -46,6 +46,7 @@ RETURNING submissions.id,
           submissions.status,
           submissions.passed_test_cases,
           submissions.total_test_cases,
+          COALESCE(submissions.execution_time_ms, 0) as execution_time_ms,
           COALESCE(submissions.output, '') as output,
           COALESCE(submissions.expected_output, '') as expected_output,
           COALESCE(submissions.error, '') as error
@@ -60,6 +61,7 @@ type ClaimNextPendingSubmissionRow struct {
 	Status          sql.NullString
 	PassedTestCases sql.NullInt32
 	TotalTestCases  sql.NullInt32
+	ExecutionTimeMs int32
 	Output          string
 	ExpectedOutput  string
 	Error           string
@@ -77,6 +79,7 @@ func (q *Queries) ClaimNextPendingSubmission(ctx context.Context) (ClaimNextPend
 		&i.Status,
 		&i.PassedTestCases,
 		&i.TotalTestCases,
+		&i.ExecutionTimeMs,
 		&i.Output,
 		&i.ExpectedOutput,
 		&i.Error,
@@ -309,7 +312,8 @@ func (q *Queries) GetCandidateScores(ctx context.Context) ([]GetCandidateScoresR
 }
 
 const getLatestSubmissionByProblem = `-- name: GetLatestSubmissionByProblem :one
-SELECT id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases, 
+SELECT id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases,
+       COALESCE(execution_time_ms, 0) as execution_time_ms,
        COALESCE(output, '') as output, COALESCE(expected_output, '') as expected_output, COALESCE(error, '') as error
 FROM submissions
 WHERE problem_id = $1
@@ -326,6 +330,7 @@ type GetLatestSubmissionByProblemRow struct {
 	Status          sql.NullString
 	PassedTestCases sql.NullInt32
 	TotalTestCases  sql.NullInt32
+	ExecutionTimeMs int32
 	Output          string
 	ExpectedOutput  string
 	Error           string
@@ -343,6 +348,7 @@ func (q *Queries) GetLatestSubmissionByProblem(ctx context.Context, problemID sq
 		&i.Status,
 		&i.PassedTestCases,
 		&i.TotalTestCases,
+		&i.ExecutionTimeMs,
 		&i.Output,
 		&i.ExpectedOutput,
 		&i.Error,
@@ -374,7 +380,8 @@ func (q *Queries) GetProblemByID(ctx context.Context, id string) (GetProblemByID
 }
 
 const getSubmissionByID = `-- name: GetSubmissionByID :one
-SELECT id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases, 
+SELECT id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases,
+       COALESCE(execution_time_ms, 0) as execution_time_ms,
        COALESCE(output, '') as output, COALESCE(expected_output, '') as expected_output, COALESCE(error, '') as error
 FROM submissions
 WHERE id = $1
@@ -389,6 +396,7 @@ type GetSubmissionByIDRow struct {
 	Status          sql.NullString
 	PassedTestCases sql.NullInt32
 	TotalTestCases  sql.NullInt32
+	ExecutionTimeMs int32
 	Output          string
 	ExpectedOutput  string
 	Error           string
@@ -406,6 +414,7 @@ func (q *Queries) GetSubmissionByID(ctx context.Context, id string) (GetSubmissi
 		&i.Status,
 		&i.PassedTestCases,
 		&i.TotalTestCases,
+		&i.ExecutionTimeMs,
 		&i.Output,
 		&i.ExpectedOutput,
 		&i.Error,
@@ -557,7 +566,8 @@ func (q *Queries) ListProblems(ctx context.Context) ([]ListProblemsRow, error) {
 }
 
 const listSubmissions = `-- name: ListSubmissions :many
-SELECT id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases, 
+SELECT id, problem_id, user_id, code, language, status, passed_test_cases, total_test_cases,
+       COALESCE(execution_time_ms, 0) as execution_time_ms,
        COALESCE(output, '') as output, COALESCE(expected_output, '') as expected_output, COALESCE(error, '') as error
 FROM submissions
 ORDER BY created_at DESC
@@ -572,6 +582,7 @@ type ListSubmissionsRow struct {
 	Status          sql.NullString
 	PassedTestCases sql.NullInt32
 	TotalTestCases  sql.NullInt32
+	ExecutionTimeMs int32
 	Output          string
 	ExpectedOutput  string
 	Error           string
@@ -595,6 +606,7 @@ func (q *Queries) ListSubmissions(ctx context.Context) ([]ListSubmissionsRow, er
 			&i.Status,
 			&i.PassedTestCases,
 			&i.TotalTestCases,
+			&i.ExecutionTimeMs,
 			&i.Output,
 			&i.ExpectedOutput,
 			&i.Error,
