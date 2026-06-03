@@ -8,7 +8,6 @@ on:
   pull_request:
     branches:
       - main
-    types: [opened, reopened, ready_for_review]
 
 concurrency: # 
   group: smc-preview-${{ github.event.number }}-frontend # Groups these jobs by the PR number
@@ -117,6 +116,11 @@ jobs:
   Deploy:
     needs: [Build-and-Push]
     runs-on: ubuntu-latest
+    # Serialize the two snapshot Deploy jobs (frontend + backend) for one PR
+    # so their webhooks don't race on the shared smc-pr-N Compose project.
+    concurrency:
+      group: smc-preview-${{ github.event.number }}-deploy
+      cancel-in-progress: false # queues the second instead of killing it
     steps:
       - name: Build deploy payload
         id: payload
@@ -125,12 +129,14 @@ jobs:
           BRANCH: ${{ github.head_ref || github.ref_name }}
           COMMIT: ${{ github.sha }}
           PR_NUMBER: ${{ github.event.number }}
+          HOST_IP: ${{ secrets.SMC_HOST_IP }}
         run: |
           jq -n \
             --arg repo "$REPO" \
             --arg branch "$BRANCH" \
             --arg commit "$COMMIT" \
             --arg pr_number "$PR_NUMBER" \
+            --arg host_ip "$HOST_IP" \
             '{
               source: {
                 title:     "SMC",
@@ -150,14 +156,14 @@ jobs:
               },
               post: {
                 setup_domain: {
-                  enable: false,
+                  enable: true,
                   title:  "Endpoint",
-                  name:   "pr-${{ github.event.number }}.showmeyourcode.online",
-                  value:  ""
+                  name:   "pr-\($pr_number).showmeyourcode.online",
+                  value:  $host_ip
                 },
                 notify_discord: {
                   enable:      true,
-                  notify_only: true,
+                  notify_only: false,
                   channel:     "smc-activity"
                 }
               }
