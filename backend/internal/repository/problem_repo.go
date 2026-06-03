@@ -110,7 +110,7 @@ func (r *ProblemRepo) GetByID(id string) (domain.Problem, bool) {
 }
 
 func (r *ProblemRepo) getTestCasesByProblemID(pID int) []domain.TestCase {
-	query := `SELECT input, expected_output FROM test_cases WHERE problem_id = $1`
+	query := `SELECT input, expected_output, COALESCE(is_hidden, false) FROM test_cases WHERE problem_id = $1`
 	rows, err := r.db.Query(query, pID)
 	if err != nil {
 		return []domain.TestCase{}
@@ -120,7 +120,7 @@ func (r *ProblemRepo) getTestCasesByProblemID(pID int) []domain.TestCase {
 	var tcs []domain.TestCase
 	for rows.Next() {
 		var tc domain.TestCase
-		if err := rows.Scan(&tc.Input, &tc.ExpectedOutput); err == nil {
+		if err := rows.Scan(&tc.Input, &tc.ExpectedOutput, &tc.IsHidden); err == nil {
 			tc.Input = strings.ReplaceAll(tc.Input, `\n`, "\n")
 			tc.ExpectedOutput = strings.ReplaceAll(tc.ExpectedOutput, `\n`, "\n")
 			tcs = append(tcs, tc)

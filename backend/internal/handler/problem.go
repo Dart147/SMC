@@ -28,7 +28,12 @@ func (h *ProblemHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 func (h *ProblemHandler) List(w http.ResponseWriter, r *http.Request) {
 	setHeaders(w)
-	_ = json.NewEncoder(w).Encode(h.svc.List())
+	all := h.svc.List()
+	display := make([]domain.Problem, len(all))
+	for i, p := range all {
+		display[i] = p.ForDisplay()
+	}
+	_ = json.NewEncoder(w).Encode(display)
 }
 
 func (h *ProblemHandler) GetByID(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +43,7 @@ func (h *ProblemHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
-	_ = json.NewEncoder(w).Encode(p)
+	_ = json.NewEncoder(w).Encode(p.ForDisplay())
 }
 
 func setHeaders(w http.ResponseWriter) {

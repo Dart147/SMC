@@ -91,7 +91,9 @@ func (s *SubmissionService) judgeAsync(sub domain.Submission, prob domain.Proble
 
 	sub.Status = result.Status
 	sub.Output = result.Output
-	sub.ExpectedOutput = result.ExpectedOutput
+	if !result.ExpectedOutputHidden {
+		sub.ExpectedOutput = result.ExpectedOutput
+	}
 	sub.Error = result.Error
 	sub.PassedTestCases = result.PassedTestCases
 
@@ -156,6 +158,25 @@ func randomID() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
+}
+
+// RunSample judges code against the first sample test case only. No DB write.
+func (s *SubmissionService) RunSample(ctx context.Context, problemID, code, language string) (judge.Result, error) {
+	prob, ok := s.problemRepo.GetByID(problemID)
+	if !ok {
+		return judge.Result{}, fmt.Errorf("problem %q not found", problemID)
+	}
+	sample, ok := prob.FirstSample()
+	if !ok {
+		return judge.Result{}, fmt.Errorf("problem %q has no sample test cases", problemID)
+	}
+	// Run against a synthetic problem containing only the sample case.
+	sampleProb := domain.Problem{
+		ID:        prob.ID,
+		TestCases: []domain.TestCase{sample},
+	}
+	result := s.judge.Run(ctx, sampleProb, code, language)
+	return result, nil
 }
 
 func (s *SubmissionService) List() []domain.Submission {

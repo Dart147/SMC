@@ -125,6 +125,7 @@ func main() {
 	mux.Handle("POST /api/problems", adminOnly(http.HandlerFunc(problemH.Create)))
 
 	// 提交路由 (需登入)
+	mux.Handle("POST /api/run", authMiddleware(http.HandlerFunc(submissionH.RunSample)))
 	mux.Handle("GET /api/submissions", authMiddleware(http.HandlerFunc(submissionH.List)))
 	mux.Handle("GET /api/submissions/{id}", authMiddleware(http.HandlerFunc(submissionH.GetByID)))
 	mux.Handle("GET /api/submissions/latest", authMiddleware(http.HandlerFunc(submissionH.GetLatest)))

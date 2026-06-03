@@ -1,26 +1,48 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { Submission } from "../../types/submission";
 import { apiClient } from "../../services/api";
 import ReportModal from "../../components/Common/ReportModal";
+import { useSubmissionsStore } from "../../features/submissions/store";
 
 export function SubmissionsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [reportId, setReportId] = useState<string | null>(null);
+  const location = useLocation();
+  const { pollUntilTerminal } = useSubmissionsStore();
+
+  const latestId: string | undefined = location.state?.submissionId;
+  const stillPending: boolean = location.state?.stillPending ?? false;
+
+  const fetchHistory = async () => {
+    try {
+      const res = await apiClient.get("/submissions");
+      setSubmissions(res.data || []);
+    } catch {
+      setSubmissions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auto-expand the submission that was just navigated from
+  const didExpand = useRef(false);
+  useEffect(() => {
+    if (latestId && !didExpand.current) {
+      setExpandedId(latestId);
+      didExpand.current = true;
+    }
+  }, [latestId]);
 
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const res = await apiClient.get("/submissions");
-        setSubmissions(res.data || []);
-      } catch {
-        setSubmissions([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
+    fetchHistory();
+
+    // If the workspace timed out before the judge finished, keep polling until done
+    if (stillPending && latestId) {
+      pollUntilTerminal(latestId, fetchHistory);
+    }
   }, []);
 
   const totalScore = submissions.reduce((sum, s) => sum + (s.score ?? 0), 0);
@@ -59,7 +81,7 @@ export function SubmissionsPage() {
               return (
                 <div
                   key={sub.id}
-                  className="bg-[#1a1a1a] rounded-2xl border border-gray-800 overflow-hidden shadow-xl transition-all"
+                  className={`rounded-2xl overflow-hidden shadow-xl transition-all ${sub.id === latestId ? "bg-[#1a1f2e] border border-indigo-500/50" : "bg-[#1a1a1a] border border-gray-800"}`}
                 >
                   <div
                     onClick={() => toggle(sub.id)}
@@ -156,14 +178,25 @@ export function SubmissionsPage() {
                               {sub.output || "No output"}
                             </pre>
                           </div>
-                          <div className="space-y-2">
-                            <h3 className="text-sm font-bold text-green-400 uppercase tracking-widest">
-                              Expected Output
-                            </h3>
-                            <pre className="p-3 overflow-x-auto text-sm bg-[#1e1e1e] rounded-xl border border-gray-800 font-mono text-gray-300">
-                              {sub.expectedOutput}
-                            </pre>
-                          </div>
+                          {sub.expectedOutput ? (
+                            <div className="space-y-2">
+                              <h3 className="text-sm font-bold text-green-400 uppercase tracking-widest">
+                                Expected Output
+                              </h3>
+                              <pre className="p-3 overflow-x-auto text-sm bg-[#1e1e1e] rounded-xl border border-gray-800 font-mono text-gray-300">
+                                {sub.expectedOutput}
+                              </pre>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest">
+                                Expected Output
+                              </h3>
+                              <p className="text-xs text-gray-600 italic p-3">
+                                Hidden for this test case.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
 

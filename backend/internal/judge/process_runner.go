@@ -178,12 +178,13 @@ func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, file st
 	expected := strings.TrimRight(tc.ExpectedOutput, "\n\r ")
 	if actual != expected {
 		return Result{
-			Status:          domain.StatusWrongAnswer,
-			Output:          stdout.String(),
-			ExpectedOutput:  tc.ExpectedOutput,
-			Error:           fmt.Sprintf("test case %d failed", idx+1),
-			PassedTestCases: passed,
-			TotalTestCases:  total,
+			Status:               domain.StatusWrongAnswer,
+			Output:               stdout.String(),
+			ExpectedOutput:       tc.ExpectedOutput,
+			ExpectedOutputHidden: tc.IsHidden,
+			Error:                fmt.Sprintf("test case %d failed", idx+1),
+			PassedTestCases:      passed,
+			TotalTestCases:       total,
 		}, false
 	}
 
