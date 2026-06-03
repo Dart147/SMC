@@ -22,6 +22,7 @@ dist-ssr
 .claude/settings.local.json
 .gitconfig-temp
 .claude/
+.claudeignore
 .agents/
 skills-lock.json
 CLAUDE.md

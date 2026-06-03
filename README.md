@@ -69,6 +69,24 @@ The `make deploy*` targets pull prebuilt images from Docker Hub and run them via
 | `make deploy-backend` | Same, but only the backend. |
 | `make deploy-down` | Stop the deployed stack. |
 
+### PR previews (snapshot deploys)
+
+Every pull request to `main` gets an isolated preview at
+`https://pr-<N>.showmeyourcode.online` — its own `postgres + backend +
+frontend` stack (Compose project `smc-pr-<N>`), separate from the shared
+`dev` stack. The `frontend-snapshot.yaml` / `backend-snapshot.yaml`
+workflows build the `:pr-<N>` images and POST a deploy webhook to SMC-CD,
+which runs `.deploy/snapshot/deploy.sh` on the host and registers the
+`pr-<N>` Cloudflare DNS record. `close.yaml` fires on PR close and tears
+the stack down (`.deploy/snapshot/cleanup.sh`, `docker compose down -v`)
+and removes the DNS record. Preview data is ephemeral — wiped on close.
+
+Requires the **`SMC_HOST_IP`** repo secret (the host's public IP, written
+into the new DNS record) alongside the existing `SMC_WEBHOOK_URL` /
+`SMC_DEPLOY_TOKEN`. The `dev` deploy needs no IP — it reuses the
+permanent `showmeyourcode.online` record — only ephemeral `pr-<N>`
+hostnames need one created on the fly.
+
 ## Repository layout
 
 ```
@@ -78,6 +96,9 @@ SMC/
 │   ├── internal/judge/   # Runner interface, ProcessRunner, DockerRunner
 │   ├── db/               # PostgreSQL schema + seed data
 │   └── ...
+├── .deploy/              # Per-env Compose stacks run on the host by SMC-CD
+│   ├── dev/                 # shared dev stack (merge to main)
+│   └── snapshot/            # isolated per-PR preview stack (pr-N)
 └── docker-compose.yaml   # Full stack: postgres + backend + frontend
 ```
 
