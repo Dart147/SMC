@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # Pulls the latest :dev images from Docker Hub and re-creates the stack.
 #
-# Runs inside an ephemeral clone (SMC-CD ssh.go re-clones the repo per
-# deploy and wipes it afterwards), so the gitignored root .env is not present.
-# Copy the host's stable SMC/.env into the clone root before compose up.
+# Runs inside an temp clone (SMC-CD ssh.go re-clones the repo per
+# deploy and wipes it afterwards)
 #
 # Usage:
 #   ./deploy.sh                  # pull + recreate all services
@@ -11,7 +10,7 @@
 #   ./deploy.sh backend          # pull + recreate only the backend
 #
 # Env (required):
-#   SMC_ENV_FILE  path to the stable .env on the host. Injected by SMC-CD from config.yaml
+#   SMC_ENV_FILE  path to the stable .env on the host
 
 set -euo pipefail
 

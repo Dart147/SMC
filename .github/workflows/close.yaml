@@ -1,0 +1,70 @@
+name: Close Snapshot
+
+# Tears down a PR's preview stack when the PR closes and removes the pr-N DNS record.
+
+on:
+  pull_request:
+    types:
+      - closed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smc-preview-${{ github.event.pull_request.number }}-deploy
+  cancel-in-progress: false
+
+jobs:
+  Close:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build cleanup payload
+        env:
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          COMMIT: ${{ github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          jq -n \
+            --arg repo "$REPO" \
+            --arg branch "$BRANCH" \
+            --arg commit "$COMMIT" \
+            --arg pr_number "$PR_NUMBER" \
+            '{
+              source: {
+                title:     "SMC",
+                repo:      $repo,
+                branch:    $branch,
+                commit:    $commit,
+                pr_number: $pr_number
+              },
+              method: "cleanup",
+              metadata: {
+                project_name: "SMC",
+                environment:  "snapshot",
+                component:    "frontend"
+              },
+              setup: {
+                inject_secret: { enable: false }
+              },
+              post: {
+                cleanup_domain: {
+                  enable: true,
+                  name:   "pr-\($pr_number).showmeyourcode.online"
+                },
+                notify_discord: {
+                  enable:      true,
+                  notify_only: false,
+                  channel:     "smc-activity"
+                }
+              }
+            }' > payload.json
+          echo "Payload:"
+          cat payload.json
+
+      - name: Trigger SMC-CD webhook
+        run: |
+          curl --location --fail-with-body --request POST "${{ secrets.SMC_WEBHOOK_URL }}" \
+            --header 'Content-Type: application/json' \
+            --header "x-deploy-token: ${{ secrets.SMC_DEPLOY_TOKEN }}" \
+            --data @payload.json
