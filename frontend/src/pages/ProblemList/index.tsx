@@ -39,9 +39,7 @@ export function ProblemList() {
 
         // 建立「已 Accepted」的題目 ID Set，方便 O(1) 查詢
         const accepted = new Set<string>(
-          loadedSubmissions
-            .filter((s) => s.status === "Accepted")
-            .map((s) => String(s.problemId)),
+          loadedSubmissions.filter((s) => s.status === "Accepted").map((s) => String(s.problemId)),
         );
         setAcceptedProblemIds(accepted);
       } catch {
@@ -63,9 +61,7 @@ export function ProblemList() {
   }
 
   if (error) {
-    return (
-      <div className="flex items-center justify-center h-40 text-red-400">{error}</div>
-    );
+    return <div className="flex items-center justify-center h-40 text-red-400">{error}</div>;
   }
 
   if (problems.length === 0) {
@@ -163,4 +159,3 @@ export function ProblemList() {
     </div>
   );
 }
-
