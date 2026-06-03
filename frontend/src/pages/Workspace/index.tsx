@@ -23,7 +23,7 @@ export function Workspace() {
   // 1. 取得網址列上的 problemId
   const { problemId } = useParams<{ problemId: string }>();
 
-  const { code, language, setCode, setLanguage } = useWorkspaceStore();
+  const { code, language, setCode, setLanguage, setResult } = useWorkspaceStore();
   const [theme, setTheme] = useState<Theme>("vs-dark");
 
   // 2. 從後端取得對應的題目
@@ -43,6 +43,7 @@ export function Workspace() {
     const initWorkspace = async () => {
       setLoading(true);
       setIsInitializing(true);
+      setResult(null); // clear previous problem's result when switching problems
 
       try {
         // A. 抓取題目基本描述

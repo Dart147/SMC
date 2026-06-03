@@ -176,6 +176,10 @@ func (s *SubmissionService) RunSample(ctx context.Context, problemID, code, lang
 		TestCases: []domain.TestCase{sample},
 	}
 	result := s.judge.Run(ctx, sampleProb, code, language)
+	// Always carry the expected output so the UI can show it on Accepted too.
+	if result.ExpectedOutput == "" {
+		result.ExpectedOutput = sample.ExpectedOutput
+	}
 	return result, nil
 }
 
