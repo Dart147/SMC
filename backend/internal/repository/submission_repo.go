@@ -185,7 +185,7 @@ func (r *SubmissionRepo) ListByUserID(userID string) []domain.Submission {
 		fmt.Printf("failed to query submissions by user: %v\n", err)
 		return []domain.Submission{}
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var submissions []domain.Submission
 	for rows.Next() {
