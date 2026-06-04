@@ -15,16 +15,22 @@ import (
 )
 
 type langConfig struct {
-	binary   string
-	args     []string
-	ext      string
-	compiled bool
+	binary      string
+	args        []string
+	ext         string
+	compiled    bool     // Go only: run a compile-check (go build) before test cases
+	compileArgs []string // C/C++: compiler invocation prefix; binary is compiled once and run per test case
+	extraEnv    []string // extra KEY=VALUE pairs appended to the subprocess environment
 }
 
 var langConfigs = map[string]langConfig{
-	"python":     {binary: "python3", args: nil, ext: ".py", compiled: false},
-	"javascript": {binary: "node", args: nil, ext: ".js", compiled: false},
-	"go":         {binary: "go", args: []string{"run"}, ext: ".go", compiled: true},
+	"python":     {binary: "python3", ext: ".py"},
+	"javascript": {binary: "node", ext: ".js"},
+	// GO111MODULE=off uses GOPATH mode so single-file submissions don't
+	// require a go.mod; running from os.TempDir() has no module root.
+	"go":  {binary: "go", args: []string{"run"}, ext: ".go", compiled: true, extraEnv: []string{"GO111MODULE=off"}},
+	"c":   {ext: ".c", compileArgs: []string{"gcc", "-O2", "-o"}},
+	"cpp": {ext: ".cpp", compileArgs: []string{"g++", "-O2", "-std=c++17", "-o"}},
 }
 
 // ProcessRunner executes user code as a direct subprocess. No container isolation.
@@ -90,7 +96,24 @@ func (r *ProcessRunner) Run(ctx context.Context, prob domain.Problem, code, lang
 
 	total := len(prob.TestCases)
 
-	if cfg.compiled {
+	// execBin / execArgs determine what runs per test case.
+	execBin := cfg.binary
+	execArgs := append(cfg.args, tmpFile.Name()) //nolint:gocritic
+
+	if len(cfg.compileArgs) > 0 {
+		// C/C++: compile once to a temp binary, run that binary for every test case.
+		tmpBin := tmpFile.Name() + ".out"
+		defer func() {
+			if err := os.Remove(tmpBin); err != nil && !os.IsNotExist(err) {
+				r.logger.Warn("temp binary cleanup", zap.String("path", tmpBin), zap.Error(err))
+			}
+		}()
+		if result, failed := r.compileBinary(ctx, cfg, tmpFile.Name(), tmpBin, total); failed {
+			return result
+		}
+		execBin = tmpBin
+		execArgs = nil
+	} else if cfg.compiled {
 		if result, failed := r.compileCheck(ctx, cfg, tmpFile.Name(), total); failed {
 			return result
 		}
@@ -100,7 +123,7 @@ func (r *ProcessRunner) Run(ctx context.Context, prob domain.Problem, code, lang
 	var lastOutput string
 	totalMs := 0
 	for i, tc := range prob.TestCases {
-		result, ok := r.runTestCase(ctx, cfg, tmpFile.Name(), tc, i, passed, total)
+		result, ok := r.runTestCase(ctx, cfg, execBin, execArgs, tc, i, passed, total)
 		totalMs += result.ExecutionTimeMs
 		if !ok {
 			result.ExecutionTimeMs = totalMs
@@ -119,11 +142,19 @@ func (r *ProcessRunner) Run(ctx context.Context, prob domain.Problem, code, lang
 	}
 }
 
-func (r *ProcessRunner) compileCheck(ctx context.Context, cfg langConfig, file string, total int) (Result, bool) {
+// compileBinary compiles srcFile to outFile using cfg.compileArgs.
+// compileArgs format: {compiler, flags..., "-o"} — outFile and srcFile are appended.
+func (r *ProcessRunner) compileBinary(ctx context.Context, cfg langConfig, srcFile, outFile string, total int) (Result, bool) {
 	compileCtx, cancel := context.WithTimeout(ctx, ExecutionTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(compileCtx, "go", "build", "-o", os.DevNull, file)
+	// e.g. ["gcc", "-O2", "-o"] + [outFile, srcFile] → gcc -O2 -o outFile srcFile
+	args := append(cfg.compileArgs[1:], outFile, srcFile) //nolint:gocritic
+	cmd := exec.CommandContext(compileCtx, cfg.compileArgs[0], args...)
+	cmd.Dir = os.TempDir()
+	if len(cfg.extraEnv) > 0 {
+		cmd.Env = append(os.Environ(), cfg.extraEnv...)
+	}
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -137,14 +168,38 @@ func (r *ProcessRunner) compileCheck(ctx context.Context, cfg langConfig, file s
 	return Result{}, false
 }
 
-func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, file string, tc domain.TestCase, idx, passed, total int) (Result, bool) {
+func (r *ProcessRunner) compileCheck(ctx context.Context, cfg langConfig, file string, total int) (Result, bool) {
+	compileCtx, cancel := context.WithTimeout(ctx, ExecutionTimeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(compileCtx, "go", "build", "-o", os.DevNull, file)
+	cmd.Dir = os.TempDir()
+	if len(cfg.extraEnv) > 0 {
+		cmd.Env = append(os.Environ(), cfg.extraEnv...)
+	}
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return Result{
+			Status:         domain.StatusCompileError,
+			Error:          stderr.String(),
+			TotalTestCases: total,
+		}, true
+	}
+	return Result{}, false
+}
+
+func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, execBin string, execArgs []string, tc domain.TestCase, idx, passed, total int) (Result, bool) {
 	execCtx, cancel := context.WithTimeout(ctx, ExecutionTimeout)
 	defer cancel()
 
-	args := append(cfg.args, file) //nolint:gocritic
-	cmd := exec.CommandContext(execCtx, cfg.binary, args...)
+	cmd := exec.CommandContext(execCtx, execBin, execArgs...)
 	cmd.Stdin = strings.NewReader(tc.Input)
 	cmd.Dir = os.TempDir()
+	if len(cfg.extraEnv) > 0 {
+		cmd.Env = append(os.Environ(), cfg.extraEnv...)
+	}
 
 	applyMemoryLimit(cmd, MemoryLimitBytes)
 

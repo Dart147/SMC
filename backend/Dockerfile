@@ -48,7 +48,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 
 # runtime
 FROM alpine:3.20 AS runtime
-RUN apk add --no-cache ca-certificates python3 nodejs docker-cli
+RUN apk add --no-cache ca-certificates python3 nodejs gcc g++ musl-dev docker-cli
 
 WORKDIR /app
 

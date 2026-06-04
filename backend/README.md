@@ -121,7 +121,7 @@ Request body:
 
 ```
 
-Supported `language` values: `python`, `javascript`, `go`
+Supported `language` values: `python`, `javascript`, `go`, `c`, `cpp`
 
 Response (201) — immediately returns `"Pending"`:
 
@@ -205,16 +205,18 @@ When `JUDGE_BACKEND=docker`, each test case runs in a fresh container:
 
 ```
 docker run --rm \
-  --network none \        # no outbound network
-  --memory 256m \         # hard memory cap (Linux cgroups)
-  --cpus 0.5 \            # CPU quota
-  --read-only \           # immutable root filesystem
-  --tmpfs /tmp \          # writable scratch space for compilation
-  -v /tmp/smc-xxx.py:/code.py:ro \   # only the submitted file is visible
+  --network none \           # no outbound network
+  --memory 256m \            # hard memory cap (Linux cgroups)
+  --cpus 0.5 \               # CPU quota
+  --read-only \              # immutable root filesystem
+  --tmpfs /tmp \             # writable scratch space for compilation
+  -v /tmp/smc-xxx:/code_dir:ro \  # temp directory containing code.py / code.js / code.go
   python:3.12-slim \
-  python3 /code.py
+  python3 /code_dir/code.py
 
 ```
+
+> **Why a directory mount?** Binding a bare file (e.g. `-v file:/code.py`) to a path that doesn't pre-exist in the image causes Docker to create the target as a **directory** when `--read-only` is active. Python then treats `/code.py` as a package and fails with `can't find '__main__' module`. Mounting a temp directory avoids this — Docker always creates directory bind-mount targets correctly.
 
 Language → image map:
 
@@ -222,7 +224,9 @@ Language → image map:
 | --- | --- | --- |
 | `python` | `python:3.12-slim` | — |
 | `javascript` | `node:20-slim` | — |
-| `go` | `golang:1.22-alpine` | `GOPATH` and `GOCACHE` redirected to `/tmp` for compilation |
+| `go` | `golang:1.22-alpine` | `GOPATH`/`GOCACHE` → `/tmp`; `GO111MODULE=off` for single-file execution without a `go.mod` |
+| `c` | `gcc:14` | compiled with `gcc -O2`; compile+run in each container via `sh -c` |
+| `cpp` | `gcc:14` | compiled with `g++ -O2 -std=c++17`; compile+run in each container via `sh -c` |
 
 > **Deployment note:** `DockerRunner` requires the `docker` CLI binary and access to the Docker daemon socket. When running the backend on the host (`go run ./cmd/api`), this works automatically. When running inside a container, the socket must be mounted and `docker-cli` must be present in the image — see `ROADMAP.md` Part 8 and SMC-18 for the production solution (Temporal judge worker).
 
@@ -264,12 +268,7 @@ Services started:
 | `smc-backend` | 8081 | built from `./backend` |
 | `smc-frontend` | 8080 | built from `./frontend` |
 
-**Note on Database Initialization:** On the first run, `db/init.sql` creates the schema automatically. To seed problems and test cases, run:
-
-```bash
-docker exec -i smc-postgres psql -U admin -d smcdb < backend/db/test_data.sql
-
-```
+**Note on Database Initialization:** On the first run, `db/init.sql` creates the schema and seeds problems and test cases automatically. No manual step required.
 
 ### Backend only (with sandbox on host)
 
