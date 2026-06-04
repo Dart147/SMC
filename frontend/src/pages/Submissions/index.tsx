@@ -111,7 +111,6 @@ export function SubmissionsPage() {
                       >
                         Report ➔
                       </button>
-
                     </div>
                   </div>
                 </div>
