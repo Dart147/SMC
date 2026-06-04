@@ -57,7 +57,12 @@ const ReportModal: React.FC<ReportModalProps> = ({ submissionId, onClose }) => {
             className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -66,16 +71,37 @@ const ReportModal: React.FC<ReportModalProps> = ({ submissionId, onClose }) => {
         <div className="p-6 overflow-y-auto flex-1">
           {error ? (
             <div className="flex items-center gap-3 text-red-400 p-4 bg-red-950/30 rounded-xl border border-red-800/40">
-              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-5 h-5 flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               <span className="text-sm">{error}</span>
             </div>
           ) : !data ? (
             <div className="flex items-center justify-center py-20 text-slate-500 text-sm gap-2">
               <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
               Loading report...
             </div>
@@ -103,12 +129,16 @@ const ReportModal: React.FC<ReportModalProps> = ({ submissionId, onClose }) => {
               {/* Stats */}
               <div className="space-y-4">
                 {/* Integrity */}
-                <div className={`p-4 rounded-xl border ${data.warningCount > 0 ? "bg-red-950/20 border-red-800/40" : "bg-emerald-950/20 border-emerald-800/30"}`}>
+                <div
+                  className={`p-4 rounded-xl border ${data.warningCount > 0 ? "bg-red-950/20 border-red-800/40" : "bg-emerald-950/20 border-emerald-800/30"}`}
+                >
                   <p className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">
                     Integrity Check
                   </p>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <p className={`text-4xl font-black ${data.warningCount > 0 ? "text-red-400" : "text-emerald-400"}`}>
+                    <p
+                      className={`text-4xl font-black ${data.warningCount > 0 ? "text-red-400" : "text-emerald-400"}`}
+                    >
                       {data.warningCount}
                     </p>
                     <p className="text-slate-400 text-sm">violations</p>
@@ -122,15 +152,18 @@ const ReportModal: React.FC<ReportModalProps> = ({ submissionId, onClose }) => {
 
                 {/* Score */}
                 <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
-                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Score</p>
+                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">
+                    Score
+                  </p>
                   <p className="text-4xl font-black text-indigo-400 mt-2">
-                    {data.score}{" "}
-                    <span className="text-base text-slate-600 font-normal">/ 100</span>
+                    {data.score} <span className="text-base text-slate-600 font-normal">/ 100</span>
                   </p>
                   <div className="mt-3 pt-3 border-t border-slate-700/50">
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">Status</span>
-                      <span className={`font-bold ${isAccepted ? "text-emerald-400" : "text-amber-400"}`}>
+                      <span
+                        className={`font-bold ${isAccepted ? "text-emerald-400" : "text-amber-400"}`}
+                      >
                         {data.status}
                       </span>
                     </div>

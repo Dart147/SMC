@@ -15,7 +15,13 @@ interface SelectProps {
   className?: string;
 }
 
-export function Select({ options, value, onChange, placeholder = "Select…", className = "" }: SelectProps) {
+export function Select({
+  options,
+  value,
+  onChange,
+  placeholder = "Select…",
+  className = "",
+}: SelectProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 

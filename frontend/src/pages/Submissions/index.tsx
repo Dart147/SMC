@@ -46,8 +46,7 @@ export function SubmissionsPage() {
             </span>
             <span className="text-slate-700">·</span>
             <span className="text-slate-500 text-sm">
-              Total score:{" "}
-              <span className="text-indigo-400 font-semibold">{totalScore} pts</span>
+              Total score: <span className="text-indigo-400 font-semibold">{totalScore} pts</span>
             </span>
           </div>
         </div>
@@ -55,15 +54,36 @@ export function SubmissionsPage() {
         {loading ? (
           <div className="flex items-center justify-center py-20 text-slate-500 text-sm gap-2">
             <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
             </svg>
             Loading results...
           </div>
         ) : submissions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-600 gap-3">
-            <svg className="w-12 h-12 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            <svg
+              className="w-12 h-12 text-slate-800"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
             </svg>
             <p className="text-sm">No submissions yet. Write some code and submit!</p>
           </div>
@@ -71,12 +91,24 @@ export function SubmissionsPage() {
           <>
             {/* Column headers */}
             <div className="grid grid-cols-[1fr_140px_100px_90px_100px_120px] gap-4 px-5 mb-2">
-              <span className="text-[10px] uppercase tracking-wider text-slate-600 font-bold">Problem</span>
-              <span className="text-[10px] uppercase tracking-wider text-slate-600 font-bold text-center">Status</span>
-              <span className="text-[10px] uppercase tracking-wider text-slate-600 font-bold text-center">Test Cases</span>
-              <span className="text-[10px] uppercase tracking-wider text-slate-600 font-bold text-center">Score</span>
-              <span className="text-[10px] uppercase tracking-wider text-slate-600 font-bold text-center">Run Time</span>
-              <span className="text-[10px] uppercase tracking-wider text-slate-600 font-bold text-right">Action</span>
+              <span className="text-[10px] uppercase tracking-wider text-slate-600 font-bold">
+                Problem
+              </span>
+              <span className="text-[10px] uppercase tracking-wider text-slate-600 font-bold text-center">
+                Status
+              </span>
+              <span className="text-[10px] uppercase tracking-wider text-slate-600 font-bold text-center">
+                Test Cases
+              </span>
+              <span className="text-[10px] uppercase tracking-wider text-slate-600 font-bold text-center">
+                Score
+              </span>
+              <span className="text-[10px] uppercase tracking-wider text-slate-600 font-bold text-center">
+                Run Time
+              </span>
+              <span className="text-[10px] uppercase tracking-wider text-slate-600 font-bold text-right">
+                Action
+              </span>
             </div>
 
             <div className="space-y-2">
@@ -98,12 +130,16 @@ export function SubmissionsPage() {
                         <span className="font-semibold text-slate-100 text-sm truncate block">
                           {sub.problemTitle || `Problem ${sub.problemId}`}
                         </span>
-                        <span className="text-[11px] text-slate-500 mt-0.5 block">{sub.language}</span>
+                        <span className="text-[11px] text-slate-500 mt-0.5 block">
+                          {sub.language}
+                        </span>
                       </div>
 
                       {/* Status */}
                       <div className="flex justify-center">
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-md border ${bg} ${color}`}>
+                        <span
+                          className={`text-xs font-bold px-2.5 py-1 rounded-md border ${bg} ${color}`}
+                        >
                           {sub.status}
                         </span>
                       </div>
@@ -117,7 +153,9 @@ export function SubmissionsPage() {
 
                       {/* Score */}
                       <div className="text-center">
-                        <span className="font-semibold text-indigo-400 text-sm">{sub.score ?? 0}</span>
+                        <span className="font-semibold text-indigo-400 text-sm">
+                          {sub.score ?? 0}
+                        </span>
                         <span className="text-slate-600 text-xs"> pts</span>
                       </div>
 

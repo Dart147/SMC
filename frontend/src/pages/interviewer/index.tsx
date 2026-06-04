@@ -189,7 +189,12 @@ const InterviewerDashboard: React.FC = () => {
       label: "Problem Bank",
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+          />
         </svg>
       ),
       onClick: fetchProblems,
@@ -199,7 +204,12 @@ const InterviewerDashboard: React.FC = () => {
       label: "Assign Problems",
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+          />
         </svg>
       ),
       onClick: openAssignTab,
@@ -227,7 +237,12 @@ const InterviewerDashboard: React.FC = () => {
                 className="w-full flex items-center gap-2 justify-center font-semibold py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm transition-all shadow-lg shadow-indigo-900/20 cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
                 </svg>
                 View Submissions
               </button>
@@ -251,8 +266,12 @@ const InterviewerDashboard: React.FC = () => {
               </button>
               {candidateCreds && (
                 <div className="mt-3 p-3 bg-slate-800 rounded-lg border border-slate-700 text-xs font-mono text-indigo-300 space-y-1">
-                  <div><span className="text-slate-500">Account:</span> {candidateCreds.acc}</div>
-                  <div><span className="text-slate-500">Password:</span> {candidateCreds.pw}</div>
+                  <div>
+                    <span className="text-slate-500">Account:</span> {candidateCreds.acc}
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Password:</span> {candidateCreds.pw}
+                  </div>
                 </div>
               )}
             </div>
@@ -291,9 +310,7 @@ const InterviewerDashboard: React.FC = () => {
                     value={selectedCandidateId ?? ""}
                     onChange={selectCandidate}
                     placeholder="— Select a candidate —"
-                    options={[
-                      ...candidates.map((c) => ({ value: c.id, label: c.username })),
-                    ]}
+                    options={[...candidates.map((c) => ({ value: c.id, label: c.username }))]}
                   />
                 </div>
 
@@ -318,10 +335,14 @@ const InterviewerDashboard: React.FC = () => {
                             }`}
                           >
                             <div className="flex items-center gap-3">
-                              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isAssigned ? "bg-indigo-400" : "bg-slate-600"}`} />
+                              <span
+                                className={`w-2 h-2 rounded-full flex-shrink-0 ${isAssigned ? "bg-indigo-400" : "bg-slate-600"}`}
+                              />
                               <div>
                                 <p className="text-slate-100 font-medium text-sm">{p.title}</p>
-                                <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ${difficultyStyle[p.difficulty] ?? "text-slate-400 border-slate-700"}`}>
+                                <span
+                                  className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ${difficultyStyle[p.difficulty] ?? "text-slate-400 border-slate-700"}`}
+                                >
                                   {p.difficulty}
                                 </span>
                               </div>
@@ -343,8 +364,18 @@ const InterviewerDashboard: React.FC = () => {
                   )
                 ) : (
                   <div className="flex flex-col items-center justify-center py-16 text-slate-600 gap-3">
-                    <svg className="w-10 h-10 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <svg
+                      className="w-10 h-10 text-slate-800"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
                     </svg>
                     <p className="text-sm">Select a candidate to manage assignments</p>
                   </div>
@@ -393,17 +424,29 @@ const InterviewerDashboard: React.FC = () => {
                         {
                           value: "Easy",
                           label: "Easy",
-                          meta: <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-emerald-950/50 text-emerald-400 border-emerald-800/40">E</span>,
+                          meta: (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-emerald-950/50 text-emerald-400 border-emerald-800/40">
+                              E
+                            </span>
+                          ),
                         },
                         {
                           value: "Medium",
                           label: "Medium",
-                          meta: <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-amber-950/50 text-amber-400 border-amber-800/40">M</span>,
+                          meta: (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-amber-950/50 text-amber-400 border-amber-800/40">
+                              M
+                            </span>
+                          ),
                         },
                         {
                           value: "Hard",
                           label: "Hard",
-                          meta: <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-red-950/50 text-red-400 border-red-800/40">H</span>,
+                          meta: (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-red-950/50 text-red-400 border-red-800/40">
+                              H
+                            </span>
+                          ),
                         },
                       ]}
                     />
@@ -471,8 +514,12 @@ const InterviewerDashboard: React.FC = () => {
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="min-w-0">
-                          <div className="text-slate-100 font-semibold text-sm truncate">{p.title}</div>
-                          <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border mt-1 inline-block ${difficultyStyle[p.difficulty] ?? "text-slate-400 border-slate-700"}`}>
+                          <div className="text-slate-100 font-semibold text-sm truncate">
+                            {p.title}
+                          </div>
+                          <span
+                            className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border mt-1 inline-block ${difficultyStyle[p.difficulty] ?? "text-slate-400 border-slate-700"}`}
+                          >
                             {p.difficulty}
                           </span>
                         </div>
@@ -499,7 +546,9 @@ const InterviewerDashboard: React.FC = () => {
             <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-3">
                 <h2 className="text-lg font-bold text-slate-50">{selectedProblem.title}</h2>
-                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${difficultyStyle[selectedProblem.difficulty] ?? "text-slate-400 border-slate-700"}`}>
+                <span
+                  className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${difficultyStyle[selectedProblem.difficulty] ?? "text-slate-400 border-slate-700"}`}
+                >
                   {selectedProblem.difficulty}
                 </span>
               </div>
@@ -508,7 +557,12 @@ const InterviewerDashboard: React.FC = () => {
                 className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -539,13 +593,17 @@ const InterviewerDashboard: React.FC = () => {
                           className="grid grid-cols-2 gap-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50"
                         >
                           <div>
-                            <p className="text-[10px] text-slate-500 font-bold mb-1.5 uppercase">Input</p>
+                            <p className="text-[10px] text-slate-500 font-bold mb-1.5 uppercase">
+                              Input
+                            </p>
                             <code className="text-indigo-300 font-mono text-xs block bg-slate-950/60 p-2.5 rounded-lg">
                               {tc.input || "N/A"}
                             </code>
                           </div>
                           <div className="border-l border-slate-700 pl-4">
-                            <p className="text-[10px] text-slate-500 font-bold mb-1.5 uppercase">Expected Output</p>
+                            <p className="text-[10px] text-slate-500 font-bold mb-1.5 uppercase">
+                              Expected Output
+                            </p>
                             <code className="text-emerald-300 font-mono text-xs block bg-slate-950/60 p-2.5 rounded-lg">
                               {tc.expected_output || tc.output || "N/A"}
                             </code>

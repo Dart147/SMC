@@ -47,8 +47,18 @@ export function DisclaimerPage() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-red-950/60 border border-red-800/60 rounded-xl flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <svg
+              className="w-5 h-5 text-red-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
             </svg>
           </div>
           <div>
@@ -66,7 +76,10 @@ export function DisclaimerPage() {
             {[
               { title: "禁止切換視窗", desc: "任何切換分頁、縮小視窗的行為皆會被系統記錄。" },
               { title: "禁止解除全螢幕", desc: "請勿按下 Esc 鍵退出全螢幕。" },
-              { title: "停用右鍵與剪貼簿", desc: "滑鼠右鍵、複製 (Ctrl+C) 與貼上 (Ctrl+V) 功能皆已關閉。" },
+              {
+                title: "停用右鍵與剪貼簿",
+                desc: "滑鼠右鍵、複製 (Ctrl+C) 與貼上 (Ctrl+V) 功能皆已關閉。",
+              },
             ].map((rule, i) => (
               <div key={i} className="flex gap-3 items-start">
                 <span className="flex-shrink-0 w-5 h-5 bg-red-950/60 border border-red-800/50 rounded text-red-400 text-[10px] font-bold flex items-center justify-center mt-0.5">
@@ -82,7 +95,8 @@ export function DisclaimerPage() {
 
           <div className="mt-4 pt-4 border-t border-red-800/30">
             <p className="text-red-400 text-sm font-semibold">
-              警告：若系統偵測到違規行為累計達 3 次，將判定為作弊，系統將立刻強制交卷並將您的帳號列為可疑名單。
+              警告：若系統偵測到違規行為累計達 3
+              次，將判定為作弊，系統將立刻強制交卷並將您的帳號列為可疑名單。
             </p>
           </div>
         </div>
