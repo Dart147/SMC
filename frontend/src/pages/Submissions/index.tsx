@@ -59,59 +59,61 @@ export function SubmissionsPage() {
                   key={sub.id}
                   className={`rounded-2xl overflow-hidden shadow-xl transition-all ${sub.id === latestId ? "bg-[#1a1f2e] border border-indigo-500/50" : "bg-[#1a1a1a] border border-gray-800"}`}
                 >
-                  <div className="flex items-center justify-between p-5">
-                    <div className="flex flex-col gap-1 w-1/3">
-                      <span className="font-mono text-lg font-bold text-indigo-400">
+                  <div className="flex items-center p-5 gap-4">
+                    {/* Problem title — takes remaining space */}
+                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                      <span className="font-mono text-lg font-bold text-indigo-400 truncate">
                         {sub.problemTitle || `Problem ${sub.problemId}`}
                       </span>
                       <span className="text-xs text-gray-500">{sub.language}</span>
                     </div>
 
-                    <div className="flex items-center justify-between w-2/3 pr-4">
-                      <div className="flex flex-col items-center">
-                        <span className="text-[10px] text-gray-500 uppercase font-bold mb-1">
-                          Status
-                        </span>
-                        <span className={`text-sm font-bold ${statusColor}`}>{sub.status}</span>
-                      </div>
-
-                      <div className="flex flex-col items-center">
-                        <span className="text-[10px] text-gray-500 uppercase font-bold mb-1">
-                          Test Cases
-                        </span>
-                        <span className="font-mono text-sm text-indigo-300">
-                          {sub.passedTestCases}/{sub.totalTestCases}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-col items-center">
-                        <span className="text-[10px] text-gray-500 uppercase font-bold mb-1">
-                          Score
-                        </span>
-                        <span className="font-bold text-blue-400">{sub.score ?? 0} pts</span>
-                      </div>
-
-                      <div className="flex flex-col items-center">
-                        <span className="text-[10px] text-gray-500 uppercase font-bold mb-1">
-                          Run Time
-                        </span>
-                        <span className="font-mono text-sm text-emerald-400">
-                          {sub.executionTimeMs != null && sub.executionTimeMs > 0
-                            ? `${sub.executionTimeMs} ms`
-                            : "—"}
-                        </span>
-                      </div>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setReportId(sub.id);
-                        }}
-                        className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 text-xs font-bold px-4 py-2 rounded-lg transition"
-                      >
-                        Report ➔
-                      </button>
+                    {/* Fixed-width columns so every row aligns regardless of text length */}
+                    <div className="flex flex-col items-center w-36 shrink-0">
+                      <span className="text-[10px] text-gray-500 uppercase font-bold mb-1">
+                        Status
+                      </span>
+                      <span className={`text-sm font-bold text-center ${statusColor}`}>
+                        {sub.status}
+                      </span>
                     </div>
+
+                    <div className="flex flex-col items-center w-24 shrink-0">
+                      <span className="text-[10px] text-gray-500 uppercase font-bold mb-1">
+                        Test Cases
+                      </span>
+                      <span className="font-mono text-sm text-indigo-300">
+                        {sub.passedTestCases}/{sub.totalTestCases}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col items-center w-20 shrink-0">
+                      <span className="text-[10px] text-gray-500 uppercase font-bold mb-1">
+                        Score
+                      </span>
+                      <span className="font-bold text-blue-400">{sub.score ?? 0} pts</span>
+                    </div>
+
+                    <div className="flex flex-col items-center w-24 shrink-0">
+                      <span className="text-[10px] text-gray-500 uppercase font-bold mb-1">
+                        Run Time
+                      </span>
+                      <span className="font-mono text-sm text-emerald-400">
+                        {sub.executionTimeMs != null && sub.executionTimeMs > 0
+                          ? `${sub.executionTimeMs} ms`
+                          : "—"}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReportId(sub.id);
+                      }}
+                      className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0"
+                    >
+                      Report ➔
+                    </button>
                   </div>
                 </div>
               );
