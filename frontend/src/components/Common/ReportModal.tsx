@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { apiClient } from "../../services/api";
 
-// 🌟 定義從後端傳回來的資料結構
 interface ReportData {
   id: string;
   username: string;
@@ -13,7 +13,6 @@ interface ReportData {
   createdAt: string;
 }
 
-// 🌟 定義組件接收的 Props 類型
 interface ReportModalProps {
   submissionId: string | null;
   onClose: () => void;
@@ -26,114 +25,144 @@ const ReportModal: React.FC<ReportModalProps> = ({ submissionId, onClose }) => {
   useEffect(() => {
     if (!submissionId) return;
 
-    // 每次開啟時先重設資料與錯誤狀態
     setData(null);
     setError(null);
 
-    fetch(`http://localhost:8080/api/submissions/${submissionId}/report`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("smc_token")}`,
-        "Content-Type": "application/json",
-      },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("無法取得報告資料");
-        return res.json();
-      })
-      .then(setData)
+    apiClient
+      .get<ReportData>(`/submissions/${submissionId}/report`)
+      .then((res) => setData(res.data))
       .catch((err) => {
         console.error(err);
-        setError(err.message);
+        setError("無法取得報告資料");
       });
   }, [submissionId]);
 
   if (!submissionId) return null;
 
+  const isAccepted = data?.status === "Accepted";
+
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-gray-900 w-full max-w-5xl rounded-2xl border border-gray-700 shadow-2xl flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-slate-900 w-full max-w-5xl rounded-2xl border border-slate-800 shadow-2xl shadow-black/60 flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900 rounded-t-2xl">
+        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between flex-shrink-0">
           <div>
-            <h2 className="text-xl font-bold text-white">面試詳細報告</h2>
+            <h2 className="text-base font-bold text-slate-50">Submission Report</h2>
             {data && (
-              <p className="text-xs text-gray-400 mt-1 font-mono">Submission ID: {submissionId}</p>
+              <p className="text-[11px] text-slate-500 font-mono mt-0.5">ID: {submissionId}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors p-2 text-2xl"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer"
           >
-            ✕
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto bg-gray-950/50">
+        <div className="p-6 overflow-y-auto flex-1">
           {error ? (
-            <div className="text-red-400 p-4 bg-red-900/20 rounded-lg border border-red-500/50">
-              ❌ 錯誤: {error}
+            <div className="flex items-center gap-3 text-red-400 p-4 bg-red-950/30 rounded-xl border border-red-800/40">
+              <svg
+                className="w-5 h-5 flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span className="text-sm">{error}</span>
             </div>
           ) : !data ? (
-            <div className="flex items-center justify-center py-20 text-blue-400 animate-pulse">
-              載入報告數據中...
+            <div className="flex items-center justify-center py-20 text-slate-500 text-sm gap-2">
+              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+              Loading report...
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* 左邊：程式碼區塊 */}
-              <div className="lg:col-span-2 space-y-4">
-                <div className="bg-black rounded-xl border border-gray-800 overflow-hidden">
-                  <div className="bg-gray-800 px-4 py-2 flex justify-between items-center">
-                    <span className="text-xs font-mono text-gray-300">
-                      {data.language.toUpperCase()}
-                    </span>
-                    <span className="text-[10px] bg-green-900/50 text-green-400 px-2 py-0.5 rounded border border-green-500/30">
-                      FINAL SUBMISSION
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              {/* Code block */}
+              <div className="lg:col-span-2">
+                <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+                  <div className="bg-slate-800/60 px-4 py-2.5 flex items-center justify-between border-b border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-mono text-slate-400 uppercase font-bold">
+                        {data.language}
+                      </span>
+                    </div>
+                    <span className="text-[10px] bg-emerald-950/50 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800/40 font-bold uppercase">
+                      Final Submission
                     </span>
                   </div>
-                  <pre className="p-6 font-mono text-green-400 text-sm leading-relaxed overflow-x-auto max-h-[500px]">
-                    {data.code || "// 無程式碼內容"}
+                  <pre className="p-5 font-mono text-emerald-400 text-sm leading-relaxed overflow-x-auto max-h-[480px]">
+                    {data.code || "// No code content"}
                   </pre>
                 </div>
               </div>
 
-              {/* 右邊：數據分析區塊 */}
+              {/* Stats */}
               <div className="space-y-4">
-                {/* 誠實度卡片 */}
+                {/* Integrity */}
                 <div
-                  className={`p-5 rounded-xl border transition-all ${data.warningCount > 0 ? "bg-red-900/20 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.1)]" : "bg-green-900/20 border-green-500/50"}`}
+                  className={`p-4 rounded-xl border ${data.warningCount > 0 ? "bg-red-950/20 border-red-800/40" : "bg-emerald-950/20 border-emerald-800/30"}`}
                 >
-                  <p className="text-xs uppercase font-black text-gray-500 tracking-widest">
-                    誠實度檢查
+                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">
+                    Integrity Check
                   </p>
                   <div className="flex items-baseline gap-2 mt-2">
                     <p
-                      className={`text-4xl font-black ${data.warningCount > 0 ? "text-red-500" : "text-green-500"}`}
+                      className={`text-4xl font-black ${data.warningCount > 0 ? "text-red-400" : "text-emerald-400"}`}
                     >
                       {data.warningCount}
                     </p>
-                    <p className="text-gray-400 text-sm font-bold">次切換警告</p>
+                    <p className="text-slate-400 text-sm">violations</p>
                   </div>
-                  <p className="mt-3 text-xs leading-relaxed text-gray-400">
+                  <p className="mt-2 text-xs text-slate-400 leading-relaxed">
                     {data.warningCount > 0
-                      ? "⚠️ 系統偵測到考生在測驗期間頻繁離開視窗，建議人工覆核代碼邏輯。"
-                      : "✅ 考生測驗過程穩定，無異常視窗切換行為。"}
+                      ? "System detected frequent window switches. Manual code review recommended."
+                      : "No abnormal behavior detected during the exam."}
                   </p>
                 </div>
 
-                {/* 評分卡片 */}
-                <div className="bg-gray-800/50 p-5 rounded-xl border border-gray-700 shadow-inner">
-                  <p className="text-xs uppercase font-black text-gray-500 tracking-widest">
-                    測驗評分
+                {/* Score */}
+                <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
+                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">
+                    Score
                   </p>
-                  <p className="text-4xl font-black text-blue-400 mt-2">
-                    {data.score} <span className="text-lg text-gray-600">/ 100</span>
+                  <p className="text-4xl font-black text-indigo-400 mt-2">
+                    {data.score} <span className="text-base text-slate-600 font-normal">/ 100</span>
                   </p>
-                  <div className="mt-4 pt-4 border-t border-gray-700 space-y-2">
+                  <div className="mt-3 pt-3 border-t border-slate-700/50">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">判定狀態</span>
+                      <span className="text-slate-500">Status</span>
                       <span
-                        className={`font-bold ${data.status === "Accepted" ? "text-green-400" : "text-orange-400"}`}
+                        className={`font-bold ${isAccepted ? "text-emerald-400" : "text-amber-400"}`}
                       >
                         {data.status}
                       </span>
@@ -141,15 +170,13 @@ const ReportModal: React.FC<ReportModalProps> = ({ submissionId, onClose }) => {
                   </div>
                 </div>
 
-                {/* 🌟 修改此處：面試者資訊區塊 */}
-                <div className="p-4 bg-gray-900 border border-gray-800 rounded-xl">
+                {/* Candidate info */}
+                <div className="p-4 bg-slate-800/30 border border-slate-700/50 rounded-xl">
                   <p className="text-[10px] text-indigo-400 uppercase font-bold tracking-wider">
-                    面試者資訊
+                    Candidate
                   </p>
-                  <p className="text-sm text-gray-200 mt-1 font-mono font-bold flex items-center gap-2">
-                    <span className="text-gray-500">帳號:</span>
-                    {/* 若後端仍然傳遞亂碼，請確保後端 API 的 username 欄位是撈取真實的帳號名稱 (如 USER-1234) */}
-                    {data.username || "未命名面試者"}
+                  <p className="text-sm text-slate-100 mt-1.5 font-mono font-semibold">
+                    {data.username || "Unknown"}
                   </p>
                 </div>
               </div>

@@ -11,7 +11,7 @@ interface JwtPayload {
 
 interface AuthState {
   token: string | null;
-  user: { id: string; role: string } | null;
+  user: { id: string; role: string; username: string } | null;
   examExpiresAt: number | null; // 🌟 新增：全域考試截止時間
   login: (credentials: { username: string; password: string }) => Promise<void>;
   logout: () => void;
@@ -26,13 +26,16 @@ export const useAuth = create<AuthState>((set) => {
     try {
       const decoded = jwtDecode<JwtPayload>(storedToken);
       if (decoded.exp * 1000 > Date.now()) {
-        initialUser = { id: decoded.sub, role: decoded.role };
+        const storedUsername = localStorage.getItem("smc_username") ?? decoded.sub;
+        initialUser = { id: decoded.sub, role: decoded.role, username: storedUsername };
         initialExpiresAt = decoded.exam_expires_at; // 🌟 初始化時回復時間
       } else {
         localStorage.removeItem("smc_token");
+        localStorage.removeItem("smc_username");
       }
     } catch (error) {
       localStorage.removeItem("smc_token");
+      localStorage.removeItem("smc_username");
     }
   }
 
@@ -48,16 +51,18 @@ export const useAuth = create<AuthState>((set) => {
       const decoded = jwtDecode<JwtPayload>(newToken);
 
       localStorage.setItem("smc_token", newToken);
+      localStorage.setItem("smc_username", credentials.username);
 
       set({
         token: newToken,
-        user: { id: decoded.sub, role: decoded.role },
+        user: { id: decoded.sub, role: decoded.role, username: credentials.username },
         examExpiresAt: decoded.exam_expires_at, // 🌟 登入成功時寫入狀態
       });
     },
 
     logout: () => {
       localStorage.removeItem("smc_token");
+      localStorage.removeItem("smc_username");
       set({ token: null, user: null, examExpiresAt: null }); // 🌟 清空
     },
   };
