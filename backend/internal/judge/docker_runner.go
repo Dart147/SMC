@@ -3,10 +3,9 @@ package judge
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -16,52 +15,46 @@ import (
 )
 
 type dockerLangConfig struct {
-	image    string
-	cmd      []string
-	ext      string
-	compiled bool
-	buildCmd []string // compile-only command run before test cases
-	extraEnv []string // extra KEY=VALUE pairs passed via -e
+	image     string
+	ext       string
+	compiled  bool
+	runSh     string // shell snippet; code is already written to /tmp/code<ext>
+	compileSh string // compile-only snippet for pre-run error check
 }
 
 var dockerLangConfigs = map[string]dockerLangConfig{
 	"python": {
 		image: "python:3.12-slim",
-		cmd:   []string{"python3", "/code_dir/code.py"},
 		ext:   ".py",
+		runSh: "python3 /tmp/code.py",
 	},
 	"javascript": {
 		image: "node:20-slim",
-		cmd:   []string{"node", "/code_dir/code.js"},
 		ext:   ".js",
+		runSh: "node /tmp/code.js",
 	},
+	// GO111MODULE=off: single-file submissions have no go.mod; GOPATH mode handles them.
+	// GOPATH/GOCACHE redirect to /tmp so the read-only root filesystem isn't touched.
 	"go": {
-		image:    "golang:1.22-alpine",
-		cmd:      []string{"go", "run", "/code_dir/code.go"},
-		ext:      ".go",
-		compiled: true,
-		buildCmd: []string{"go", "build", "-o", "/tmp/out", "/code_dir/code.go"},
-		// Go toolchain writes build cache and GOPATH under /root by default.
-		// Redirect both to /tmp so they land on the writable tmpfs mount.
-		// GO111MODULE=off uses GOPATH mode so single-file submissions don't
-		// require a go.mod, which isn't present in the isolated container.
-		extraEnv: []string{"GOPATH=/tmp/go", "GOCACHE=/tmp/go-cache", "GO111MODULE=off"},
+		image:     "golang:1.22-alpine",
+		ext:       ".go",
+		compiled:  true,
+		runSh:     "GO111MODULE=off GOPATH=/tmp/go GOCACHE=/tmp/go-cache go run /tmp/code.go",
+		compileSh: "GO111MODULE=off GOPATH=/tmp/go GOCACHE=/tmp/go-cache go build -o /tmp/out /tmp/code.go",
 	},
-	// C and C++ compile and run inside each test-case container via sh -c so
-	// the binary lives only in that container's /tmp tmpfs and is never persisted.
 	"c": {
-		image:    "gcc:14",
-		cmd:      []string{"sh", "-c", "gcc -O2 /code_dir/code.c -o /tmp/out && /tmp/out"},
-		ext:      ".c",
-		compiled: true,
-		buildCmd: []string{"sh", "-c", "gcc -O2 /code_dir/code.c -o /tmp/out"},
+		image:     "gcc:14",
+		ext:       ".c",
+		compiled:  true,
+		runSh:     "gcc -O2 /tmp/code.c -o /tmp/out && /tmp/out",
+		compileSh: "gcc -O2 /tmp/code.c -o /tmp/out",
 	},
 	"cpp": {
-		image:    "gcc:14",
-		cmd:      []string{"sh", "-c", "g++ -O2 -std=c++17 /code_dir/code.cpp -o /tmp/out && /tmp/out"},
-		ext:      ".cpp",
-		compiled: true,
-		buildCmd: []string{"sh", "-c", "g++ -O2 -std=c++17 /code_dir/code.cpp -o /tmp/out"},
+		image:     "gcc:14",
+		ext:       ".cpp",
+		compiled:  true,
+		runSh:     "g++ -O2 -std=c++17 /tmp/code.cpp -o /tmp/out && /tmp/out",
+		compileSh: "g++ -O2 -std=c++17 /tmp/code.cpp -o /tmp/out",
 	},
 }
 
@@ -77,7 +70,6 @@ func NewDockerRunner(logger *zap.Logger) *DockerRunner {
 	return r
 }
 
-// pullImages pre-pulls all language images so the first submission does not pay the pull latency.
 func (r *DockerRunner) pullImages() {
 	for lang, cfg := range dockerLangConfigs {
 		r.logger.Info("pulling sandbox image", zap.String("language", lang), zap.String("image", cfg.image))
@@ -110,33 +102,10 @@ func (r *DockerRunner) Run(ctx context.Context, prob domain.Problem, code, langu
 		}
 	}
 
-	tmpDir, err := os.MkdirTemp("", "smc-*")
-	if err != nil {
-		return Result{
-			Status:         domain.StatusRuntimeError,
-			Error:          "failed to create temp dir",
-			TotalTestCases: len(prob.TestCases),
-		}
-	}
-	defer func() {
-		if err := os.RemoveAll(tmpDir); err != nil {
-			r.logger.Warn("temp dir cleanup", zap.String("path", tmpDir), zap.Error(err))
-		}
-	}()
-
-	codeFile := filepath.Join(tmpDir, "code"+cfg.ext)
-	if err := os.WriteFile(codeFile, []byte(code), 0o444); err != nil {
-		return Result{
-			Status:         domain.StatusRuntimeError,
-			Error:          "failed to write code",
-			TotalTestCases: len(prob.TestCases),
-		}
-	}
-
 	total := len(prob.TestCases)
 
 	if cfg.compiled {
-		if result, failed := r.compileCheck(ctx, cfg, tmpDir, total); failed {
+		if result, failed := r.compileCheck(ctx, cfg, code, total); failed {
 			return result
 		}
 	}
@@ -145,7 +114,7 @@ func (r *DockerRunner) Run(ctx context.Context, prob domain.Problem, code, langu
 	var lastOutput string
 	totalMs := 0
 	for i, tc := range prob.TestCases {
-		result, ok := r.runTestCase(ctx, cfg, tmpDir, tc, i, passed, total)
+		result, ok := r.runTestCase(ctx, cfg, code, tc, i, passed, total)
 		totalMs += result.ExecutionTimeMs
 		if !ok {
 			result.ExecutionTimeMs = totalMs
@@ -164,11 +133,11 @@ func (r *DockerRunner) Run(ctx context.Context, prob domain.Problem, code, langu
 	}
 }
 
-func (r *DockerRunner) compileCheck(ctx context.Context, cfg dockerLangConfig, dir string, total int) (Result, bool) {
+func (r *DockerRunner) compileCheck(ctx context.Context, cfg dockerLangConfig, code string, total int) (Result, bool) {
 	compileCtx, cancel := context.WithTimeout(ctx, ExecutionTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(compileCtx, "docker", r.dockerArgs(cfg, dir, cfg.buildCmd)...)
+	cmd := exec.CommandContext(compileCtx, "docker", r.dockerArgs(cfg, code, cfg.compileSh)...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -182,11 +151,11 @@ func (r *DockerRunner) compileCheck(ctx context.Context, cfg dockerLangConfig, d
 	return Result{}, false
 }
 
-func (r *DockerRunner) runTestCase(ctx context.Context, cfg dockerLangConfig, dir string, tc domain.TestCase, idx, passed, total int) (Result, bool) {
+func (r *DockerRunner) runTestCase(ctx context.Context, cfg dockerLangConfig, code string, tc domain.TestCase, idx, passed, total int) (Result, bool) {
 	execCtx, cancel := context.WithTimeout(ctx, ExecutionTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(execCtx, "docker", r.dockerArgs(cfg, dir, cfg.cmd)...)
+	cmd := exec.CommandContext(execCtx, "docker", r.dockerArgs(cfg, code, cfg.runSh)...)
 	cmd.Stdin = strings.NewReader(tc.Input)
 
 	var stdout, stderr bytes.Buffer
@@ -236,22 +205,24 @@ func (r *DockerRunner) runTestCase(ctx context.Context, cfg dockerLangConfig, di
 	return Result{Output: stdout.String(), ExecutionTimeMs: elapsedMs}, true
 }
 
-// dockerArgs builds the argument list for `docker run` with full isolation flags.
+// dockerArgs builds the `docker run` argument list.
 //
-//	--network none      no outbound or inbound network
-//	--memory 256m       hard cap via Linux cgroups
-//	--cpus 0.5          prevent CPU starvation
-//	--read-only         immutable root filesystem
-//	--tmpfs /tmp        writable in-memory scratch space (needed for Go compilation)
-//	-v dir:/code_dir    only the submitted file's directory is visible in the container.
-//	                    Mounting a directory (not a bare file) works reliably with
-//	                    --read-only because Docker always creates the bind-mount target
-//	                    as a directory, so the mount point is created correctly even
-//	                    when it doesn't pre-exist in the image.
-func (r *DockerRunner) dockerArgs(cfg dockerLangConfig, hostDir string, containerCmd []string) []string {
-	volume := hostDir + ":/code_dir:ro"
+// Code is delivered via the SMC_CODE env var (base64-encoded) and decoded into
+// /tmp/code<ext> at container startup. This avoids any bind-mount host-path
+// dependency, which breaks when the backend itself runs inside a container:
+// Docker daemon resolves volume paths on the host, not inside the backend container.
+//
+//	--network none    no outbound or inbound network
+//	--memory 256m     hard cap via Linux cgroups
+//	--cpus 0.5        prevent CPU starvation
+//	--read-only       immutable root filesystem
+//	--tmpfs /tmp:exec writable in-memory scratch (exec flag needed for compiled binaries)
+//	SMC_CODE=<b64>    base64-encoded source; decoded to /tmp/code<ext> before running
+func (r *DockerRunner) dockerArgs(cfg dockerLangConfig, code, shScript string) []string {
+	encoded := base64.StdEncoding.EncodeToString([]byte(code))
+	script := fmt.Sprintf("echo \"$SMC_CODE\" | base64 -d > /tmp/code%s && %s", cfg.ext, shScript)
 
-	args := []string{
+	return []string{
 		"run", "--rm",
 		"--network", "none",
 		"--memory", "256m",
@@ -259,12 +230,8 @@ func (r *DockerRunner) dockerArgs(cfg dockerLangConfig, hostDir string, containe
 		"--read-only",
 		"--tmpfs", "/tmp:exec",
 		"-i",
-		"-v", volume,
+		"-e", "SMC_CODE=" + encoded,
+		cfg.image,
+		"sh", "-c", script,
 	}
-	for _, env := range cfg.extraEnv {
-		args = append(args, "-e", env)
-	}
-	args = append(args, cfg.image)
-	args = append(args, containerCmd...)
-	return args
 }
