@@ -5,10 +5,9 @@ import {
   unassignProblem,
   fetchCandidateAssignments,
 } from "../../features/problems/api";
-// 引入跳轉工具
 import { useNavigate } from "react-router-dom";
+import { Select } from "../../components/Common/Select";
 
-// --- 定義資料型別 ---
 interface TestCase {
   input: string;
   expected_output: string;
@@ -20,7 +19,7 @@ interface Problem {
   difficulty: string;
   description: string;
   testCases?: TestCase[];
-  test_cases?: TestCase[]; // 兼容後端底線命名
+  test_cases?: TestCase[];
 }
 
 interface Candidate {
@@ -28,14 +27,19 @@ interface Candidate {
   username: string;
 }
 
+const difficultyStyle: Record<string, string> = {
+  Easy: "bg-emerald-950/50 text-emerald-400 border-emerald-800/40",
+  Medium: "bg-amber-950/50 text-amber-400 border-amber-800/40",
+  Hard: "bg-red-950/50 text-red-400 border-red-800/40",
+};
+
 const InterviewerDashboard: React.FC = () => {
-  const navigate = useNavigate(); // 用於跳轉頁面
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"create" | "list" | "assign">("create");
   const [problems, setProblems] = useState<Problem[]>([]);
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 表單狀態
   const [title, setTitle] = useState("");
   const [difficulty, setDifficulty] = useState("Medium");
   const [description, setDescription] = useState("");
@@ -44,14 +48,12 @@ const InterviewerDashboard: React.FC = () => {
   ]);
   const [candidateCreds, setCandidateCreds] = useState<{ acc: string; pw: string } | null>(null);
 
-  // 指派題目相關狀態
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [assignedProblemIds, setAssignedProblemIds] = useState<Set<string>>(new Set());
   const [assignLoading, setAssignLoading] = useState(false);
   const [allProblemsForAssign, setAllProblemsForAssign] = useState<Problem[]>([]);
 
-  // 1. 生成面試者帳密
   const generateCredentials = async () => {
     const newAcc = "USER-" + Math.floor(Math.random() * 9000 + 1000);
     const newPw = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -59,26 +61,24 @@ const InterviewerDashboard: React.FC = () => {
     try {
       await createCandidate({ username: newAcc, password: newPw });
       setCandidateCreds({ acc: newAcc, pw: newPw });
-      alert("🎉 帳號已成功寫入資料庫！");
-    } catch (error) {
-      alert("❌ 創建失敗，請檢查伺服器狀態。");
+      alert("Account created successfully.");
+    } catch {
+      alert("Failed to create account. Check server status.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 2. 獲取題庫清單
   const fetchProblems = async () => {
     try {
       const response = await apiClient.get("/problems");
       setProblems(response.data || []);
       setActiveTab("list");
-    } catch (error) {
-      alert("❌ 無法獲取題庫，請確認權限或後端狀態");
+    } catch {
+      alert("Failed to fetch problems. Check permissions or server.");
     }
   };
 
-  // 5. 進入「指派題目」頁簽時載入資料
   const openAssignTab = async () => {
     setActiveTab("assign");
     setAssignLoading(true);
@@ -87,26 +87,23 @@ const InterviewerDashboard: React.FC = () => {
         apiClient.get<Candidate[]>("/interviewer/candidates"),
         apiClient.get<Problem[]>("/problems"),
       ]);
-      // /interviewer/candidates 回傳的是陣列，每個元素有 id 和 username
       const cands: Candidate[] = (candidatesRes.data as any[]).map((c: any) => ({
         id: c.id,
         username: c.username,
       }));
       setCandidates(cands);
       setAllProblemsForAssign(problemsRes.data || []);
-      // 若之前有選過考生，重新拉最新指派清單
       if (selectedCandidateId) {
         const ids = await fetchCandidateAssignments(selectedCandidateId);
         setAssignedProblemIds(new Set(ids.map(String)));
       }
     } catch {
-      alert("❌ 無法載入候選人或題庫資料");
+      alert("Failed to load candidates or problems.");
     } finally {
       setAssignLoading(false);
     }
   };
 
-  // 6. 選擇考生後載入其指派清單
   const selectCandidate = async (candidateId: string) => {
     setSelectedCandidateId(candidateId || null);
     if (!candidateId) {
@@ -118,13 +115,12 @@ const InterviewerDashboard: React.FC = () => {
       const ids = await fetchCandidateAssignments(candidateId);
       setAssignedProblemIds(new Set(ids.map(String)));
     } catch {
-      alert("❌ 無法載入指派清單");
+      alert("Failed to load assignment list.");
     } finally {
       setAssignLoading(false);
     }
   };
 
-  // 7. 切換題目指派狀態
   const toggleAssignment = async (problemId: string) => {
     if (!selectedCandidateId) return;
     const pidStr = String(problemId);
@@ -142,11 +138,10 @@ const InterviewerDashboard: React.FC = () => {
         setAssignedProblemIds((prev) => new Set([...prev, pidStr]));
       }
     } catch {
-      alert("❌ 操作失敗，請確認後端狀態");
+      alert("Operation failed. Check server status.");
     }
   };
 
-  // 3. 儲存新題目
   const handleSubmitProblem = async (e: React.FormEvent) => {
     e.preventDefault();
     const problemData = {
@@ -161,120 +156,154 @@ const InterviewerDashboard: React.FC = () => {
 
     try {
       await apiClient.post("/problems", problemData);
-      alert(`🎉 題目儲存成功！`);
+      alert("Problem saved successfully.");
       setTitle("");
       setDescription("");
       setTestCases([{ input: "", output: "" }]);
       fetchProblems();
-    } catch (error) {
-      alert("❌ 儲存失敗，請檢查後端報錯或權限");
+    } catch {
+      alert("Save failed. Check server or permissions.");
     }
   };
 
   const addTestCase = () => setTestCases([...testCases, { input: "", output: "" }]);
   const handleTestCaseChange = (index: number, field: "input" | "output", value: string) => {
-    const newTestCases = [...testCases];
-    newTestCases[index][field] = value;
-    setTestCases(newTestCases);
+    const next = [...testCases];
+    next[index][field] = value;
+    setTestCases(next);
   };
 
-  return (
-    <div className="min-h-screen bg-[#111] text-gray-200 p-8 font-sans">
-      <div className="max-w-[90rem] mx-auto">
-        <h1 className="text-4xl font-extrabold text-indigo-400 mb-10 tracking-tight italic">
-          SMC <span className="text-white not-italic">Dashboard</span>
-        </h1>
+  const navItems = [
+    {
+      id: "create" as const,
+      label: "New Problem",
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      ),
+      onClick: () => setActiveTab("create"),
+    },
+    {
+      id: "list" as const,
+      label: "Problem Bank",
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      ),
+      onClick: fetchProblems,
+    },
+    {
+      id: "assign" as const,
+      label: "Assign Problems",
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      ),
+      onClick: openAssignTab,
+    },
+  ];
 
-        <div className="flex gap-8">
-          {/* 左側選單 */}
-          <div className="w-1/4 space-y-6">
-            {/* 報告分析快捷入口 (新增) */}
-            <div className="bg-indigo-950/20 p-6 rounded-2xl border border-indigo-500/30 shadow-xl">
-              <h2 className="text-xl font-bold mb-4 text-indigo-300 flex items-center gap-2">
-                📈 監控面板
-              </h2>
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-200 p-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-slate-50 tracking-tight">SMC Dashboard</h1>
+          <p className="text-slate-500 text-sm mt-1">Interviewer control panel</p>
+        </div>
+
+        <div className="flex gap-6">
+          {/* Sidebar */}
+          <div className="w-64 flex-shrink-0 space-y-4">
+            {/* Monitor shortcut */}
+            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4">
+              <p className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-3">
+                Monitor
+              </p>
               <button
                 onClick={() => navigate("/submissions")}
-                className="w-full font-bold py-3 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-lg shadow-indigo-900/40 flex items-center justify-center gap-2"
+                className="w-full flex items-center gap-2 justify-center font-semibold py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm transition-all shadow-lg shadow-indigo-900/20 cursor-pointer"
               >
-                📊 查看考生提交報告
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                View Submissions
               </button>
-              <p className="mt-3 text-[10px] text-indigo-400/70 text-center uppercase tracking-widest font-bold">
-                含誠實度偵測與程式碼分析
-              </p>
             </div>
 
-            <div className="bg-[#1a1a1a] p-6 rounded-2xl border border-gray-800 shadow-xl">
-              <h2 className="text-xl font-bold mb-4 text-gray-100 flex items-center gap-2">
-                👤 面試者管理
-              </h2>
+            {/* Candidate generator */}
+            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4">
+              <p className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-3">
+                Candidate
+              </p>
               <button
                 onClick={generateCredentials}
                 disabled={isLoading}
-                className={`w-full font-bold py-3 px-5 rounded-xl transition ${isLoading ? "bg-gray-700" : "bg-blue-600 hover:bg-blue-700 text-white"}`}
+                className={`w-full font-semibold py-2.5 px-4 rounded-lg text-sm transition-all cursor-pointer ${
+                  isLoading
+                    ? "bg-slate-700 text-slate-500 cursor-not-allowed"
+                    : "bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700"
+                }`}
               >
-                {isLoading ? "⏳ 處理中..." : "生成面試者隨機帳密"}
+                {isLoading ? "Creating..." : "Generate Credentials"}
               </button>
               {candidateCreds && (
-                <div className="mt-4 p-3 bg-[#222] rounded-lg border border-indigo-900 text-sm text-indigo-300 font-mono">
-                  帳號: {candidateCreds.acc} <br /> 密碼: {candidateCreds.pw}
+                <div className="mt-3 p-3 bg-slate-800 rounded-lg border border-slate-700 text-xs font-mono text-indigo-300 space-y-1">
+                  <div><span className="text-slate-500">Account:</span> {candidateCreds.acc}</div>
+                  <div><span className="text-slate-500">Password:</span> {candidateCreds.pw}</div>
                 </div>
               )}
             </div>
 
-            <div className="bg-[#1a1a1a] p-6 rounded-2xl border border-gray-800 shadow-xl space-y-2">
-              <div
-                onClick={() => setActiveTab("create")}
-                className={`p-3 rounded-lg cursor-pointer transition ${activeTab === "create" ? "bg-indigo-950/30 text-indigo-300 font-medium" : "text-gray-500 hover:bg-[#222]"}`}
-              >
-                ✨ 建立新題目
-              </div>
-              <div
-                onClick={fetchProblems}
-                className={`p-3 rounded-lg cursor-pointer transition ${activeTab === "list" ? "bg-indigo-950/30 text-indigo-300 font-medium" : "text-gray-500 hover:bg-[#222]"}`}
-              >
-                📚 題庫清單
-              </div>
-              <div
-                onClick={openAssignTab}
-                className={`p-3 rounded-lg cursor-pointer transition ${activeTab === "assign" ? "bg-indigo-950/30 text-indigo-300 font-medium" : "text-gray-500 hover:bg-[#222]"}`}
-              >
-                🎯 指派題目
-              </div>
+            {/* Nav items */}
+            <div className="bg-slate-900 rounded-xl border border-slate-800 p-2 space-y-1">
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={item.onClick}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                    activeTab === item.id
+                      ? "bg-indigo-950/50 text-indigo-300 border border-indigo-800/40"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                  }`}
+                >
+                  {item.icon}
+                  {item.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* 右側內容區 */}
-          <div className="w-3/4">
-            {activeTab === "assign" ? (
-              <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800 shadow-2xl">
-                <h2 className="text-3xl font-bold text-gray-100 mb-6">🎯 指派題目給考生</h2>
+          {/* Main content */}
+          <div className="flex-1 min-w-0">
+            {/* Assign tab */}
+            {activeTab === "assign" && (
+              <div className="bg-slate-900 rounded-xl border border-slate-800 p-6">
+                <h2 className="text-lg font-bold text-slate-50 mb-5">Assign Problems</h2>
 
-                {/* 選擇考生 */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-400 mb-2">選擇考生</label>
-                  <select
+                <div className="mb-5">
+                  <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+                    Select Candidate
+                  </label>
+                  <Select
                     value={selectedCandidateId ?? ""}
-                    onChange={(e) => selectCandidate(e.target.value)}
-                    className="w-full bg-[#222] border border-gray-700 rounded-lg p-3 text-gray-100 focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">-- 請選擇考生 --</option>
-                    {candidates.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.username}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={selectCandidate}
+                    placeholder="— Select a candidate —"
+                    options={[
+                      ...candidates.map((c) => ({ value: c.id, label: c.username })),
+                    ]}
+                  />
                 </div>
 
-                {/* 題目指派清單 */}
                 {selectedCandidateId ? (
                   assignLoading ? (
-                    <div className="text-gray-500 text-center py-8">載入中...</div>
+                    <div className="text-slate-500 text-sm text-center py-8">Loading...</div>
                   ) : (
-                    <div className="space-y-3">
-                      <p className="text-xs text-gray-500 mb-4">
-                        已指派 {assignedProblemIds.size} / {allProblemsForAssign.length} 道題目
+                    <div className="space-y-2">
+                      <p className="text-xs text-slate-500 mb-3">
+                        {assignedProblemIds.size} / {allProblemsForAssign.length} problems assigned
                       </p>
                       {allProblemsForAssign.map((p) => {
                         const pid = String(p.id);
@@ -282,42 +311,30 @@ const InterviewerDashboard: React.FC = () => {
                         return (
                           <div
                             key={`assign-${pid}`}
-                            className={`flex items-center justify-between p-4 rounded-xl border transition ${
+                            className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
                               isAssigned
-                                ? "bg-indigo-950/20 border-indigo-500/50"
-                                : "bg-[#222] border-gray-800"
+                                ? "bg-indigo-950/20 border-indigo-800/40"
+                                : "bg-slate-800/40 border-slate-700/50"
                             }`}
                           >
                             <div className="flex items-center gap-3">
-                              <span
-                                className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                                  isAssigned ? "bg-indigo-400" : "bg-gray-600"
-                                }`}
-                              />
+                              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isAssigned ? "bg-indigo-400" : "bg-slate-600"}`} />
                               <div>
-                                <p className="text-gray-100 font-medium">{p.title}</p>
-                                <span
-                                  className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
-                                    p.difficulty === "Easy"
-                                      ? "bg-green-900/40 text-green-400"
-                                      : p.difficulty === "Medium"
-                                        ? "bg-yellow-900/40 text-yellow-400"
-                                        : "bg-red-900/40 text-red-400"
-                                  }`}
-                                >
+                                <p className="text-slate-100 font-medium text-sm">{p.title}</p>
+                                <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ${difficultyStyle[p.difficulty] ?? "text-slate-400 border-slate-700"}`}>
                                   {p.difficulty}
                                 </span>
                               </div>
                             </div>
                             <button
                               onClick={() => toggleAssignment(pid)}
-                              className={`text-sm font-bold px-4 py-2 rounded-lg transition ${
+                              className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                                 isAssigned
-                                  ? "bg-red-900/30 text-red-400 hover:bg-red-900/50"
+                                  ? "bg-red-950/30 text-red-400 border border-red-800/40 hover:bg-red-950/50"
                                   : "bg-indigo-600 text-white hover:bg-indigo-500"
                               }`}
                             >
-                              {isAssigned ? "取消指派" : "指派"}
+                              {isAssigned ? "Unassign" : "Assign"}
                             </button>
                           </div>
                         );
@@ -325,118 +342,146 @@ const InterviewerDashboard: React.FC = () => {
                     </div>
                   )
                 ) : (
-                  <div className="text-center py-12 text-gray-600">
-                    <p className="text-4xl mb-3">👆</p>
-                    <p>請先選擇一位考生</p>
+                  <div className="flex flex-col items-center justify-center py-16 text-slate-600 gap-3">
+                    <svg className="w-10 h-10 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <p className="text-sm">Select a candidate to manage assignments</p>
                   </div>
                 )}
               </div>
-            ) : activeTab === "create" ? (
+            )}
+
+            {/* Create problem tab */}
+            {activeTab === "create" && (
               <form
                 onSubmit={handleSubmitProblem}
-                className="bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800 shadow-2xl space-y-6"
+                className="bg-slate-900 rounded-xl border border-slate-800 p-6 space-y-5"
               >
                 <div className="flex items-center justify-between">
-                  <h2 className="text-3xl font-bold text-gray-100">✨ 建立新題目</h2>
+                  <h2 className="text-lg font-bold text-slate-50">New Problem</h2>
                   <button
                     type="submit"
-                    className="bg-indigo-600 text-white font-bold py-3 px-8 rounded-xl hover:bg-indigo-700 transition"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-6 rounded-lg text-sm transition-all shadow-lg shadow-indigo-900/20 cursor-pointer"
                   >
-                    儲存題目
+                    Save Problem
                   </button>
                 </div>
 
-                <div className="grid grid-cols-3 gap-6">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-400 mb-1.5">
-                      題目名稱
+                    <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+                      Title
                     </label>
                     <input
                       type="text"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       required
-                      className="w-full bg-[#222] border border-gray-800 rounded-lg p-3.5 text-gray-100 outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+                      placeholder="Problem title"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1.5">難度</label>
-                    <select
+                    <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+                      Difficulty
+                    </label>
+                    <Select
                       value={difficulty}
-                      onChange={(e) => setDifficulty(e.target.value)}
-                      className="w-full bg-[#222] border border-gray-800 rounded-lg p-3.5 text-gray-100"
-                    >
-                      <option>Easy</option>
-                      <option>Medium</option>
-                      <option>Hard</option>
-                    </select>
+                      onChange={setDifficulty}
+                      options={[
+                        {
+                          value: "Easy",
+                          label: "Easy",
+                          meta: <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-emerald-950/50 text-emerald-400 border-emerald-800/40">E</span>,
+                        },
+                        {
+                          value: "Medium",
+                          label: "Medium",
+                          meta: <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-amber-950/50 text-amber-400 border-amber-800/40">M</span>,
+                        },
+                        {
+                          value: "Hard",
+                          label: "Hard",
+                          meta: <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-red-950/50 text-red-400 border-red-800/40">H</span>,
+                        },
+                      ]}
+                    />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1.5">
-                    描述 (Markdown)
+                  <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+                    Description (Markdown)
                   </label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     required
-                    className="w-full bg-[#222] border border-gray-800 rounded-lg p-4 h-56 text-gray-100 font-mono text-sm resize-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-4 h-48 text-slate-100 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder-slate-500"
+                    placeholder="Describe the problem in Markdown..."
                   />
                 </div>
 
-                <div className="border-t border-gray-800 pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <label className="text-lg font-semibold text-gray-300">⚙️ 評測測資</label>
-                    <button type="button" onClick={addTestCase} className="text-sm text-indigo-400">
-                      + 新增測資
+                <div className="border-t border-slate-800 pt-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-sm font-semibold text-slate-300">Test Cases</label>
+                    <button
+                      type="button"
+                      onClick={addTestCase}
+                      className="text-xs font-medium text-indigo-400 hover:text-indigo-300 bg-indigo-950/30 hover:bg-indigo-950/50 border border-indigo-800/40 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+                    >
+                      + Add Test Case
                     </button>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {testCases.map((tc, index) => (
                       <div
                         key={`input-row-${index}`}
-                        className="grid grid-cols-2 gap-3 bg-[#222] p-3 rounded-lg border border-gray-800"
+                        className="grid grid-cols-2 gap-3 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50"
                       >
                         <input
                           placeholder="Input"
                           value={tc.input}
                           onChange={(e) => handleTestCaseChange(index, "input", e.target.value)}
-                          className="bg-[#1a1a1a] border border-gray-800 rounded p-2.5 text-xs text-gray-300"
+                          className="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
                         />
                         <input
-                          placeholder="Output"
+                          placeholder="Expected Output"
                           value={tc.output}
                           onChange={(e) => handleTestCaseChange(index, "output", e.target.value)}
-                          className="bg-[#1a1a1a] border border-gray-800 rounded p-2.5 text-xs text-gray-300"
+                          className="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
                         />
                       </div>
                     ))}
                   </div>
                 </div>
               </form>
-            ) : (
-              <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800 shadow-2xl">
-                <h2 className="text-3xl font-bold text-gray-100 mb-6">📚 題庫清單</h2>
-                <div className="space-y-4">
+            )}
+
+            {/* Problem list tab */}
+            {activeTab === "list" && (
+              <div className="bg-slate-900 rounded-xl border border-slate-800 p-6">
+                <h2 className="text-lg font-bold text-slate-50 mb-5">Problem Bank</h2>
+                <div className="space-y-2">
                   {problems.map((p) => (
                     <div
                       key={`p-list-${p.id}`}
-                      className="p-5 bg-[#222] border border-gray-800 rounded-xl flex items-center justify-between group hover:border-indigo-500 transition cursor-default"
+                      className="flex items-center justify-between p-4 bg-slate-800/40 border border-slate-700/50 rounded-xl hover:border-slate-600 transition-all group"
                     >
-                      <div>
-                        <div className="text-lg font-bold text-gray-100 mb-1">{p.title}</div>
-                        <span
-                          className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${p.difficulty === "Easy" ? "bg-green-900/40 text-green-400" : p.difficulty === "Medium" ? "bg-yellow-900/40 text-yellow-400" : "bg-red-900/40 text-red-400"}`}
-                        >
-                          {p.difficulty}
-                        </span>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="min-w-0">
+                          <div className="text-slate-100 font-semibold text-sm truncate">{p.title}</div>
+                          <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border mt-1 inline-block ${difficultyStyle[p.difficulty] ?? "text-slate-400 border-slate-700"}`}>
+                            {p.difficulty}
+                          </span>
+                        </div>
                       </div>
                       <button
                         onClick={() => setSelectedProblem(p)}
-                        className="opacity-0 group-hover:opacity-100 bg-indigo-600 text-xs px-4 py-2 rounded-lg transition hover:bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-900/20"
+                        className="opacity-0 group-hover:opacity-100 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all cursor-pointer"
                       >
-                        檢視細節
+                        View Details
                       </button>
                     </div>
                   ))}
@@ -447,42 +492,42 @@ const InterviewerDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 彈窗細節 */}
+      {/* Problem detail modal */}
       {selectedProblem && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 backdrop-blur-md">
-          <div className="bg-[#1a1a1a] border border-gray-700 rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-8 border-b border-gray-800 flex justify-between items-center bg-[#1d1d1d]">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl shadow-black/60 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-3">
-                <h2 className="text-3xl font-bold text-white">{selectedProblem.title}</h2>
-                <span
-                  className={`text-xs px-2 py-1 rounded font-bold ${selectedProblem.difficulty === "Easy" ? "bg-green-900/40 text-green-400" : selectedProblem.difficulty === "Medium" ? "bg-yellow-900/40 text-yellow-400" : "bg-red-900/40 text-red-400"}`}
-                >
+                <h2 className="text-lg font-bold text-slate-50">{selectedProblem.title}</h2>
+                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${difficultyStyle[selectedProblem.difficulty] ?? "text-slate-400 border-slate-700"}`}>
                   {selectedProblem.difficulty}
                 </span>
               </div>
               <button
                 onClick={() => setSelectedProblem(null)}
-                className="text-gray-400 hover:text-white text-3xl"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer"
               >
-                ✕
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
-            <div className="p-8 overflow-y-auto space-y-8 custom-scrollbar">
+            <div className="p-6 overflow-y-auto space-y-6">
               <section>
-                <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-widest mb-4">
-                  題目描述
+                <h3 className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-3">
+                  Description
                 </h3>
-                <div className="bg-[#111] p-6 rounded-2xl border border-gray-800 text-sm whitespace-pre-wrap text-gray-300 font-sans leading-relaxed">
+                <div className="bg-slate-950/60 p-5 rounded-xl border border-slate-800 text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">
                   {selectedProblem.description}
                 </div>
               </section>
 
               <section>
-                <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  系統評測測資
+                <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3">
+                  Test Cases
                 </h3>
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 gap-2">
                   {(() => {
                     const data = selectedProblem as any;
                     const tcs = data.testCases || data.test_cases || [];
@@ -491,21 +536,17 @@ const InterviewerDashboard: React.FC = () => {
                       return tcs.map((tc: any, idx: number) => (
                         <div
                           key={`modal-tc-${idx}`}
-                          className="grid grid-cols-2 gap-4 bg-[#222] p-4 rounded-xl border border-gray-800"
+                          className="grid grid-cols-2 gap-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50"
                         >
                           <div>
-                            <p className="text-[10px] text-gray-500 font-bold mb-1 uppercase">
-                              Input
-                            </p>
-                            <code className="text-indigo-300 font-mono text-sm block bg-[#1a1a1a] p-2 rounded">
+                            <p className="text-[10px] text-slate-500 font-bold mb-1.5 uppercase">Input</p>
+                            <code className="text-indigo-300 font-mono text-xs block bg-slate-950/60 p-2.5 rounded-lg">
                               {tc.input || "N/A"}
                             </code>
                           </div>
-                          <div className="border-l border-gray-700 pl-4">
-                            <p className="text-[10px] text-gray-500 font-bold mb-1 uppercase">
-                              Expected Output
-                            </p>
-                            <code className="text-emerald-300 font-mono text-sm block bg-[#1a1a1a] p-2 rounded">
+                          <div className="border-l border-slate-700 pl-4">
+                            <p className="text-[10px] text-slate-500 font-bold mb-1.5 uppercase">Expected Output</p>
+                            <code className="text-emerald-300 font-mono text-xs block bg-slate-950/60 p-2.5 rounded-lg">
                               {tc.expected_output || tc.output || "N/A"}
                             </code>
                           </div>
@@ -513,8 +554,8 @@ const InterviewerDashboard: React.FC = () => {
                       ));
                     }
                     return (
-                      <div className="p-4 bg-[#111] rounded-xl border border-gray-800 text-gray-600 text-sm italic">
-                        尚無測資或解析失敗。
+                      <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50 text-slate-500 text-sm italic">
+                        No test cases available.
                       </div>
                     );
                   })()}
@@ -522,22 +563,17 @@ const InterviewerDashboard: React.FC = () => {
               </section>
             </div>
 
-            <div className="p-6 border-t border-gray-800 bg-[#1d1d1d] flex justify-end">
+            <div className="px-6 py-4 border-t border-slate-800 flex justify-end flex-shrink-0">
               <button
                 onClick={() => setSelectedProblem(null)}
-                className="bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 px-10 rounded-xl transition"
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2 px-6 rounded-lg text-sm transition-all cursor-pointer"
               >
-                關閉
+                Close
               </button>
             </div>
           </div>
         </div>
       )}
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-      `}</style>
     </div>
   );
 };

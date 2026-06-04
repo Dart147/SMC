@@ -19,10 +19,7 @@ export function ProblemList() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // 考生只能看到被指派的題目；面試官/admin 看全部
         const problemsFetch = isCandidate ? fetchMyProblems() : fetchProblems();
-
-        // 取得當前使用者的所有提交，找出已 Accepted 的題目
         const submissionsFetch = isCandidate
           ? apiClient
               .get<Submission[]>("/submissions")
@@ -37,7 +34,6 @@ export function ProblemList() {
 
         setProblems(loadedProblems);
 
-        // 建立「已 Accepted」的題目 ID Set，方便 O(1) 查詢
         const accepted = new Set<string>(
           loadedSubmissions.filter((s) => s.status === "Accepted").map((s) => String(s.problemId)),
         );
@@ -54,33 +50,54 @@ export function ProblemList() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-40 text-gray-400 dark:text-gray-500">
+      <div className="flex items-center justify-center h-40 text-slate-500 text-sm">
+        <svg className="w-4 h-4 mr-2 animate-spin" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
         載入中...
       </div>
     );
   }
 
   if (error) {
-    return <div className="flex items-center justify-center h-40 text-red-400">{error}</div>;
+    return (
+      <div className="flex items-center justify-center h-40 text-red-400 text-sm">{error}</div>
+    );
   }
 
   if (problems.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-40 text-gray-400 dark:text-gray-500 gap-2">
-        <span className="text-4xl">📭</span>
-        <p>{isCandidate ? "目前沒有被指派的題目。" : "題庫目前沒有題目。"}</p>
+      <div className="flex flex-col items-center justify-center h-40 text-slate-500 gap-2">
+        <svg className="w-10 h-10 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <p className="text-sm">{isCandidate ? "目前沒有被指派的題目。" : "題庫目前沒有題目。"}</p>
       </div>
     );
   }
 
+  const difficultyConfig = {
+    Easy: "bg-emerald-950/50 text-emerald-400 border-emerald-800/50",
+    Medium: "bg-amber-950/50 text-amber-400 border-amber-800/50",
+    Hard: "bg-red-950/50 text-red-400 border-red-800/50",
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
-        {isCandidate ? "我的題目" : "所有題目"}
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl font-bold text-slate-50 tracking-tight">
+          {isCandidate ? "我的題目" : "所有題目"}
+        </h1>
+        {isCandidate && (
+          <span className="text-xs text-slate-500 font-mono">
+            {acceptedProblemIds.size} / {problems.length} 已完成
+          </span>
+        )}
+      </div>
 
-      <div className="flex flex-col gap-3">
-        {problems.map((problem) => {
+      <div className="flex flex-col gap-2">
+        {problems.map((problem, index) => {
           const problemId = String(problem.id);
           const isAccepted = acceptedProblemIds.has(problemId);
 
@@ -92,70 +109,47 @@ export function ProblemList() {
                 relative flex items-center justify-between
                 px-5 py-4 rounded-xl border cursor-pointer
                 transition-all duration-150
-                bg-white dark:bg-gray-800
-                hover:border-blue-500 dark:hover:border-blue-400
-                hover:shadow-md
-                ${
-                  isAccepted
-                    ? "border-green-400 dark:border-green-500"
-                    : "border-gray-200 dark:border-gray-700"
-                }
+                bg-slate-900
+                hover:bg-slate-800/80 hover:border-slate-600
+                ${isAccepted ? "border-emerald-800/50" : "border-slate-800"}
               `}
             >
-              {/* 左側：標題 + 完成標籤 */}
-              <div className="flex items-center gap-3 min-w-0">
-                {/* 完成圓點指示器 */}
-                <span
-                  className={`flex-shrink-0 w-2.5 h-2.5 rounded-full ${
-                    isAccepted ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"
-                  }`}
-                />
+              {/* Left: index + title */}
+              <div className="flex items-center gap-4 min-w-0">
+                <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 text-slate-500 text-xs font-mono font-bold">
+                  {index + 1}
+                </span>
 
                 <div className="min-w-0">
-                  <h3 className="text-base font-semibold text-gray-900 dark:text-white truncate">
-                    {problem.title}
-                  </h3>
+                  <h3 className="text-sm font-semibold text-slate-100 truncate">{problem.title}</h3>
                 </div>
               </div>
 
-              {/* 右側：徽章區 */}
+              {/* Right: badges */}
               <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                {/* 完成徽章 */}
                 {isAccepted && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20">
-                    ✓ 已完成
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-950/50 text-emerald-400 border border-emerald-800/50">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    已完成
                   </span>
                 )}
 
-                {/* 難度：只有面試官/admin 能看到 */}
                 {!isCandidate && problem.difficulty && (
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
-                      problem.difficulty === "Easy"
-                        ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20"
-                        : problem.difficulty === "Medium"
-                          ? "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20"
-                          : "bg-red-100 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20"
-                    }`}
-                  >
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${difficultyConfig[problem.difficulty as keyof typeof difficultyConfig] ?? "text-slate-400 border-slate-700"}`}>
                     {problem.difficulty}
                   </span>
                 )}
 
-                {/* 箭頭 */}
-                <span className="text-gray-400 dark:text-gray-500 text-sm">›</span>
+                <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
             </div>
           );
         })}
       </div>
-
-      {/* 底部統計（考生專用） */}
-      {isCandidate && (
-        <p className="mt-6 text-sm text-center text-gray-400 dark:text-gray-500">
-          已完成 {acceptedProblemIds.size} / {problems.length} 題
-        </p>
-      )}
     </div>
   );
 }

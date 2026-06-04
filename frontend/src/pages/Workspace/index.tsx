@@ -110,17 +110,12 @@ export function Workspace() {
   // 5. 錯誤處理：如果題目不存在，跳回列表頁
   if (loading || isInitializing) {
     return (
-      <div
-        style={{
-          padding: "40px",
-          color: "#d4d4d4",
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-        }}
-      >
-        <div className="animate-spin">⏳</div>
-        <span>正在載入工作區並回復程式碼狀態...</span>
+      <div className="flex items-center justify-center h-screen bg-slate-950 text-slate-400 text-sm gap-2">
+        <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        <span>Loading workspace...</span>
       </div>
     );
   }
@@ -155,46 +150,28 @@ export function Workspace() {
       }}
     >
       {/* 頂部全域導覽列 */}
-      <header
-        style={{
-          height: "50px",
-          background: "#252526",
-          borderBottom: "1px solid #333",
-          display: "flex",
-          alignItems: "center",
-          padding: "0 20px",
-        }}
-      >
-        <strong style={{ color: "#fff", fontSize: "18px" }}>SMC Judge</strong>
-        <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
+      <header className="h-12 bg-slate-900 border-b border-slate-800 flex items-center px-5 flex-shrink-0">
+        <strong className="text-slate-100 text-sm font-semibold tracking-tight">SMC — Workspace</strong>
+        <div className="ml-auto flex items-center gap-2">
           <button
             onClick={runSample}
             disabled={isRunSample || isRunning}
-            style={{
-              background: "#2d2d2d",
-              color: isRunSample ? "#9ca3af" : "#fff",
-              padding: "6px 16px",
-              borderRadius: "4px",
-              border: "1px solid #444",
-              cursor: isRunSample || isRunning ? "not-allowed" : "pointer",
-              opacity: isRunSample ? 0.6 : 1,
-            }}
+            className={`text-xs font-semibold px-4 py-1.5 rounded-lg border transition-all ${
+              isRunSample || isRunning
+                ? "bg-slate-800/50 border-slate-700 text-slate-500 cursor-not-allowed"
+                : "bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700 cursor-pointer"
+            }`}
           >
             {isRunSample ? "Running..." : "Run"}
           </button>
           <button
             onClick={runCode}
             disabled={isRunning}
-            style={{
-              background: "#22c55e",
-              color: "#fff",
-              padding: "6px 16px",
-              borderRadius: "4px",
-              border: "none",
-              fontWeight: "bold",
-              cursor: isRunning ? "not-allowed" : "pointer",
-              opacity: isRunning ? 0.6 : 1,
-            }}
+            className={`text-xs font-bold px-4 py-1.5 rounded-lg transition-all ${
+              isRunning
+                ? "bg-emerald-900/50 text-emerald-600 cursor-not-allowed"
+                : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20 cursor-pointer"
+            }`}
           >
             {isRunning ? "Submitting..." : "Submit"}
           </button>

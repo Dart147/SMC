@@ -2,16 +2,19 @@ import { LoginForm } from "../../features/auth/components/LoginForm";
 
 export function Login() {
   return (
-    // 使用 min-h-screen 確保背景能完全覆蓋整個螢幕
-    <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-gray-950">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950">
       <div className="mb-8 text-center">
-        <h1 className="text-4xl text-blue-600 dark:text-blue-500 font-bold mb-2">
-          SMC 線上測驗系統
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400">登入以進入專屬考場</p>
+        <div className="inline-flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+          </div>
+          <span className="text-slate-50 font-bold text-xl tracking-tight">SMC Judge</span>
+        </div>
+        <p className="text-slate-500 text-sm">登入以進入專屬考場</p>
       </div>
 
-      {/* 載入你寫好的 LoginForm 元件 */}
       <LoginForm />
     </div>
   );
