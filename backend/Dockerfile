@@ -22,6 +22,8 @@ COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 COPY configs/ ./configs/
 COPY api/ ./api/
+COPY sqlc.yaml ./
+COPY db/ ./db/
 
 # lint
 FROM source AS lint
