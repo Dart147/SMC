@@ -55,10 +55,8 @@ const InterviewerDashboard: React.FC = () => {
   const [allProblemsForAssign, setAllProblemsForAssign] = useState<Problem[]>([]);
 
   const generateCredentials = async () => {
-    const randomVals = new Uint32Array(1);
-    window.crypto.getRandomValues(randomVals);
-    const newAcc = "USER-" + (1000 + (randomVals[0] % 9000));
-    const newPw = window.crypto.randomUUID().substring(0, 6).toUpperCase();
+    const newAcc = "USER-" + Math.floor(Math.random() * 9000 + 1000);
+    const newPw = Math.random().toString(36).substring(2, 8).toUpperCase();
     setIsLoading(true);
     try {
       await createCandidate({ username: newAcc, password: newPw });
