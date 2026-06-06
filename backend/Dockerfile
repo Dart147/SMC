@@ -11,8 +11,7 @@ COPY --from=sqlc/sqlc:1.31.1 /workspace/sqlc /usr/local/bin/sqlc
 COPY --from=vektra/mockery:v3.7.0 /usr/local/bin/mockery /usr/local/bin/mockery
 
 # 3. go-lint (解決目前的 "Avoid executing downloaded artifacts directly" 警告)
-COPY --from=golangci/golangci-lint:v1.60.3 /usr/bin/golangci-lint /usr/local/bin/golangci-lint
-
+COPY --from=golangci/golangci-lint:latest /usr/bin/golangci-lint /usr/local/bin/golangci-lint
 WORKDIR /app
 
 COPY go.mod go.sum ./
