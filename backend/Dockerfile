@@ -19,7 +19,10 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 FROM deps AS source
-COPY . .
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
+COPY configs/ ./configs/
+COPY api/ ./api/
 
 # lint
 FROM source AS lint
