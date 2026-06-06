@@ -7,8 +7,8 @@ test.describe("SMC Anti-Cheat System (防作弊系統 E2E 測試)", () => {
     await page.goto("http://localhost:8080/login");
 
     // 2. 填入指定的測試帳號與密碼
-    await page.getByPlaceholder("請輸入面試通知上的帳號").fill("USER-4457");
-    await page.getByPlaceholder("請輸入密碼").fill("Y4VX9M");
+    await page.getByPlaceholder("請輸入面試通知上的帳號").fill("USER-2853");
+    await page.getByPlaceholder("請輸入密碼").fill("3D5Q47");
     await page.getByRole("button", { name: "進入工作區" }).click();
 
     // ==========================================
