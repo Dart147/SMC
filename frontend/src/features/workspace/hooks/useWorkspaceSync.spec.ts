@@ -53,7 +53,7 @@ describe("useWorkspaceSync Hook", () => {
     localStorage.setItem("smc_draft_p1_python", "print('local storage cache')");
 
     const { result } = renderHook(() =>
-      useWorkspaceSync({ problemId: "p1", defaultLang: "javascript", skeletons: mockSkeletons })
+      useWorkspaceSync({ problemId: "p1", defaultLang: "javascript", skeletons: mockSkeletons }),
     );
 
     // 等待初始化結束
@@ -62,7 +62,7 @@ describe("useWorkspaceSync Hook", () => {
     expect(result.current.language).toBe("python");
     expect(result.current.code).toBe("print('local storage cache')");
     // 不應該打 API
-    expect(apiClient.get).not.toHaveBeenCalled(); 
+    expect(apiClient.get).not.toHaveBeenCalled();
   });
 
   it("情境二：LocalStorage 沒草稿但 DB 有紀錄時，應打 API 並存入 LocalStorage", async () => {
@@ -71,19 +71,21 @@ describe("useWorkspaceSync Hook", () => {
     });
 
     const { result } = renderHook(() =>
-      useWorkspaceSync({ problemId: "p2", defaultLang: "javascript", skeletons: mockSkeletons })
+      useWorkspaceSync({ problemId: "p2", defaultLang: "javascript", skeletons: mockSkeletons }),
     );
 
     await waitFor(() => expect(result.current.isInitializing).toBe(false));
 
-    expect(apiClient.get).toHaveBeenCalledWith("/submissions/latest", { params: { problemId: "p2" } });
+    expect(apiClient.get).toHaveBeenCalledWith("/submissions/latest", {
+      params: { problemId: "p2" },
+    });
     expect(result.current.code).toBe("console.log('from db')");
     expect(localStorage.getItem("smc_draft_p2_javascript")).toBe("console.log('from db')");
   });
 
   it("切換語言時，應自動載入該語言對應的骨架 (Skeleton) 或舊草稿", async () => {
     const { result } = renderHook(() =>
-      useWorkspaceSync({ problemId: "p3", defaultLang: "javascript", skeletons: mockSkeletons })
+      useWorkspaceSync({ problemId: "p3", defaultLang: "javascript", skeletons: mockSkeletons }),
     );
 
     await waitFor(() => expect(result.current.isInitializing).toBe(false));
@@ -100,7 +102,7 @@ describe("useWorkspaceSync Hook", () => {
 
   it("修改程式碼時，應自動寫入 LocalStorage", async () => {
     const { result } = renderHook(() =>
-      useWorkspaceSync({ problemId: "p4", defaultLang: "javascript", skeletons: mockSkeletons })
+      useWorkspaceSync({ problemId: "p4", defaultLang: "javascript", skeletons: mockSkeletons }),
     );
 
     await waitFor(() => expect(result.current.isInitializing).toBe(false));

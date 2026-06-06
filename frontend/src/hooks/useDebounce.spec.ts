@@ -13,10 +13,9 @@ describe("useDebounce Hook", () => {
   });
 
   it("在延遲時間內，回傳的值不應改變", () => {
-    const { result, rerender } = renderHook(
-      ({ value }) => useDebounce(value, 500),
-      { initialProps: { value: "hello" } }
-    );
+    const { result, rerender } = renderHook(({ value }) => useDebounce(value, 500), {
+      initialProps: { value: "hello" },
+    });
 
     expect(result.current).toBe("hello");
     rerender({ value: "hello world" });
@@ -31,7 +30,7 @@ describe("useDebounce Hook", () => {
     act(() => {
       vi.advanceTimersByTime(200);
     });
-    
+
     // 現在 React 已經成功把狀態更新上去了！
     expect(result.current).toBe("hello world");
   });

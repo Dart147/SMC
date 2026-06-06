@@ -17,7 +17,7 @@ describe("Format Utils", () => {
   it("應能接受 Date 物件作為參數", () => {
     const testDate = new Date("2025-01-01T00:00:00Z");
     const formatted = formatDate(testDate);
-    
+
     expect(formatted).toContain("2025");
   });
 });

@@ -18,7 +18,7 @@ describe("Workspace API", () => {
   it("submitCode 應正確發送 POST 請求與資料", async () => {
     const mockPayload = { problemId: "p1", code: "print(1)", language: "python" };
     const mockResponse = { data: { id: "sub-123", status: "Pending" } };
-    
+
     vi.mocked(apiClient.post).mockResolvedValueOnce(mockResponse);
 
     const result = await submitCode(mockPayload);

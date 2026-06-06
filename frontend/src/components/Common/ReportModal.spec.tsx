@@ -68,10 +68,10 @@ describe("ReportModal", () => {
   it("點擊關閉按鈕時，應呼叫 onClose", () => {
     const handleClose = vi.fn();
     // 保持 Loading 狀態即可測按鈕
-    vi.mocked(apiClient.get).mockReturnValue(new Promise(() => {})); 
+    vi.mocked(apiClient.get).mockReturnValue(new Promise(() => {}));
 
     render(<ReportModal submissionId={mockSubmissionId} onClose={handleClose} />);
-    
+
     // 找叉叉按鈕 (透過 svg 的外層 button)
     const closeBtn = screen.getByRole("button");
     fireEvent.click(closeBtn);

@@ -47,7 +47,7 @@ describe("useRunCode Hook", () => {
 
   it("成功提交並輪詢直到獲得最終狀態 (Accepted)", async () => {
     vi.mocked(api.submitCode).mockResolvedValueOnce({ id: "sub-123" } as any);
-    
+
     // 第一次輪詢回傳 Pending，第二次回傳 Accepted
     vi.mocked(api.getSubmission)
       .mockResolvedValueOnce({ id: "sub-123", status: "Pending" } as any)
@@ -72,7 +72,7 @@ describe("useRunCode Hook", () => {
     await act(async () => {
       vi.advanceTimersByTime(1500);
     });
-    
+
     // 驗證獲得最終結果，跳轉頁面，並停止執行
     expect(useWorkspaceStore.getState().result?.status).toBe("Accepted");
     expect(result.current.isRunning).toBe(false);

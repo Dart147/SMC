@@ -10,7 +10,7 @@ describe("Select Component", () => {
 
   it("預設應顯示選中的值或 Placeholder，且不顯示下拉選單", () => {
     render(<Select options={options} value="" placeholder="Choose Language" onChange={vi.fn()} />);
-    
+
     expect(screen.getByText("Choose Language")).toBeInTheDocument();
     expect(screen.queryByText("Python")).not.toBeInTheDocument(); // 下拉選單未展開
   });
@@ -18,7 +18,7 @@ describe("Select Component", () => {
   it("點擊按鈕應展開下拉選單，並能觸發 onChange", () => {
     const handleChange = vi.fn();
     render(<Select options={options} value="cpp" onChange={handleChange} />);
-    
+
     // 檢查已選中的值
     expect(screen.getByText("C++")).toBeInTheDocument();
 
@@ -36,7 +36,7 @@ describe("Select Component", () => {
       <div>
         <div data-testid="outside">Outside Area</div>
         <Select options={options} value="" onChange={vi.fn()} />
-      </div>
+      </div>,
     );
 
     // 點開
