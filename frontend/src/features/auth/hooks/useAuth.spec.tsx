@@ -72,7 +72,7 @@ describe("useAuth Hook", () => {
 
     // 驗證 4: Zustand 的狀態有沒有被正確更新
     expect(result.current.token).toBe(mockToken);
-    expect(result.current.user).toEqual({ id: "usr_123", role: "candidate" });
+    expect(result.current.user).toEqual({ id: "usr_123", role: "candidate", username: "testuser" });
     expect(result.current.examExpiresAt).toBe(1710000000);
   });
 

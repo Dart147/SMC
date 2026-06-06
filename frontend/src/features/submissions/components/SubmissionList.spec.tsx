@@ -86,7 +86,7 @@ describe("SubmissionList", () => {
       render(<SubmissionList submissions={mockSubmissions} />);
 
       const acceptedRow = screen.getByText("Problem p1");
-      const successMessage = "All test cases passed successfully! You are awesome!";
+      const successMessage = "All test cases passed successfully!";
 
       // 初始狀態下，不應該看到詳細成功訊息
       expect(screen.queryByText(successMessage)).not.toBeInTheDocument();
@@ -131,13 +131,13 @@ describe("SubmissionList", () => {
 
       // 先點開第一個
       fireEvent.click(screen.getByText("Problem p1"));
-      expect(screen.getByText(/You are awesome/)).toBeInTheDocument();
+      expect(screen.getByText(/All test cases passed/)).toBeInTheDocument();
 
       // 點開第三個
       fireEvent.click(screen.getByText("Problem p3"));
 
       // 驗證第一個已經被收起來了 (找不到文字)，而第三個的內容出現了
-      expect(screen.queryByText(/You are awesome/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/All test cases passed/)).not.toBeInTheDocument();
       expect(screen.getByText("Your Output")).toBeInTheDocument();
     });
   });
