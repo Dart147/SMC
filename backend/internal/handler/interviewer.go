@@ -24,6 +24,7 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 			u.username,
 			u.role,
 			u.created_at,
+			u.warning_count,
 			COALESCE(score_data.overall_score, 0) as overall_score,
 			COALESCE(s.id::text, '') as sub_id,
 			COALESCE(p.title, '未命名題目') as p_title,
@@ -69,8 +70,8 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 
 	for rows.Next() {
 		var id, username, role, createdAt, subID, pTitle, subStatus string
-		var overallScore, codeStyleScore, passed, total, runTimeMs int
-		if err := rows.Scan(&id, &username, &role, &createdAt, &overallScore, &subID, &pTitle, &subStatus, &codeStyleScore, &passed, &total, &runTimeMs); err != nil {
+		var warningCount, overallScore, codeStyleScore, passed, total, runTimeMs int
+		if err := rows.Scan(&id, &username, &role, &createdAt, &warningCount, &overallScore, &subID, &pTitle, &subStatus, &codeStyleScore, &passed, &total, &runTimeMs); err != nil {
 			_ = err
 			continue
 		}
@@ -85,7 +86,7 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 				"id":           id,
 				"username":     displayName,
 				"createdAt":    createdAt,
-				"warningCount": 0,
+				"warningCount": warningCount,
 				"overallScore": overallScore,
 				"submissions":  []map[string]interface{}{},
 			}
