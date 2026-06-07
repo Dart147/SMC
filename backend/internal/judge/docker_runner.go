@@ -70,10 +70,12 @@ func NewDockerRunner(logger *zap.Logger) *DockerRunner {
 	return r
 }
 
+const dockerBin = "/usr/bin/docker"
+
 func (r *DockerRunner) pullImages() {
 	for lang, cfg := range dockerLangConfigs {
 		r.logger.Info("pulling sandbox image", zap.String("language", lang), zap.String("image", cfg.image))
-		out, err := exec.Command("docker", "pull", cfg.image).CombinedOutput()
+		out, err := exec.Command(dockerBin, "pull", cfg.image).CombinedOutput()
 		if err != nil {
 			r.logger.Warn("image pull failed — first submission may be slow",
 				zap.String("image", cfg.image),
@@ -137,7 +139,7 @@ func (r *DockerRunner) compileCheck(ctx context.Context, cfg dockerLangConfig, c
 	compileCtx, cancel := context.WithTimeout(ctx, ExecutionTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(compileCtx, "docker", r.dockerArgs(cfg, code, cfg.compileSh)...)
+	cmd := exec.CommandContext(compileCtx, dockerBin, r.dockerArgs(cfg, code, cfg.compileSh)...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -155,7 +157,7 @@ func (r *DockerRunner) runTestCase(ctx context.Context, cfg dockerLangConfig, co
 	execCtx, cancel := context.WithTimeout(ctx, ExecutionTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(execCtx, "docker", r.dockerArgs(cfg, code, cfg.runSh)...)
+	cmd := exec.CommandContext(execCtx, dockerBin, r.dockerArgs(cfg, code, cfg.runSh)...)
 	cmd.Stdin = strings.NewReader(tc.Input)
 
 	var stdout, stderr bytes.Buffer

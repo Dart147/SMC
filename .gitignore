@@ -44,3 +44,4 @@ test-results/
 
 postgres_data/
 docs/
+coverage/

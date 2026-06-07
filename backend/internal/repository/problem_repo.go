@@ -2,12 +2,12 @@ package repository
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"strconv"
 	"strings"
-	"time"
 
 	sqlcdb "github.com/Dart147/SMC/backend/internal/db"
 	"github.com/Dart147/SMC/backend/internal/domain"
@@ -27,8 +27,11 @@ func NewProblemRepo(db *sql.DB) *ProblemRepo {
 
 func (r *ProblemRepo) Create(prob *domain.Problem) error {
 	ctx := context.Background()
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	newProblemID := fmt.Sprintf("%d", rng.Intn(899999)+100000)
+	nProb, err := rand.Int(rand.Reader, big.NewInt(900000))
+	if err != nil {
+		return fmt.Errorf("generate problem id failed: %w", err)
+	}
+	newProblemID := fmt.Sprintf("%d", nProb.Int64()+100000)
 
 	// Begin transaction — 確保題目與測資一起成功或一起失敗
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -52,7 +55,11 @@ func (r *ProblemRepo) Create(prob *domain.Problem) error {
 	}
 
 	for _, tc := range prob.TestCases {
-		newTCID := fmt.Sprintf("%d", rng.Intn(89999999)+10000000)
+		nTC, err := rand.Int(rand.Reader, big.NewInt(90000000))
+		if err != nil {
+			return fmt.Errorf("generate test case id failed: %w", err)
+		}
+		newTCID := fmt.Sprintf("%d", nTC.Int64()+10000000)
 		err = qtx.CreateTestCase(ctx, sqlcdb.CreateTestCaseParams{
 			ID:             newTCID,
 			ProblemID:      sql.NullString{String: newProblemID, Valid: true},
