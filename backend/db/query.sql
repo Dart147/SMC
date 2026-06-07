@@ -63,11 +63,19 @@ SELECT
     u.id        AS user_id,
     u.username,
     u.exam_started_at,
-    COALESCE(SUM(s.score), 0)::int                                                AS total_score,
-    COUNT(DISTINCT s.problem_id)::int                                             AS problems_attempted,
-    COUNT(DISTINCT CASE WHEN s.status = 'Accepted' THEN s.problem_id END)::int   AS problems_accepted
+    CASE
+        WHEN COUNT(DISTINCT upa.problem_id) = 0 THEN 0
+        ELSE ROUND(
+            COUNT(DISTINCT CASE WHEN s.status = 'Accepted' THEN upa.problem_id END)::numeric
+            * 100
+            / COUNT(DISTINCT upa.problem_id)
+        )::int
+    END                                                                           AS total_score,
+    COUNT(DISTINCT upa.problem_id)::int                                           AS problems_attempted,
+    COUNT(DISTINCT CASE WHEN s.status = 'Accepted' THEN upa.problem_id END)::int AS problems_accepted
 FROM users u
-LEFT JOIN submissions s ON u.id = s.user_id
+LEFT JOIN user_problem_assignments upa ON u.id = upa.user_id
+LEFT JOIN submissions s ON s.user_id = u.id AND s.problem_id = upa.problem_id
 WHERE u.role = 'candidate'
 GROUP BY u.id, u.username, u.exam_started_at
 ORDER BY total_score DESC;
