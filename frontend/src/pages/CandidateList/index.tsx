@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { apiClient } from "../services/api";
-import ReportModal from "../components/Common/ReportModal";
+import { apiClient } from "../../services/api";
+import ReportModal from "../../components/Common/ReportModal";
 
 interface SubmissionDetail {
   id: string;
@@ -94,7 +94,16 @@ export const CandidateList: React.FC = () => {
               >
                 {/* Candidate row */}
                 <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => toggleExpand(candidate.id)}
+                  onKeyDown={(e) => {
+                    // 讓鍵盤使用者也能透過 Enter 或空白鍵觸發展開
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggleExpand(candidate.id);
+                    }
+                  }}
                   className="flex items-center p-4 px-5 cursor-pointer hover:bg-slate-800/60 transition-colors"
                 >
                   {/* Username */}

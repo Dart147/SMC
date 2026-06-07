@@ -72,13 +72,23 @@ export const SubmissionList: React.FC<Props> = ({ submissions, isLoading }) => {
             className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden transition-all duration-200"
           >
             {/* Summary row */}
+            {/* Summary row */}
             <div
+              role="button"
+              tabIndex={0}
               className="flex items-center justify-between p-4 hover:bg-slate-800/40 transition-colors cursor-pointer"
               onClick={() => toggleExpand(submission.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggleExpand(submission.id);
+                }
+              }}
             >
               <div className="flex items-center gap-4">
                 {/* Status badge — click opens report */}
-                <div
+                <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     setReportId(submission.id);
@@ -93,7 +103,7 @@ export const SubmissionList: React.FC<Props> = ({ submissions, isLoading }) => {
                   <span className="text-[10px] bg-slate-800 px-1 py-0.5 rounded font-bold text-slate-400 ml-0.5">
                     REPORT
                   </span>
-                </div>
+                </button>
 
                 {/* Problem info */}
                 <div>
