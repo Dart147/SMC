@@ -144,7 +144,7 @@ export function ConsolePanel({ theme, sampleTestCase, onRun, isRunSample }: Cons
                 onClick={onRun}
                 disabled={isRunSample}
                 style={{
-                  background: isRunSample ? colors.secondaryBg : colors.secondaryBg,
+                  background: colors.secondaryBg,
                   color: isRunSample ? "#9ca3af" : colors.text,
                   padding: "6px 16px",
                   borderRadius: "4px",

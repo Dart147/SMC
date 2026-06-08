@@ -1,9 +1,9 @@
 import { Language, Theme, THEME_CONFIG } from "../constants";
 
 interface EditorToolbarProps {
-  language: Language;
-  theme: Theme;
-  onLanguageChange: (lang: Language) => void;
+  readonly language: Language;
+  readonly theme: Theme;
+  readonly onLanguageChange: (lang: Language) => void;
 }
 
 export default function EditorToolbar({ language, theme, onLanguageChange }: EditorToolbarProps) {

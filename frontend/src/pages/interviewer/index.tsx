@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { createCandidate, apiClient } from "../../services/api";
 import {
   assignProblem,
@@ -30,12 +30,210 @@ interface Candidate {
   username: string;
 }
 
+interface FormTestCase {
+  uid: number;
+  input: string;
+  output: string;
+  isHidden?: boolean;
+}
+
+interface ProblemFormFieldsProps {
+  readonly titleId: string;
+  readonly titleValue: string;
+  readonly onTitleChange: (v: string) => void;
+  readonly difficultyValue: string;
+  readonly onDifficultyChange: (v: string) => void;
+  readonly descriptionId: string;
+  readonly descriptionValue: string;
+  readonly onDescriptionChange: (v: string) => void;
+  readonly testCases: FormTestCase[];
+  readonly onTestCaseChange: (index: number, field: "input" | "output", value: string) => void;
+  readonly onAddTestCase: () => void;
+  readonly onRemoveTestCase?: (index: number) => void;
+  readonly onToggleHidden?: (index: number) => void;
+}
+
 const difficultyStyle: Record<string, string> = {
   Easy: "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40",
   Medium:
     "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40",
   Hard: "bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/40",
 };
+
+const DIFFICULTY_OPTIONS = [
+  {
+    value: "Easy",
+    label: "Easy",
+    meta: (
+      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40">
+        E
+      </span>
+    ),
+  },
+  {
+    value: "Medium",
+    label: "Medium",
+    meta: (
+      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40">
+        M
+      </span>
+    ),
+  },
+  {
+    value: "Hard",
+    label: "Hard",
+    meta: (
+      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/40">
+        H
+      </span>
+    ),
+  },
+];
+
+function ProblemFormFields({
+  titleId,
+  titleValue,
+  onTitleChange,
+  difficultyValue,
+  onDifficultyChange,
+  descriptionId,
+  descriptionValue,
+  onDescriptionChange,
+  testCases,
+  onTestCaseChange,
+  onAddTestCase,
+  onRemoveTestCase,
+  onToggleHidden,
+}: ProblemFormFieldsProps) {
+  return (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="sm:col-span-2">
+          <label
+            htmlFor={titleId}
+            className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider"
+          >
+            Title
+          </label>
+          <input
+            id={titleId}
+            type="text"
+            value={titleValue}
+            onChange={(e) => onTitleChange(e.target.value)}
+            required
+            className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+            placeholder="Problem title"
+          />
+        </div>
+        <div>
+          <span className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
+            Difficulty
+          </span>
+          <Select
+            value={difficultyValue}
+            onChange={onDifficultyChange}
+            options={DIFFICULTY_OPTIONS}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label
+          htmlFor={descriptionId}
+          className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider"
+        >
+          Description (Markdown)
+        </label>
+        <textarea
+          id={descriptionId}
+          value={descriptionValue}
+          onChange={(e) => onDescriptionChange(e.target.value)}
+          required
+          className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 h-48 text-gray-900 dark:text-slate-100 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-slate-500"
+          placeholder="Describe the problem in Markdown..."
+        />
+      </div>
+
+      <div className="border-t border-gray-200 dark:border-slate-800 pt-5">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+            Test Cases
+          </span>
+          <button
+            type="button"
+            onClick={onAddTestCase}
+            className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/40 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+          >
+            + Add Test Case
+          </button>
+        </div>
+        <div className="space-y-2">
+          {testCases.map((tc, index) => (
+            <div
+              key={`tc-${tc.uid}`}
+              className={`bg-gray-50 dark:bg-slate-800/50 p-3 rounded-lg border transition-colors ${tc.isHidden ? "border-amber-200 dark:border-amber-800/40" : "border-gray-200 dark:border-slate-700/50"}`}
+            >
+              <div className="grid grid-cols-2 gap-3 mb-2">
+                <input
+                  placeholder="Input"
+                  value={tc.input}
+                  onChange={(e) => onTestCaseChange(index, "input", e.target.value)}
+                  className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-gray-700 dark:text-slate-300 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                />
+                <input
+                  placeholder="Expected Output"
+                  value={tc.output}
+                  onChange={(e) => onTestCaseChange(index, "output", e.target.value)}
+                  className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-gray-700 dark:text-slate-300 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                />
+              </div>
+              {(onToggleHidden || onRemoveTestCase) && (
+                <div className="flex items-center justify-between">
+                  {onToggleHidden ? (
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={tc.isHidden ?? false}
+                        onChange={() => onToggleHidden(index)}
+                        className="w-3.5 h-3.5 accent-amber-500 cursor-pointer"
+                      />
+                      <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                        Hidden (not shown to candidate)
+                      </span>
+                    </label>
+                  ) : (
+                    <span />
+                  )}
+                  {onRemoveTestCase && testCases.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => onRemoveTestCase(index)}
+                      className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
 
 const InterviewerDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -44,11 +242,14 @@ const InterviewerDashboard: React.FC = () => {
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const nextUid = useRef(0);
+  const uid = () => (nextUid.current += 1);
+
   const [title, setTitle] = useState("");
   const [difficulty, setDifficulty] = useState("Medium");
   const [description, setDescription] = useState("");
-  const [testCases, setTestCases] = useState<{ input: string; output: string }[]>([
-    { input: "", output: "" },
+  const [testCases, setTestCases] = useState<FormTestCase[]>([
+    { input: "", output: "", uid: uid() },
   ]);
   const [candidateCreds, setCandidateCreds] = useState<{ acc: string; pw: string } | null>(null);
 
@@ -62,15 +263,13 @@ const InterviewerDashboard: React.FC = () => {
   const [editTitle, setEditTitle] = useState("");
   const [editDifficulty, setEditDifficulty] = useState("Medium");
   const [editDescription, setEditDescription] = useState("");
-  const [editTestCases, setEditTestCases] = useState<
-    { input: string; output: string; isHidden: boolean }[]
-  >([]);
+  const [editTestCases, setEditTestCases] = useState<FormTestCase[]>([]);
 
   const generateCredentials = async () => {
     const randomVals = new Uint32Array(1);
-    window.crypto.getRandomValues(randomVals);
+    globalThis.crypto.getRandomValues(randomVals);
     const newAcc = "USER-" + (1000 + (randomVals[0] % 9000));
-    const newPw = window.crypto.randomUUID().substring(0, 6).toUpperCase();
+    const newPw = globalThis.crypto.randomUUID().substring(0, 6).toUpperCase();
     setIsLoading(true);
     try {
       await createCandidate({ username: newAcc, password: newPw });
@@ -173,7 +372,7 @@ const InterviewerDashboard: React.FC = () => {
       alert("Problem saved successfully.");
       setTitle("");
       setDescription("");
-      setTestCases([{ input: "", output: "" }]);
+      setTestCases([{ input: "", output: "", uid: uid() }]);
       fetchProblems();
     } catch {
       alert("Save failed. Check server or permissions.");
@@ -182,7 +381,7 @@ const InterviewerDashboard: React.FC = () => {
 
   const handleDeleteProblem = async (problemId: string, problemTitle: string) => {
     if (
-      !window.confirm(
+      !globalThis.confirm(
         `Delete "${problemTitle}"? This will also remove all submissions and assignments for this problem.`,
       )
     )
@@ -207,6 +406,7 @@ const InterviewerDashboard: React.FC = () => {
           input: tc.input || "",
           output: tc.expected_output || "",
           isHidden: tc.isHidden ?? false,
+          uid: uid(),
         })),
       );
       setEditingProblem(p);
@@ -241,29 +441,28 @@ const InterviewerDashboard: React.FC = () => {
           isHidden: tc.isHidden,
         })),
       });
-      setProblems((prev) =>
-        prev.map((p) =>
-          String(p.id) === String(editingProblem.id)
-            ? {
-                ...p,
-                title: editTitle,
-                difficulty: editDifficulty,
-                description: editDescription,
-                testCases: editTestCases.map((tc) => ({
-                  input: tc.input,
-                  expected_output: tc.output,
-                })),
-              }
-            : p,
-        ),
-      );
+      const editedId = String(editingProblem.id);
+      const patchProblem = (p: Problem): Problem =>
+        String(p.id) === editedId
+          ? {
+              ...p,
+              title: editTitle,
+              difficulty: editDifficulty,
+              description: editDescription,
+              testCases: editTestCases.map((tc) => ({
+                input: tc.input,
+                expected_output: tc.output,
+              })),
+            }
+          : p;
+      setProblems((prev) => prev.map(patchProblem));
       setEditingProblem(null);
     } catch {
       alert("Failed to save changes. Check server or permissions.");
     }
   };
 
-  const addTestCase = () => setTestCases([...testCases, { input: "", output: "" }]);
+  const addTestCase = () => setTestCases([...testCases, { input: "", output: "", uid: uid() }]);
   const handleTestCaseChange = (index: number, field: "input" | "output", value: string) => {
     const next = [...testCases];
     next[index][field] = value;
@@ -408,9 +607,9 @@ const InterviewerDashboard: React.FC = () => {
                 </h2>
 
                 <div className="mb-5">
-                  <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
+                  <span className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
                     Select Candidate
-                  </label>
+                  </span>
                   <Select
                     value={selectedCandidateId ?? ""}
                     onChange={selectCandidate}
@@ -510,108 +709,19 @@ const InterviewerDashboard: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
-                      Title
-                    </label>
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      required
-                      className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
-                      placeholder="Problem title"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
-                      Difficulty
-                    </label>
-                    <Select
-                      value={difficulty}
-                      onChange={setDifficulty}
-                      options={[
-                        {
-                          value: "Easy",
-                          label: "Easy",
-                          meta: (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40">
-                              E
-                            </span>
-                          ),
-                        },
-                        {
-                          value: "Medium",
-                          label: "Medium",
-                          meta: (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40">
-                              M
-                            </span>
-                          ),
-                        },
-                        {
-                          value: "Hard",
-                          label: "Hard",
-                          meta: (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/40">
-                              H
-                            </span>
-                          ),
-                        },
-                      ]}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
-                    Description (Markdown)
-                  </label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    required
-                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 h-48 text-gray-900 dark:text-slate-100 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-slate-500"
-                    placeholder="Describe the problem in Markdown..."
-                  />
-                </div>
-
-                <div className="border-t border-gray-200 dark:border-slate-800 pt-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-                      Test Cases
-                    </label>
-                    <button
-                      type="button"
-                      onClick={addTestCase}
-                      className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/40 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
-                    >
-                      + Add Test Case
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {testCases.map((tc, index) => (
-                      <div
-                        key={`input-row-${index}`}
-                        className="grid grid-cols-2 gap-3 bg-gray-50 dark:bg-slate-800/50 p-3 rounded-lg border border-gray-200 dark:border-slate-700/50"
-                      >
-                        <input
-                          placeholder="Input"
-                          value={tc.input}
-                          onChange={(e) => handleTestCaseChange(index, "input", e.target.value)}
-                          className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-gray-700 dark:text-slate-300 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
-                        />
-                        <input
-                          placeholder="Expected Output"
-                          value={tc.output}
-                          onChange={(e) => handleTestCaseChange(index, "output", e.target.value)}
-                          className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-gray-700 dark:text-slate-300 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <ProblemFormFields
+                  titleId="create-title"
+                  titleValue={title}
+                  onTitleChange={setTitle}
+                  difficultyValue={difficulty}
+                  onDifficultyChange={setDifficulty}
+                  descriptionId="create-description"
+                  descriptionValue={description}
+                  onDescriptionChange={setDescription}
+                  testCases={testCases}
+                  onTestCaseChange={handleTestCaseChange}
+                  onAddTestCase={addTestCase}
+                />
               </form>
             )}
 
@@ -716,151 +826,28 @@ const InterviewerDashboard: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveEdit} className="p-6 overflow-y-auto space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    required
-                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
-                    Difficulty
-                  </label>
-                  <Select
-                    value={editDifficulty}
-                    onChange={setEditDifficulty}
-                    options={[
-                      {
-                        value: "Easy",
-                        label: "Easy",
-                        meta: (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40">
-                            E
-                          </span>
-                        ),
-                      },
-                      {
-                        value: "Medium",
-                        label: "Medium",
-                        meta: (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40">
-                            M
-                          </span>
-                        ),
-                      },
-                      {
-                        value: "Hard",
-                        label: "Hard",
-                        meta: (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/40">
-                            H
-                          </span>
-                        ),
-                      },
-                    ]}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
-                  Description (Markdown)
-                </label>
-                <textarea
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  required
-                  className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 h-48 text-gray-900 dark:text-slate-100 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-slate-500"
-                />
-              </div>
-
-              <div className="border-t border-gray-200 dark:border-slate-800 pt-5">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-                    Test Cases
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setEditTestCases([
-                        ...editTestCases,
-                        { input: "", output: "", isHidden: false },
-                      ])
-                    }
-                    className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/40 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
-                  >
-                    + Add Test Case
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {editTestCases.map((tc, index) => (
-                    <div
-                      key={`edit-tc-${index}`}
-                      className={`bg-gray-50 dark:bg-slate-800/50 p-3 rounded-lg border transition-colors ${tc.isHidden ? "border-amber-200 dark:border-amber-800/40" : "border-gray-200 dark:border-slate-700/50"}`}
-                    >
-                      <div className="grid grid-cols-2 gap-3 mb-2">
-                        <input
-                          placeholder="Input"
-                          value={tc.input}
-                          onChange={(e) => handleEditTestCaseChange(index, "input", e.target.value)}
-                          className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-gray-700 dark:text-slate-300 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
-                        />
-                        <input
-                          placeholder="Expected Output"
-                          value={tc.output}
-                          onChange={(e) =>
-                            handleEditTestCaseChange(index, "output", e.target.value)
-                          }
-                          className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-gray-700 dark:text-slate-300 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <label className="flex items-center gap-2 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={tc.isHidden}
-                            onChange={() => toggleEditTestCaseHidden(index)}
-                            className="w-3.5 h-3.5 accent-amber-500 cursor-pointer"
-                          />
-                          <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                            Hidden (not shown to candidate)
-                          </span>
-                        </label>
-                        {editTestCases.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditTestCases(editTestCases.filter((_, i) => i !== index))
-                            }
-                            className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer"
-                          >
-                            <svg
-                              className="w-3.5 h-3.5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M6 18L18 6M6 6l12 12"
-                              />
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ProblemFormFields
+                titleId="edit-title"
+                titleValue={editTitle}
+                onTitleChange={setEditTitle}
+                difficultyValue={editDifficulty}
+                onDifficultyChange={setEditDifficulty}
+                descriptionId="edit-description"
+                descriptionValue={editDescription}
+                onDescriptionChange={setEditDescription}
+                testCases={editTestCases}
+                onTestCaseChange={handleEditTestCaseChange}
+                onAddTestCase={() =>
+                  setEditTestCases([
+                    ...editTestCases,
+                    { input: "", output: "", isHidden: false, uid: uid() },
+                  ])
+                }
+                onRemoveTestCase={(index) =>
+                  setEditTestCases(editTestCases.filter((_, i) => i !== index))
+                }
+                onToggleHidden={toggleEditTestCaseHidden}
+              />
 
               <div className="flex justify-end gap-3 pt-2">
                 <button

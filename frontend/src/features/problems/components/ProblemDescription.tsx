@@ -7,7 +7,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 
 interface ProblemDescriptionProps {
-  problem: Problem;
+  readonly problem: Problem;
 }
 
 const getDifficultyBadge = (diff: string) => {
@@ -29,17 +29,49 @@ function extractText(node: React.ReactNode): string {
   return "";
 }
 
+/** Parse an Input/Output/Explanation block without ReDoS-prone regex */
+function parseExampleRaw(raw: string): {
+  input: string;
+  output: string;
+  explanation: string | null;
+} | null {
+  type Section = "input" | "output" | "explanation";
+  let section: Section | null = null;
+  const buckets: Record<Section, string[]> = { input: [], output: [], explanation: [] };
+
+  for (const line of raw.split("\n")) {
+    if (/^Input:/.exec(line)) {
+      section = "input";
+      const rest = line.slice("Input:".length).trimStart();
+      if (rest) buckets.input.push(rest);
+    } else if (/^Output:/.exec(line)) {
+      section = "output";
+      const rest = line.slice("Output:".length).trimStart();
+      if (rest) buckets.output.push(rest);
+    } else if (/^Explanation:/.exec(line)) {
+      section = "explanation";
+      const rest = line.slice("Explanation:".length).trimStart();
+      if (rest) buckets.explanation.push(rest);
+    } else if (section !== null) {
+      buckets[section].push(line);
+    }
+  }
+
+  if (buckets.input.length === 0 || buckets.output.length === 0) return null;
+
+  return {
+    input: buckets.input.join("\n").trim(),
+    output: buckets.output.join("\n").trim(),
+    explanation: buckets.explanation.length > 0 ? buckets.explanation.join("\n").trim() : null,
+  };
+}
+
 /** Render a polished Input / Output example card */
-function ExampleBlock({ raw }: { raw: string }) {
-  const inputMatch = raw.match(/Input:\s*([\s\S]*?)(?=\nOutput:)/);
-  const outputMatch = raw.match(/Output:\s*([\s\S]*?)(?=\nExplanation:|$)/);
-  const explanationMatch = raw.match(/Explanation:\s*([\s\S]*?)$/);
+function ExampleBlock({ raw }: { readonly raw: string }) {
+  const parsed = parseExampleRaw(raw);
+  if (!parsed) return null;
 
-  if (!inputMatch || !outputMatch) return null;
-
-  const inputVal = inputMatch[1].trim();
-  const outputVal = outputMatch[1].trim();
-  const explanation = explanationMatch ? explanationMatch[1].trim() : null;
+  const { input: inputVal, output: outputVal, explanation } = parsed;
 
   return (
     <div className="my-3 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden shadow-sm dark:shadow-none">
@@ -120,6 +152,53 @@ function ExampleBlock({ raw }: { raw: string }) {
   );
 }
 
+// Markdown component renderers defined at module level to avoid re-definition on each render
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const markdownComponents = {
+  h3: ({ node: _node, ...props }: any) => (
+    <h3
+      className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-7 mb-2.5 pb-1.5 border-b border-slate-100 dark:border-slate-800"
+      {...props}
+    />
+  ),
+  ol: ({ node: _node, ...props }: any) => (
+    <ol className="list-decimal ml-5 mb-4 space-y-1" {...props} />
+  ),
+  ul: ({ node: _node, ...props }: any) => (
+    <ul className="list-disc ml-5 mb-4 space-y-1" {...props} />
+  ),
+  code: ({ node: _node, className, children, ...props }: any) => {
+    const isBlock = /language-(\w+)/.exec(className ?? "");
+    if (isBlock) {
+      return (
+        <code className={`${className} font-mono text-[0.78rem]`} {...props}>
+          {children}
+        </code>
+      );
+    }
+    return (
+      <code
+        className="bg-slate-100 dark:bg-slate-800 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded font-mono text-[0.82em] before:content-none after:content-none"
+        {...props}
+      >
+        {children}
+      </code>
+    );
+  },
+  pre: ({ children }: { children?: React.ReactNode }) => {
+    const raw = extractText(children).trim();
+    if (raw.includes("Input:") && raw.includes("Output:")) {
+      return <ExampleBlock raw={raw} />;
+    }
+    return (
+      <pre className="my-4 p-4 rounded-xl bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 overflow-x-auto font-mono text-[0.82rem] leading-relaxed text-gray-800 dark:text-slate-200">
+        {children}
+      </pre>
+    );
+  },
+};
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 export function ProblemDescription({ problem }: ProblemDescriptionProps) {
   return (
     <div className="font-sans p-6 h-full overflow-y-auto bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
@@ -153,49 +232,7 @@ export function ProblemDescription({ problem }: ProblemDescriptionProps) {
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath]}
           rehypePlugins={[rehypeKatex]}
-          components={{
-            // Section headers — styled as compact label dividers
-            h3: ({ ...props }) => (
-              <h3
-                className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-7 mb-2.5 pb-1.5 border-b border-slate-100 dark:border-slate-800"
-                {...props}
-              />
-            ),
-            ol: ({ ...props }) => <ol className="list-decimal ml-5 mb-4 space-y-1" {...props} />,
-            ul: ({ ...props }) => <ul className="list-disc ml-5 mb-4 space-y-1" {...props} />,
-            // Inline code only (block code is handled by pre renderer below)
-            code: ({ className, children, ...props }) => {
-              const isBlock = /language-(\w+)/.exec(className || "");
-              if (isBlock) {
-                return (
-                  <code className={`${className} font-mono text-[0.78rem]`} {...props}>
-                    {children}
-                  </code>
-                );
-              }
-              return (
-                <code
-                  className="bg-slate-100 dark:bg-slate-800 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded font-mono text-[0.82em] before:content-none after:content-none"
-                  {...props}
-                >
-                  {children}
-                </code>
-              );
-            },
-            // Pre / fenced code blocks — detect Input/Output examples and render as cards
-            pre: ({ children }) => {
-              const raw = extractText(children).trim();
-              if (raw.includes("Input:") && raw.includes("Output:")) {
-                return <ExampleBlock raw={raw} />;
-              }
-              // Fallback: standard styled code block
-              return (
-                <pre className="my-4 p-4 rounded-xl bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 overflow-x-auto font-mono text-[0.82rem] leading-relaxed text-gray-800 dark:text-slate-200">
-                  {children}
-                </pre>
-              );
-            },
-          }}
+          components={markdownComponents}
         >
           {problem.description}
         </ReactMarkdown>

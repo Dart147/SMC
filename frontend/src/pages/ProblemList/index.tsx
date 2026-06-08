@@ -100,7 +100,7 @@ export function ProblemList() {
     );
   }
 
-  const difficultyConfig = {
+  const difficultyConfig: Record<string, string> = {
     Easy: "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50",
     Medium:
       "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
@@ -111,7 +111,7 @@ export function ProblemList() {
     <div className="max-w-3xl mx-auto px-4 py-10">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-50 tracking-tight">
-          {isCandidate ? "我的題目" : "所有題目"}
+          {isCandidate ? "Assigned Problems" : "All Problems"}
         </h1>
         {isCandidate && (
           <span className="text-xs text-gray-400 dark:text-slate-500 font-mono">
@@ -168,7 +168,7 @@ export function ProblemList() {
 
                 {!isCandidate && problem.difficulty && (
                   <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${difficultyConfig[problem.difficulty as keyof typeof difficultyConfig] ?? "text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700"}`}
+                    className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${difficultyConfig[problem.difficulty] ?? "text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700"}`}
                   >
                     {problem.difficulty}
                   </span>
