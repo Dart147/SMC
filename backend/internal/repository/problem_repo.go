@@ -82,7 +82,7 @@ func (r *ProblemRepo) Create(prob *domain.Problem) error {
 }
 
 func (r *ProblemRepo) List() []domain.Problem {
-	rows, err := r.db.Query(`SELECT id, title, difficulty, description FROM problems ORDER BY id DESC`)
+	rows, err := r.db.Query(`SELECT id, title, difficulty, description FROM problems ORDER BY id ASC`)
 	if err != nil {
 		return []domain.Problem{}
 	}
@@ -117,7 +117,7 @@ func (r *ProblemRepo) GetByID(id string) (domain.Problem, bool) {
 }
 
 func (r *ProblemRepo) getTestCasesByProblemID(pID int) []domain.TestCase {
-	query := `SELECT input, expected_output, COALESCE(is_hidden, false) FROM test_cases WHERE problem_id = $1`
+	query := `SELECT input, expected_output, COALESCE(is_hidden, false) FROM test_cases WHERE problem_id = $1 ORDER BY id ASC`
 	rows, err := r.db.Query(query, pID)
 	if err != nil {
 		return []domain.TestCase{}
@@ -167,6 +167,22 @@ func (r *ProblemRepo) ListAssigned(userID string) []domain.Problem {
 		return []domain.Problem{}
 	}
 	return problems
+}
+
+// Delete removes a problem and all related data (test cases, assignments, submissions cascade via FK)
+func (r *ProblemRepo) Delete(id string) error {
+	res, err := r.db.Exec(`DELETE FROM problems WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("problem %s not found", id)
+	}
+	return nil
 }
 
 // Assign 將一道題目指派給某位考生

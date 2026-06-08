@@ -22,6 +22,11 @@ export const assignProblem = async (userId: string, problemId: string): Promise<
   await apiClient.post("/admin/assign-problem", { userId, problemId });
 };
 
+/** 面試官：刪除題目 */
+export const deleteProblem = async (problemId: string): Promise<void> => {
+  await apiClient.delete(`/problems/${problemId}`);
+};
+
 /** 面試官：取消指派 */
 export const unassignProblem = async (userId: string, problemId: string): Promise<void> => {
   await apiClient.delete("/admin/assign-problem", { data: { userId, problemId } });

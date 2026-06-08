@@ -39,19 +39,19 @@ export const LoginForm = () => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-8 bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl shadow-black/40">
-      <h2 className="text-xl font-semibold text-slate-50 mb-6 text-center tracking-tight">
+    <div className="w-full max-w-md mx-auto p-8 bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-xl shadow-gray-200/60 dark:shadow-black/40">
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-50 mb-6 text-center tracking-tight">
         面試系統登入
       </h2>
 
       <form onSubmit={handleLogin} className="space-y-5">
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+          <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
             帳號
           </label>
           <input
             type="text"
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+            className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg px-4 py-3 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
             placeholder="請輸入面試通知上的帳號"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -59,12 +59,12 @@ export const LoginForm = () => {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+          <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
             密碼
           </label>
           <input
             type="password"
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+            className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg px-4 py-3 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
             placeholder="請輸入密碼"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -72,7 +72,7 @@ export const LoginForm = () => {
         </div>
 
         {error && (
-          <p className="text-red-400 text-sm bg-red-950/40 border border-red-800/50 rounded-lg px-4 py-2.5">
+          <p className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-lg px-4 py-2.5">
             {error}
           </p>
         )}
@@ -82,8 +82,8 @@ export const LoginForm = () => {
           disabled={isLoading}
           className={`w-full font-semibold py-3 rounded-lg transition-all duration-200 ${
             isLoading
-              ? "bg-indigo-900/50 text-indigo-400 cursor-not-allowed"
-              : "bg-indigo-600 hover:bg-indigo-500 text-white active:scale-[0.98] shadow-lg shadow-indigo-900/30"
+              ? "bg-indigo-100 dark:bg-indigo-900/50 text-indigo-400 cursor-not-allowed"
+              : "bg-indigo-600 hover:bg-indigo-500 text-white active:scale-[0.98] shadow-lg shadow-indigo-900/20"
           }`}
         >
           {isLoading ? "登入中..." : "進入工作區"}

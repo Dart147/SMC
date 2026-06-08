@@ -48,6 +48,21 @@ func (h *ProblemHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(p.ForDisplay())
 }
 
+func (h *ProblemHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	setHeaders(w)
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+	if err := h.svc.Delete(id); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "deleted"})
+}
+
 // ListMyProblems 考生專用：只回傳被指派給自己的題目 (需要 JWT Auth)
 func (h *ProblemHandler) ListMyProblems(w http.ResponseWriter, r *http.Request) {
 	setHeaders(w)

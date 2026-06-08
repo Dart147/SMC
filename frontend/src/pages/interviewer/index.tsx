@@ -4,6 +4,7 @@ import {
   assignProblem,
   unassignProblem,
   fetchCandidateAssignments,
+  deleteProblem,
 } from "../../features/problems/api";
 import { useNavigate } from "react-router-dom";
 import { Select } from "../../components/Common/Select";
@@ -28,9 +29,9 @@ interface Candidate {
 }
 
 const difficultyStyle: Record<string, string> = {
-  Easy: "bg-emerald-950/50 text-emerald-400 border-emerald-800/40",
-  Medium: "bg-amber-950/50 text-amber-400 border-amber-800/40",
-  Hard: "bg-red-950/50 text-red-400 border-red-800/40",
+  Easy: "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40",
+  Medium: "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40",
+  Hard: "bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/40",
 };
 
 const InterviewerDashboard: React.FC = () => {
@@ -168,6 +169,17 @@ const InterviewerDashboard: React.FC = () => {
     }
   };
 
+  const handleDeleteProblem = async (problemId: string, problemTitle: string) => {
+    if (!window.confirm(`Delete "${problemTitle}"? This will also remove all submissions and assignments for this problem.`)) return;
+    try {
+      await deleteProblem(String(problemId));
+      setProblems((prev) => prev.filter((p) => String(p.id) !== String(problemId)));
+      setAllProblemsForAssign((prev) => prev.filter((p) => String(p.id) !== String(problemId)));
+    } catch {
+      alert("Failed to delete problem. Check permissions or server.");
+    }
+  };
+
   const addTestCase = () => setTestCases([...testCases, { input: "", output: "" }]);
   const handleTestCaseChange = (index: number, field: "input" | "output", value: string) => {
     const next = [...testCases];
@@ -191,12 +203,7 @@ const InterviewerDashboard: React.FC = () => {
       label: "Problem Bank",
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         </svg>
       ),
       onClick: fetchProblems,
@@ -206,12 +213,7 @@ const InterviewerDashboard: React.FC = () => {
       label: "Assign Problems",
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       ),
       onClick: openAssignTab,
@@ -219,19 +221,19 @@ const InterviewerDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-800 dark:text-slate-200 p-4 sm:p-6 md:p-8 transition-colors duration-200">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-50 tracking-tight">SMC Dashboard</h1>
-          <p className="text-slate-500 text-sm mt-1">Interviewer control panel</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-50 tracking-tight">SMC Dashboard</h1>
+          <p className="text-gray-400 dark:text-slate-500 text-sm mt-1">Interviewer control panel</p>
         </div>
 
-        <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar */}
-          <div className="w-64 flex-shrink-0 space-y-4">
+          <div className="w-full lg:w-64 flex-shrink-0 space-y-4">
             {/* Monitor shortcut */}
-            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4">
-              <p className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-3">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-4">
+              <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400 dark:text-slate-500 mb-3">
                 Monitor
               </p>
               <button
@@ -239,20 +241,15 @@ const InterviewerDashboard: React.FC = () => {
                 className="w-full flex items-center gap-2 justify-center font-semibold py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm transition-all shadow-lg shadow-indigo-900/20 cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
                 View Submissions
               </button>
             </div>
 
             {/* Candidate generator */}
-            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4">
-              <p className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-3">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-4">
+              <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400 dark:text-slate-500 mb-3">
                 Candidate
               </p>
               <button
@@ -260,34 +257,34 @@ const InterviewerDashboard: React.FC = () => {
                 disabled={isLoading}
                 className={`w-full font-semibold py-2.5 px-4 rounded-lg text-sm transition-all cursor-pointer ${
                   isLoading
-                    ? "bg-slate-700 text-slate-500 cursor-not-allowed"
-                    : "bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700"
+                    ? "bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed"
+                    : "bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-800 dark:text-slate-100 border border-gray-200 dark:border-slate-700"
                 }`}
               >
                 {isLoading ? "Creating..." : "Generate Credentials"}
               </button>
               {candidateCreds && (
-                <div className="mt-3 p-3 bg-slate-800 rounded-lg border border-slate-700 text-xs font-mono text-indigo-300 space-y-1">
+                <div className="mt-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 text-xs font-mono text-indigo-600 dark:text-indigo-300 space-y-1">
                   <div>
-                    <span className="text-slate-500">Account:</span> {candidateCreds.acc}
+                    <span className="text-gray-400 dark:text-slate-500">Account:</span> {candidateCreds.acc}
                   </div>
                   <div>
-                    <span className="text-slate-500">Password:</span> {candidateCreds.pw}
+                    <span className="text-gray-400 dark:text-slate-500">Password:</span> {candidateCreds.pw}
                   </div>
                 </div>
               )}
             </div>
 
             {/* Nav items */}
-            <div className="bg-slate-900 rounded-xl border border-slate-800 p-2 space-y-1">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-2 space-y-1">
               {navItems.map((item) => (
                 <button
                   key={item.id}
                   onClick={item.onClick}
                   className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                     activeTab === item.id
-                      ? "bg-indigo-950/50 text-indigo-300 border border-indigo-800/40"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                      ? "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40"
+                      : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800/60"
                   }`}
                 >
                   {item.icon}
@@ -301,11 +298,11 @@ const InterviewerDashboard: React.FC = () => {
           <div className="flex-1 min-w-0">
             {/* Assign tab */}
             {activeTab === "assign" && (
-              <div className="bg-slate-900 rounded-xl border border-slate-800 p-6">
-                <h2 className="text-lg font-bold text-slate-50 mb-5">Assign Problems</h2>
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-6">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50 mb-5">Assign Problems</h2>
 
                 <div className="mb-5">
-                  <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
                     Select Candidate
                   </label>
                   <Select
@@ -318,10 +315,10 @@ const InterviewerDashboard: React.FC = () => {
 
                 {selectedCandidateId ? (
                   assignLoading ? (
-                    <div className="text-slate-500 text-sm text-center py-8">Loading...</div>
+                    <div className="text-gray-400 dark:text-slate-500 text-sm text-center py-8">Loading...</div>
                   ) : (
                     <div className="space-y-2">
-                      <p className="text-xs text-slate-500 mb-3">
+                      <p className="text-xs text-gray-400 dark:text-slate-500 mb-3">
                         {assignedProblemIds.size} / {allProblemsForAssign.length} problems assigned
                       </p>
                       {allProblemsForAssign.map((p) => {
@@ -332,18 +329,18 @@ const InterviewerDashboard: React.FC = () => {
                             key={`assign-${pid}`}
                             className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
                               isAssigned
-                                ? "bg-indigo-950/20 border-indigo-800/40"
-                                : "bg-slate-800/40 border-slate-700/50"
+                                ? "bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800/40"
+                                : "bg-gray-50 dark:bg-slate-800/40 border-gray-200 dark:border-slate-700/50"
                             }`}
                           >
                             <div className="flex items-center gap-3">
                               <span
-                                className={`w-2 h-2 rounded-full flex-shrink-0 ${isAssigned ? "bg-indigo-400" : "bg-slate-600"}`}
+                                className={`w-2 h-2 rounded-full flex-shrink-0 ${isAssigned ? "bg-indigo-500 dark:bg-indigo-400" : "bg-gray-300 dark:bg-slate-600"}`}
                               />
                               <div>
-                                <p className="text-slate-100 font-medium text-sm">{p.title}</p>
+                                <p className="text-gray-800 dark:text-slate-100 font-medium text-sm">{p.title}</p>
                                 <span
-                                  className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ${difficultyStyle[p.difficulty] ?? "text-slate-400 border-slate-700"}`}
+                                  className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ${difficultyStyle[p.difficulty] ?? "text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700"}`}
                                 >
                                   {p.difficulty}
                                 </span>
@@ -353,7 +350,7 @@ const InterviewerDashboard: React.FC = () => {
                               onClick={() => toggleAssignment(pid)}
                               className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                                 isAssigned
-                                  ? "bg-red-950/30 text-red-400 border border-red-800/40 hover:bg-red-950/50"
+                                  ? "bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/40 hover:bg-red-100 dark:hover:bg-red-950/50"
                                   : "bg-indigo-600 text-white hover:bg-indigo-500"
                               }`}
                             >
@@ -365,19 +362,9 @@ const InterviewerDashboard: React.FC = () => {
                     </div>
                   )
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-16 text-slate-600 gap-3">
-                    <svg
-                      className="w-10 h-10 text-slate-800"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
+                  <div className="flex flex-col items-center justify-center py-16 text-gray-300 dark:text-slate-600 gap-3">
+                    <svg className="w-10 h-10 text-gray-200 dark:text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     <p className="text-sm">Select a candidate to manage assignments</p>
                   </div>
@@ -389,10 +376,10 @@ const InterviewerDashboard: React.FC = () => {
             {activeTab === "create" && (
               <form
                 onSubmit={handleSubmitProblem}
-                className="bg-slate-900 rounded-xl border border-slate-800 p-6 space-y-5"
+                className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-6 space-y-5"
               >
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-bold text-slate-50">New Problem</h2>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50">New Problem</h2>
                   <button
                     type="submit"
                     className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-6 rounded-lg text-sm transition-all shadow-lg shadow-indigo-900/20 cursor-pointer"
@@ -401,9 +388,9 @@ const InterviewerDashboard: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="col-span-2">
-                    <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
                       Title
                     </label>
                     <input
@@ -411,12 +398,12 @@ const InterviewerDashboard: React.FC = () => {
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       required
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+                      className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
                       placeholder="Problem title"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+                    <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
                       Difficulty
                     </label>
                     <Select
@@ -427,7 +414,7 @@ const InterviewerDashboard: React.FC = () => {
                           value: "Easy",
                           label: "Easy",
                           meta: (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-emerald-950/50 text-emerald-400 border-emerald-800/40">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40">
                               E
                             </span>
                           ),
@@ -436,7 +423,7 @@ const InterviewerDashboard: React.FC = () => {
                           value: "Medium",
                           label: "Medium",
                           meta: (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-amber-950/50 text-amber-400 border-amber-800/40">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40">
                               M
                             </span>
                           ),
@@ -445,7 +432,7 @@ const InterviewerDashboard: React.FC = () => {
                           value: "Hard",
                           label: "Hard",
                           meta: (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-red-950/50 text-red-400 border-red-800/40">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/40">
                               H
                             </span>
                           ),
@@ -456,25 +443,25 @@ const InterviewerDashboard: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
                     Description (Markdown)
                   </label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     required
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-4 h-48 text-slate-100 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder-slate-500"
+                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 h-48 text-gray-900 dark:text-slate-100 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-slate-500"
                     placeholder="Describe the problem in Markdown..."
                   />
                 </div>
 
-                <div className="border-t border-slate-800 pt-5">
+                <div className="border-t border-gray-200 dark:border-slate-800 pt-5">
                   <div className="flex items-center justify-between mb-3">
-                    <label className="text-sm font-semibold text-slate-300">Test Cases</label>
+                    <label className="text-sm font-semibold text-gray-700 dark:text-slate-300">Test Cases</label>
                     <button
                       type="button"
                       onClick={addTestCase}
-                      className="text-xs font-medium text-indigo-400 hover:text-indigo-300 bg-indigo-950/30 hover:bg-indigo-950/50 border border-indigo-800/40 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+                      className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/40 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
                     >
                       + Add Test Case
                     </button>
@@ -483,19 +470,19 @@ const InterviewerDashboard: React.FC = () => {
                     {testCases.map((tc, index) => (
                       <div
                         key={`input-row-${index}`}
-                        className="grid grid-cols-2 gap-3 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50"
+                        className="grid grid-cols-2 gap-3 bg-gray-50 dark:bg-slate-800/50 p-3 rounded-lg border border-gray-200 dark:border-slate-700/50"
                       >
                         <input
                           placeholder="Input"
                           value={tc.input}
                           onChange={(e) => handleTestCaseChange(index, "input", e.target.value)}
-                          className="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                          className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-gray-700 dark:text-slate-300 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
                         />
                         <input
                           placeholder="Expected Output"
                           value={tc.output}
                           onChange={(e) => handleTestCaseChange(index, "output", e.target.value)}
-                          className="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                          className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-gray-700 dark:text-slate-300 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
                         />
                       </div>
                     ))}
@@ -506,32 +493,43 @@ const InterviewerDashboard: React.FC = () => {
 
             {/* Problem list tab */}
             {activeTab === "list" && (
-              <div className="bg-slate-900 rounded-xl border border-slate-800 p-6">
-                <h2 className="text-lg font-bold text-slate-50 mb-5">Problem Bank</h2>
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-6">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50 mb-5">Problem Bank</h2>
                 <div className="space-y-2">
                   {problems.map((p) => (
                     <div
                       key={`p-list-${p.id}`}
-                      className="flex items-center justify-between p-4 bg-slate-800/40 border border-slate-700/50 rounded-xl hover:border-slate-600 transition-all group"
+                      className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700/50 rounded-xl hover:border-gray-300 dark:hover:border-slate-600 transition-all group"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="min-w-0">
-                          <div className="text-slate-100 font-semibold text-sm truncate">
+                          <div className="text-gray-800 dark:text-slate-100 font-semibold text-sm truncate">
                             {p.title}
                           </div>
                           <span
-                            className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border mt-1 inline-block ${difficultyStyle[p.difficulty] ?? "text-slate-400 border-slate-700"}`}
+                            className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border mt-1 inline-block ${difficultyStyle[p.difficulty] ?? "text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700"}`}
                           >
                             {p.difficulty}
                           </span>
                         </div>
                       </div>
-                      <button
-                        onClick={() => setSelectedProblem(p)}
-                        className="opacity-0 group-hover:opacity-100 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all cursor-pointer"
-                      >
-                        View Details
-                      </button>
+                      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-2 transition-all">
+                        <button
+                          onClick={() => setSelectedProblem(p)}
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer"
+                        >
+                          View Details
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProblem(String(p.id), p.title)}
+                          title="Delete problem"
+                          className="p-1.5 rounded-lg text-gray-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -544,43 +542,38 @@ const InterviewerDashboard: React.FC = () => {
       {/* Problem detail modal */}
       {selectedProblem && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl shadow-black/60 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between flex-shrink-0">
+          <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl shadow-gray-300/40 dark:shadow-black/60 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-3">
-                <h2 className="text-lg font-bold text-slate-50">{selectedProblem.title}</h2>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50">{selectedProblem.title}</h2>
                 <span
-                  className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${difficultyStyle[selectedProblem.difficulty] ?? "text-slate-400 border-slate-700"}`}
+                  className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${difficultyStyle[selectedProblem.difficulty] ?? "text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700"}`}
                 >
                   {selectedProblem.difficulty}
                 </span>
               </div>
               <button
                 onClick={() => setSelectedProblem(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
             <div className="p-6 overflow-y-auto space-y-6">
               <section>
-                <h3 className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-3">
+                <h3 className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-3">
                   Description
                 </h3>
-                <div className="bg-slate-950/60 p-5 rounded-xl border border-slate-800 text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">
+                <div className="bg-gray-50 dark:bg-slate-950/60 p-5 rounded-xl border border-gray-200 dark:border-slate-800 text-sm text-gray-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
                   {selectedProblem.description}
                 </div>
               </section>
 
               <section>
-                <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3">
+                <h3 className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-3">
                   Test Cases
                 </h3>
                 <div className="grid grid-cols-1 gap-2">
@@ -592,21 +585,21 @@ const InterviewerDashboard: React.FC = () => {
                       return tcs.map((tc: any, idx: number) => (
                         <div
                           key={`modal-tc-${idx}`}
-                          className="grid grid-cols-2 gap-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50"
+                          className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-slate-800/50 p-4 rounded-xl border border-gray-200 dark:border-slate-700/50"
                         >
                           <div>
-                            <p className="text-[10px] text-slate-500 font-bold mb-1.5 uppercase">
+                            <p className="text-[10px] text-gray-400 dark:text-slate-500 font-bold mb-1.5 uppercase">
                               Input
                             </p>
-                            <code className="text-indigo-300 font-mono text-xs block bg-slate-950/60 p-2.5 rounded-lg">
+                            <code className="text-indigo-600 dark:text-indigo-300 font-mono text-xs block bg-gray-50 dark:bg-slate-950/60 p-2.5 rounded-lg">
                               {tc.input || "N/A"}
                             </code>
                           </div>
-                          <div className="border-l border-slate-700 pl-4">
-                            <p className="text-[10px] text-slate-500 font-bold mb-1.5 uppercase">
+                          <div className="border-l border-gray-200 dark:border-slate-700 pl-4">
+                            <p className="text-[10px] text-gray-400 dark:text-slate-500 font-bold mb-1.5 uppercase">
                               Expected Output
                             </p>
-                            <code className="text-emerald-300 font-mono text-xs block bg-slate-950/60 p-2.5 rounded-lg">
+                            <code className="text-emerald-600 dark:text-emerald-300 font-mono text-xs block bg-gray-50 dark:bg-slate-950/60 p-2.5 rounded-lg">
                               {tc.expected_output || tc.output || "N/A"}
                             </code>
                           </div>
@@ -614,7 +607,7 @@ const InterviewerDashboard: React.FC = () => {
                       ));
                     }
                     return (
-                      <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50 text-slate-500 text-sm italic">
+                      <div className="p-4 bg-gray-50 dark:bg-slate-800/30 rounded-xl border border-gray-200 dark:border-slate-700/50 text-gray-400 dark:text-slate-500 text-sm italic">
                         No test cases available.
                       </div>
                     );
@@ -623,10 +616,10 @@ const InterviewerDashboard: React.FC = () => {
               </section>
             </div>
 
-            <div className="px-6 py-4 border-t border-slate-800 flex justify-end flex-shrink-0">
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-slate-800 flex justify-end flex-shrink-0">
               <button
                 onClick={() => setSelectedProblem(null)}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2 px-6 rounded-lg text-sm transition-all cursor-pointer"
+                className="bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 font-semibold py-2 px-6 rounded-lg text-sm transition-all cursor-pointer"
               >
                 Close
               </button>
