@@ -52,6 +52,11 @@ func (s *ProblemService) Delete(id string) error {
 	return s.repo.Delete(id)
 }
 
+// Update replaces a problem's fields and test cases.
+func (s *ProblemService) Update(id string, prob *domain.Problem) error {
+	return s.repo.Update(id, prob)
+}
+
 // GetAssignedProblemIDs 取得考生被指派的題目 ID 清單
 func (s *ProblemService) GetAssignedProblemIDs(userID string) []string {
 	return s.repo.GetAssignedProblemIDs(userID)
