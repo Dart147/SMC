@@ -92,19 +92,11 @@ export const CandidateList: React.FC = () => {
                 key={candidate.id}
                 className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden"
               >
-                {/* Candidate row */}
-                <div
-                  role="button"
-                  tabIndex={0}
+                {/* Candidate row - 使用原生 button，並強制透明背景與靠左對齊 */}
+                <button
+                  type="button"
                   onClick={() => toggleExpand(candidate.id)}
-                  onKeyDown={(e) => {
-                    // 讓鍵盤使用者也能透過 Enter 或空白鍵觸發展開
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      toggleExpand(candidate.id);
-                    }
-                  }}
-                  className="flex items-center p-4 px-5 cursor-pointer hover:bg-slate-800/60 transition-colors"
+                  className="w-full bg-transparent text-left flex items-center p-4 px-5 cursor-pointer hover:bg-slate-800/60 transition-colors focus:outline-none"
                 >
                   {/* Username */}
                   <div className="flex items-center gap-3 w-1/3 min-w-0">
@@ -177,7 +169,7 @@ export const CandidateList: React.FC = () => {
                       />
                     </svg>
                   </div>
-                </div>
+                </button>
 
                 {/* Expanded submissions */}
                 {expandedId === candidate.id && (
