@@ -31,11 +31,20 @@ interface UpdateProblemPayload {
   title: string;
   difficulty: string;
   description: string;
-  testCases: { input: string; expected_output: string }[];
+  testCases: { input: string; expected_output: string; isHidden?: boolean }[];
 }
 
+/** 面試官：取得完整題目資料（含隱藏測資） */
+export const fetchAdminProblemById = async (id: string): Promise<any> => {
+  const res = await apiClient.get(`/admin/problems/${id}`);
+  return res.data;
+};
+
 /** 面試官：更新題目 */
-export const updateProblem = async (problemId: string, data: UpdateProblemPayload): Promise<void> => {
+export const updateProblem = async (
+  problemId: string,
+  data: UpdateProblemPayload,
+): Promise<void> => {
   await apiClient.put(`/problems/${problemId}`, data);
 };
 

@@ -221,7 +221,7 @@ func (r *ProblemRepo) Update(id string, prob *domain.Problem) error {
 		newTCID := fmt.Sprintf("%d", nTC.Int64()+10000000)
 		_, err = tx.ExecContext(ctx,
 			`INSERT INTO test_cases (id, problem_id, input, expected_output, is_hidden) VALUES ($1, $2, $3, $4, $5)`,
-			newTCID, id, tc.Input, tc.ExpectedOutput, sql.NullBool{Bool: false, Valid: true},
+			newTCID, id, tc.Input, tc.ExpectedOutput, sql.NullBool{Bool: tc.IsHidden, Valid: true},
 		)
 		if err != nil {
 			return fmt.Errorf("insert test case: %w", err)

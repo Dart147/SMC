@@ -71,10 +71,25 @@ func (h *ProblemHandler) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "id is required", http.StatusBadRequest)
 		return
 	}
-	var prob domain.Problem
-	if err := json.NewDecoder(r.Body).Decode(&prob); err != nil {
+	var req struct {
+		Title       string `json:"title"`
+		Difficulty  string `json:"difficulty"`
+		Description string `json:"description"`
+		TestCases   []struct {
+			Input          string `json:"input"`
+			ExpectedOutput string `json:"expected_output"`
+			IsHidden       bool   `json:"isHidden"`
+		} `json:"testCases"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+	prob := domain.Problem{Title: req.Title, Difficulty: req.Difficulty, Description: req.Description}
+	for _, tc := range req.TestCases {
+		prob.TestCases = append(prob.TestCases, domain.TestCase{
+			Input: tc.Input, ExpectedOutput: tc.ExpectedOutput, IsHidden: tc.IsHidden,
+		})
 	}
 	if err := h.svc.Update(id, &prob); err != nil {
 		if strings.Contains(err.Error(), "not found") {
@@ -85,6 +100,36 @@ func (h *ProblemHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = json.NewEncoder(w).Encode(map[string]string{"message": "updated"})
+}
+
+// GetByIDAdmin returns the full problem including hidden test cases (admin only).
+func (h *ProblemHandler) GetByIDAdmin(w http.ResponseWriter, r *http.Request) {
+	setHeaders(w)
+	p, ok := h.svc.GetByID(r.PathValue("id"))
+	if !ok {
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+	type adminTC struct {
+		Input          string `json:"input"`
+		ExpectedOutput string `json:"expected_output"`
+		IsHidden       bool   `json:"isHidden"`
+	}
+	type adminProb struct {
+		ID          int       `json:"id"`
+		Title       string    `json:"title"`
+		Difficulty  string    `json:"difficulty"`
+		Description string    `json:"description"`
+		TestCases   []adminTC `json:"testCases"`
+	}
+	tcs := make([]adminTC, len(p.TestCases))
+	for i, tc := range p.TestCases {
+		tcs[i] = adminTC{Input: tc.Input, ExpectedOutput: tc.ExpectedOutput, IsHidden: tc.IsHidden}
+	}
+	_ = json.NewEncoder(w).Encode(adminProb{
+		ID: p.ID, Title: p.Title, Difficulty: p.Difficulty,
+		Description: p.Description, TestCases: tcs,
+	})
 }
 
 // ListMyProblems 考生專用：只回傳被指派給自己的題目 (需要 JWT Auth)

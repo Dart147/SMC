@@ -6,6 +6,7 @@ import {
   fetchCandidateAssignments,
   deleteProblem,
   updateProblem,
+  fetchAdminProblemById,
 } from "../../features/problems/api";
 import { useNavigate } from "react-router-dom";
 import { Select } from "../../components/Common/Select";
@@ -61,7 +62,9 @@ const InterviewerDashboard: React.FC = () => {
   const [editTitle, setEditTitle] = useState("");
   const [editDifficulty, setEditDifficulty] = useState("Medium");
   const [editDescription, setEditDescription] = useState("");
-  const [editTestCases, setEditTestCases] = useState<{ input: string; output: string }[]>([]);
+  const [editTestCases, setEditTestCases] = useState<
+    { input: string; output: string; isHidden: boolean }[]
+  >([]);
 
   const generateCredentials = async () => {
     const randomVals = new Uint32Array(1);
@@ -193,24 +196,35 @@ const InterviewerDashboard: React.FC = () => {
     }
   };
 
-  const openEditProblem = (p: Problem) => {
-    setEditingProblem(p);
-    setEditTitle(p.title);
-    setEditDifficulty(p.difficulty);
-    setEditDescription(p.description);
-    const tcs = (p as any).testCases || (p as any).test_cases || [];
-    setEditTestCases(
-      tcs.map((tc: any) => ({
-        input: tc.input || "",
-        output: tc.expected_output || tc.output || "",
-      })),
-    );
+  const openEditProblem = async (p: Problem) => {
+    try {
+      const full = await fetchAdminProblemById(String(p.id));
+      setEditTitle(full.title);
+      setEditDifficulty(full.difficulty);
+      setEditDescription(full.description);
+      setEditTestCases(
+        (full.testCases || []).map((tc: any) => ({
+          input: tc.input || "",
+          output: tc.expected_output || "",
+          isHidden: tc.isHidden ?? false,
+        })),
+      );
+      setEditingProblem(p);
+    } catch {
+      alert("Failed to load problem details. Check server or permissions.");
+    }
   };
 
   const handleEditTestCaseChange = (index: number, field: "input" | "output", value: string) => {
     const next = [...editTestCases];
     next[index][field] = value;
     setEditTestCases(next);
+  };
+
+  const toggleEditTestCaseHidden = (index: number) => {
+    setEditTestCases((prev) =>
+      prev.map((tc, i) => (i === index ? { ...tc, isHidden: !tc.isHidden } : tc)),
+    );
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
@@ -221,7 +235,11 @@ const InterviewerDashboard: React.FC = () => {
         title: editTitle,
         difficulty: editDifficulty,
         description: editDescription,
-        testCases: editTestCases.map((tc) => ({ input: tc.input, expected_output: tc.output })),
+        testCases: editTestCases.map((tc) => ({
+          input: tc.input,
+          expected_output: tc.output,
+          isHidden: tc.isHidden,
+        })),
       });
       setProblems((prev) =>
         prev.map((p) =>
@@ -770,7 +788,12 @@ const InterviewerDashboard: React.FC = () => {
                   </label>
                   <button
                     type="button"
-                    onClick={() => setEditTestCases([...editTestCases, { input: "", output: "" }])}
+                    onClick={() =>
+                      setEditTestCases([
+                        ...editTestCases,
+                        { input: "", output: "", isHidden: false },
+                      ])
+                    }
                     className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/40 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
                   >
                     + Add Test Case
@@ -780,30 +803,43 @@ const InterviewerDashboard: React.FC = () => {
                   {editTestCases.map((tc, index) => (
                     <div
                       key={`edit-tc-${index}`}
-                      className="grid grid-cols-2 gap-3 bg-gray-50 dark:bg-slate-800/50 p-3 rounded-lg border border-gray-200 dark:border-slate-700/50"
+                      className={`bg-gray-50 dark:bg-slate-800/50 p-3 rounded-lg border transition-colors ${tc.isHidden ? "border-amber-200 dark:border-amber-800/40" : "border-gray-200 dark:border-slate-700/50"}`}
                     >
-                      <input
-                        placeholder="Input"
-                        value={tc.input}
-                        onChange={(e) => handleEditTestCaseChange(index, "input", e.target.value)}
-                        className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-gray-700 dark:text-slate-300 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
-                      />
-                      <div className="flex gap-2">
+                      <div className="grid grid-cols-2 gap-3 mb-2">
+                        <input
+                          placeholder="Input"
+                          value={tc.input}
+                          onChange={(e) => handleEditTestCaseChange(index, "input", e.target.value)}
+                          className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-gray-700 dark:text-slate-300 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                        />
                         <input
                           placeholder="Expected Output"
                           value={tc.output}
                           onChange={(e) =>
                             handleEditTestCaseChange(index, "output", e.target.value)
                           }
-                          className="flex-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-gray-700 dark:text-slate-300 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                          className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-gray-700 dark:text-slate-300 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
                         />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={tc.isHidden}
+                            onChange={() => toggleEditTestCaseHidden(index)}
+                            className="w-3.5 h-3.5 accent-amber-500 cursor-pointer"
+                          />
+                          <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                            Hidden (not shown to candidate)
+                          </span>
+                        </label>
                         {editTestCases.length > 1 && (
                           <button
                             type="button"
                             onClick={() =>
                               setEditTestCases(editTestCases.filter((_, i) => i !== index))
                             }
-                            className="p-2 text-gray-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer flex-shrink-0"
+                            className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer"
                           >
                             <svg
                               className="w-3.5 h-3.5"
