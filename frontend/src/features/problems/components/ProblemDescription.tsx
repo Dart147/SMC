@@ -36,22 +36,20 @@ function parseExampleRaw(raw: string): {
   explanation: string | null;
 } | null {
   type Section = "input" | "output" | "explanation";
+  const PREFIXES: [string, Section][] = [
+    ["Input:", "input"],
+    ["Output:", "output"],
+    ["Explanation:", "explanation"],
+  ];
   let section: Section | null = null;
   const buckets: Record<Section, string[]> = { input: [], output: [], explanation: [] };
 
   for (const line of raw.split("\n")) {
-    if (/^Input:/.exec(line)) {
-      section = "input";
-      const rest = line.slice("Input:".length).trimStart();
-      if (rest) buckets.input.push(rest);
-    } else if (/^Output:/.exec(line)) {
-      section = "output";
-      const rest = line.slice("Output:".length).trimStart();
-      if (rest) buckets.output.push(rest);
-    } else if (/^Explanation:/.exec(line)) {
-      section = "explanation";
-      const rest = line.slice("Explanation:".length).trimStart();
-      if (rest) buckets.explanation.push(rest);
+    const match = PREFIXES.find(([p]) => line.startsWith(p));
+    if (match) {
+      const [prefix, sec] = match;
+      section = sec;
+      buckets[section].push(line.slice(prefix.length).trimStart());
     } else if (section !== null) {
       buckets[section].push(line);
     }
@@ -155,11 +153,13 @@ function ExampleBlock({ raw }: { readonly raw: string }) {
 // Markdown component renderers defined at module level to avoid re-definition on each render
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const markdownComponents = {
-  h3: ({ node: _node, ...props }: any) => (
+  h3: ({ node: _node, children, ...props }: any) => (
     <h3
       className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-7 mb-2.5 pb-1.5 border-b border-slate-100 dark:border-slate-800"
       {...props}
-    />
+    >
+      {children}
+    </h3>
   ),
   ol: ({ node: _node, ...props }: any) => (
     <ol className="list-decimal ml-5 mb-4 space-y-1" {...props} />
