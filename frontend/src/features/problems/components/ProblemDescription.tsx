@@ -47,8 +47,18 @@ function ExampleBlock({ raw }: { raw: string }) {
         {/* Input panel */}
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/40 border-b border-gray-200 dark:border-slate-700">
-            <svg className="w-3 h-3 text-indigo-500 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            <svg
+              className="w-3 h-3 text-indigo-500 dark:text-indigo-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2.5}
+                d="M13 7l5 5m0 0l-5 5m5-5H6"
+              />
             </svg>
             <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
               Input
@@ -62,8 +72,18 @@ function ExampleBlock({ raw }: { raw: string }) {
         {/* Output panel */}
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/40 border-b border-gray-200 dark:border-slate-700">
-            <svg className="w-3 h-3 text-emerald-500 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            <svg
+              className="w-3 h-3 text-emerald-500 dark:text-emerald-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2.5}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
               Output
@@ -78,10 +98,22 @@ function ExampleBlock({ raw }: { raw: string }) {
       {/* Explanation row (optional) */}
       {explanation && (
         <div className="flex items-start gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-950/20 border-t border-gray-200 dark:border-slate-700">
-          <svg className="w-3 h-3 mt-0.5 flex-shrink-0 text-amber-500 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            className="w-3 h-3 mt-0.5 flex-shrink-0 text-amber-500 dark:text-amber-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
-          <span className="text-[0.78rem] text-amber-700 dark:text-amber-300 leading-relaxed">{explanation}</span>
+          <span className="text-[0.78rem] text-amber-700 dark:text-amber-300 leading-relaxed">
+            {explanation}
+          </span>
         </div>
       )}
     </div>
@@ -129,12 +161,8 @@ export function ProblemDescription({ problem }: ProblemDescriptionProps) {
                 {...props}
               />
             ),
-            ol: ({ ...props }) => (
-              <ol className="list-decimal ml-5 mb-4 space-y-1" {...props} />
-            ),
-            ul: ({ ...props }) => (
-              <ul className="list-disc ml-5 mb-4 space-y-1" {...props} />
-            ),
+            ol: ({ ...props }) => <ol className="list-decimal ml-5 mb-4 space-y-1" {...props} />,
+            ul: ({ ...props }) => <ul className="list-disc ml-5 mb-4 space-y-1" {...props} />,
             // Inline code only (block code is handled by pre renderer below)
             code: ({ className, children, ...props }) => {
               const isBlock = /language-(\w+)/.exec(className || "");

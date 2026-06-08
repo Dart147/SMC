@@ -30,7 +30,8 @@ interface Candidate {
 
 const difficultyStyle: Record<string, string> = {
   Easy: "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40",
-  Medium: "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40",
+  Medium:
+    "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40",
   Hard: "bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/40",
 };
 
@@ -170,7 +171,12 @@ const InterviewerDashboard: React.FC = () => {
   };
 
   const handleDeleteProblem = async (problemId: string, problemTitle: string) => {
-    if (!window.confirm(`Delete "${problemTitle}"? This will also remove all submissions and assignments for this problem.`)) return;
+    if (
+      !window.confirm(
+        `Delete "${problemTitle}"? This will also remove all submissions and assignments for this problem.`,
+      )
+    )
+      return;
     try {
       await deleteProblem(String(problemId));
       setProblems((prev) => prev.filter((p) => String(p.id) !== String(problemId)));
@@ -203,7 +209,12 @@ const InterviewerDashboard: React.FC = () => {
       label: "Problem Bank",
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+          />
         </svg>
       ),
       onClick: fetchProblems,
@@ -213,7 +224,12 @@ const InterviewerDashboard: React.FC = () => {
       label: "Assign Problems",
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+          />
         </svg>
       ),
       onClick: openAssignTab,
@@ -224,8 +240,12 @@ const InterviewerDashboard: React.FC = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-800 dark:text-slate-200 p-4 sm:p-6 md:p-8 transition-colors duration-200">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-50 tracking-tight">SMC Dashboard</h1>
-          <p className="text-gray-400 dark:text-slate-500 text-sm mt-1">Interviewer control panel</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-50 tracking-tight">
+            SMC Dashboard
+          </h1>
+          <p className="text-gray-400 dark:text-slate-500 text-sm mt-1">
+            Interviewer control panel
+          </p>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
@@ -241,7 +261,12 @@ const InterviewerDashboard: React.FC = () => {
                 className="w-full flex items-center gap-2 justify-center font-semibold py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm transition-all shadow-lg shadow-indigo-900/20 cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
                 </svg>
                 View Submissions
               </button>
@@ -266,10 +291,12 @@ const InterviewerDashboard: React.FC = () => {
               {candidateCreds && (
                 <div className="mt-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 text-xs font-mono text-indigo-600 dark:text-indigo-300 space-y-1">
                   <div>
-                    <span className="text-gray-400 dark:text-slate-500">Account:</span> {candidateCreds.acc}
+                    <span className="text-gray-400 dark:text-slate-500">Account:</span>{" "}
+                    {candidateCreds.acc}
                   </div>
                   <div>
-                    <span className="text-gray-400 dark:text-slate-500">Password:</span> {candidateCreds.pw}
+                    <span className="text-gray-400 dark:text-slate-500">Password:</span>{" "}
+                    {candidateCreds.pw}
                   </div>
                 </div>
               )}
@@ -299,7 +326,9 @@ const InterviewerDashboard: React.FC = () => {
             {/* Assign tab */}
             {activeTab === "assign" && (
               <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-6">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50 mb-5">Assign Problems</h2>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50 mb-5">
+                  Assign Problems
+                </h2>
 
                 <div className="mb-5">
                   <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
@@ -315,7 +344,9 @@ const InterviewerDashboard: React.FC = () => {
 
                 {selectedCandidateId ? (
                   assignLoading ? (
-                    <div className="text-gray-400 dark:text-slate-500 text-sm text-center py-8">Loading...</div>
+                    <div className="text-gray-400 dark:text-slate-500 text-sm text-center py-8">
+                      Loading...
+                    </div>
                   ) : (
                     <div className="space-y-2">
                       <p className="text-xs text-gray-400 dark:text-slate-500 mb-3">
@@ -338,7 +369,9 @@ const InterviewerDashboard: React.FC = () => {
                                 className={`w-2 h-2 rounded-full flex-shrink-0 ${isAssigned ? "bg-indigo-500 dark:bg-indigo-400" : "bg-gray-300 dark:bg-slate-600"}`}
                               />
                               <div>
-                                <p className="text-gray-800 dark:text-slate-100 font-medium text-sm">{p.title}</p>
+                                <p className="text-gray-800 dark:text-slate-100 font-medium text-sm">
+                                  {p.title}
+                                </p>
                                 <span
                                   className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ${difficultyStyle[p.difficulty] ?? "text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700"}`}
                                 >
@@ -363,8 +396,18 @@ const InterviewerDashboard: React.FC = () => {
                   )
                 ) : (
                   <div className="flex flex-col items-center justify-center py-16 text-gray-300 dark:text-slate-600 gap-3">
-                    <svg className="w-10 h-10 text-gray-200 dark:text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <svg
+                      className="w-10 h-10 text-gray-200 dark:text-slate-800"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
                     </svg>
                     <p className="text-sm">Select a candidate to manage assignments</p>
                   </div>
@@ -379,7 +422,9 @@ const InterviewerDashboard: React.FC = () => {
                 className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-6 space-y-5"
               >
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50">New Problem</h2>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50">
+                    New Problem
+                  </h2>
                   <button
                     type="submit"
                     className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-6 rounded-lg text-sm transition-all shadow-lg shadow-indigo-900/20 cursor-pointer"
@@ -457,7 +502,9 @@ const InterviewerDashboard: React.FC = () => {
 
                 <div className="border-t border-gray-200 dark:border-slate-800 pt-5">
                   <div className="flex items-center justify-between mb-3">
-                    <label className="text-sm font-semibold text-gray-700 dark:text-slate-300">Test Cases</label>
+                    <label className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+                      Test Cases
+                    </label>
                     <button
                       type="button"
                       onClick={addTestCase}
@@ -494,7 +541,9 @@ const InterviewerDashboard: React.FC = () => {
             {/* Problem list tab */}
             {activeTab === "list" && (
               <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-6">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50 mb-5">Problem Bank</h2>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50 mb-5">
+                  Problem Bank
+                </h2>
                 <div className="space-y-2">
                   {problems.map((p) => (
                     <div
@@ -525,8 +574,18 @@ const InterviewerDashboard: React.FC = () => {
                           title="Delete problem"
                           className="p-1.5 rounded-lg text-gray-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
                         >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
                           </svg>
                         </button>
                       </div>
@@ -545,7 +604,9 @@ const InterviewerDashboard: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl shadow-gray-300/40 dark:shadow-black/60 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-3">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50">{selectedProblem.title}</h2>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50">
+                  {selectedProblem.title}
+                </h2>
                 <span
                   className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${difficultyStyle[selectedProblem.difficulty] ?? "text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700"}`}
                 >
@@ -557,7 +618,12 @@ const InterviewerDashboard: React.FC = () => {
                 className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>

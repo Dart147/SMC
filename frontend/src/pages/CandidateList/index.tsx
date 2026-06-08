@@ -60,7 +60,9 @@ export const CandidateList: React.FC = () => {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-50 tracking-tight">Candidate Roster</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-50 tracking-tight">
+            Candidate Roster
+          </h2>
           <p className="text-gray-400 dark:text-slate-500 text-sm mt-1">
             Live monitoring — violations trigger an automatic update.
           </p>
@@ -69,8 +71,19 @@ export const CandidateList: React.FC = () => {
         {isLoading ? (
           <div className="flex items-center justify-center py-20 text-gray-400 dark:text-slate-500 text-sm gap-2">
             <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
             </svg>
             載入應試者資料中...
           </div>
@@ -90,8 +103,18 @@ export const CandidateList: React.FC = () => {
                   {/* Username */}
                   <div className="flex items-center gap-3 w-1/3 min-w-0">
                     <div className="w-8 h-8 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/40 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 text-indigo-500 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      <svg
+                        className="w-4 h-4 text-indigo-500 dark:text-indigo-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
                       </svg>
                     </div>
                     <span className="font-mono font-semibold text-gray-800 dark:text-slate-100 truncate">
@@ -102,14 +125,18 @@ export const CandidateList: React.FC = () => {
                   {/* Stats */}
                   <div className="flex items-center justify-between w-2/3 pr-4">
                     <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-gray-300 dark:text-slate-600 uppercase font-bold mb-1">Score</span>
+                      <span className="text-[10px] text-gray-300 dark:text-slate-600 uppercase font-bold mb-1">
+                        Score
+                      </span>
                       <span className="font-bold text-indigo-600 dark:text-indigo-400">
                         {candidate.overallScore} pts
                       </span>
                     </div>
 
                     <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-gray-300 dark:text-slate-600 uppercase font-bold mb-1">Violations</span>
+                      <span className="text-[10px] text-gray-300 dark:text-slate-600 uppercase font-bold mb-1">
+                        Violations
+                      </span>
                       <span
                         className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${
                           candidate.warningCount > 0
@@ -122,7 +149,9 @@ export const CandidateList: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-gray-300 dark:text-slate-600 uppercase font-bold mb-1">Submissions</span>
+                      <span className="text-[10px] text-gray-300 dark:text-slate-600 uppercase font-bold mb-1">
+                        Submissions
+                      </span>
                       <span className="font-semibold text-gray-600 dark:text-slate-300">
                         {candidate.submissions.length}
                       </span>
@@ -134,7 +163,12 @@ export const CandidateList: React.FC = () => {
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </div>
                 </button>
@@ -146,66 +180,74 @@ export const CandidateList: React.FC = () => {
                       Submission Details
                     </h4>
                     <div className="overflow-x-auto -mx-1 px-1">
-                    <div className="space-y-2 min-w-[520px]">
-                      {candidate.submissions.map((sub) => (
-                        <div
-                          key={sub.id}
-                          className="grid grid-cols-[1fr_80px_90px_80px_80px_auto] gap-3 items-center bg-white dark:bg-slate-900 p-3 px-4 rounded-lg border border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 transition-colors"
-                        >
-                          <div>
-                            <span className="text-gray-800 dark:text-slate-100 font-semibold text-sm">
-                              {sub.problemTitle}
-                            </span>
-                            <span
-                              className={`text-[11px] font-bold mt-0.5 block ${
-                                sub.status === "Accepted"
-                                  ? "text-emerald-600 dark:text-emerald-400"
-                                  : "text-red-600 dark:text-red-400"
-                              }`}
-                            >
-                              {sub.status}
-                            </span>
+                      <div className="space-y-2 min-w-[520px]">
+                        {candidate.submissions.map((sub) => (
+                          <div
+                            key={sub.id}
+                            className="grid grid-cols-[1fr_80px_90px_80px_80px_auto] gap-3 items-center bg-white dark:bg-slate-900 p-3 px-4 rounded-lg border border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 transition-colors"
+                          >
+                            <div>
+                              <span className="text-gray-800 dark:text-slate-100 font-semibold text-sm">
+                                {sub.problemTitle}
+                              </span>
+                              <span
+                                className={`text-[11px] font-bold mt-0.5 block ${
+                                  sub.status === "Accepted"
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : "text-red-600 dark:text-red-400"
+                                }`}
+                              >
+                                {sub.status}
+                              </span>
+                            </div>
+                            <div className="text-center">
+                              <span className="text-[10px] text-gray-300 dark:text-slate-600 uppercase block">
+                                Tests
+                              </span>
+                              <span className="font-mono text-sm text-gray-600 dark:text-slate-300 mt-0.5">
+                                {sub.testCases || "0/0"}
+                              </span>
+                            </div>
+                            <div className="text-center">
+                              <span className="text-[10px] text-gray-300 dark:text-slate-600 uppercase block">
+                                Run Time
+                              </span>
+                              <span className="font-mono text-sm text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                {sub.runTimeMs} ms
+                              </span>
+                            </div>
+                            <div className="text-center">
+                              <span className="text-[10px] text-gray-300 dark:text-slate-600 uppercase block">
+                                Style
+                              </span>
+                              <span
+                                className={`font-mono text-sm font-bold mt-0.5 ${sub.codeStyleScore >= 90 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}
+                              >
+                                {sub.codeStyleScore}
+                              </span>
+                            </div>
+                            <div className="text-center">
+                              <span className="text-[10px] text-gray-300 dark:text-slate-600 uppercase block">
+                                Score
+                              </span>
+                              <span className="font-bold text-indigo-500 dark:text-indigo-400 mt-0.5">
+                                {sub.codeStyleScore}
+                              </span>
+                            </div>
+                            <div className="flex justify-end">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedSubmissionId(sub.id);
+                                }}
+                                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-gray-400 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 border border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700/50 transition-all duration-150 cursor-pointer whitespace-nowrap"
+                              >
+                                View Code
+                              </button>
+                            </div>
                           </div>
-                          <div className="text-center">
-                            <span className="text-[10px] text-gray-300 dark:text-slate-600 uppercase block">Tests</span>
-                            <span className="font-mono text-sm text-gray-600 dark:text-slate-300 mt-0.5">
-                              {sub.testCases || "0/0"}
-                            </span>
-                          </div>
-                          <div className="text-center">
-                            <span className="text-[10px] text-gray-300 dark:text-slate-600 uppercase block">Run Time</span>
-                            <span className="font-mono text-sm text-emerald-600 dark:text-emerald-400 mt-0.5">
-                              {sub.runTimeMs} ms
-                            </span>
-                          </div>
-                          <div className="text-center">
-                            <span className="text-[10px] text-gray-300 dark:text-slate-600 uppercase block">Style</span>
-                            <span
-                              className={`font-mono text-sm font-bold mt-0.5 ${sub.codeStyleScore >= 90 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}
-                            >
-                              {sub.codeStyleScore}
-                            </span>
-                          </div>
-                          <div className="text-center">
-                            <span className="text-[10px] text-gray-300 dark:text-slate-600 uppercase block">Score</span>
-                            <span className="font-bold text-indigo-500 dark:text-indigo-400 mt-0.5">
-                              {sub.codeStyleScore}
-                            </span>
-                          </div>
-                          <div className="flex justify-end">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedSubmissionId(sub.id);
-                              }}
-                              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-gray-400 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 border border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700/50 transition-all duration-150 cursor-pointer whitespace-nowrap"
-                            >
-                              View Code
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}

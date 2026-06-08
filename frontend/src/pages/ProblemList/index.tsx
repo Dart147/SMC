@@ -52,8 +52,19 @@ export function ProblemList() {
     return (
       <div className="flex items-center justify-center h-40 text-gray-400 dark:text-slate-500 text-sm">
         <svg className="w-4 h-4 mr-2 animate-spin" viewBox="0 0 24 24" fill="none">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
         </svg>
         載入中...
       </div>
@@ -62,15 +73,27 @@ export function ProblemList() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-40 text-red-600 dark:text-red-400 text-sm">{error}</div>
+      <div className="flex items-center justify-center h-40 text-red-600 dark:text-red-400 text-sm">
+        {error}
+      </div>
     );
   }
 
   if (problems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-40 text-gray-400 dark:text-slate-500 gap-2">
-        <svg className="w-10 h-10 text-gray-300 dark:text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        <svg
+          className="w-10 h-10 text-gray-300 dark:text-slate-700"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+          />
         </svg>
         <p className="text-sm">{isCandidate ? "目前沒有被指派的題目。" : "題庫目前沒有題目。"}</p>
       </div>
@@ -79,7 +102,8 @@ export function ProblemList() {
 
   const difficultyConfig = {
     Easy: "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50",
-    Medium: "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
+    Medium:
+      "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
     Hard: "bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/50",
   };
 
@@ -121,7 +145,9 @@ export function ProblemList() {
                 </span>
 
                 <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-gray-800 dark:text-slate-100 truncate">{problem.title}</h3>
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-slate-100 truncate">
+                    {problem.title}
+                  </h3>
                 </div>
               </div>
 
@@ -130,7 +156,11 @@ export function ProblemList() {
                 {isAccepted && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     已完成
                   </span>
@@ -144,8 +174,18 @@ export function ProblemList() {
                   </span>
                 )}
 
-                <svg className="w-4 h-4 text-gray-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <svg
+                  className="w-4 h-4 text-gray-300 dark:text-slate-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
               </div>
             </div>

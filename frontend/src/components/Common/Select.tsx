@@ -48,7 +48,11 @@ export function Select({
             : "bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600"
         }`}
       >
-        <span className={selected ? "text-gray-800 dark:text-slate-100" : "text-gray-400 dark:text-slate-500"}>
+        <span
+          className={
+            selected ? "text-gray-800 dark:text-slate-100" : "text-gray-400 dark:text-slate-500"
+          }
+        >
           {selected ? selected.label : placeholder}
         </span>
         {selected?.meta && <span className="ml-auto mr-2">{selected.meta}</span>}
@@ -79,7 +83,9 @@ export function Select({
                   {opt.meta && <span>{opt.meta}</span>}
                   {opt.label}
                 </span>
-                {isSelected && <Check className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 flex-shrink-0" />}
+                {isSelected && (
+                  <Check className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
+                )}
               </button>
             );
           })}
