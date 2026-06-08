@@ -24,7 +24,8 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 			u.username,
 			u.role,
 			u.created_at,
-			COALESCE(sub_data.total_score, 0) as overall_score,
+			u.warning_count,
+			COALESCE(score_data.overall_score, 0) as overall_score,
 			COALESCE(s.id::text, '') as sub_id,
 			COALESCE(p.title, '未命名題目') as p_title,
 			COALESCE(s.status, 'Ready') as sub_status,
@@ -34,10 +35,22 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 			COALESCE(s.execution_time_ms, 0) as run_time_ms
 		FROM users u
 		LEFT JOIN (
-			SELECT user_id, SUM(score) as total_score
-			FROM submissions
-			GROUP BY user_id
-		) sub_data ON u.id = sub_data.user_id
+			SELECT
+				upa.user_id,
+				CASE
+					WHEN COUNT(DISTINCT upa.problem_id) = 0 THEN 0
+					ELSE ROUND(
+						COUNT(DISTINCT CASE WHEN s.status = 'Accepted' THEN upa.problem_id END)::numeric
+						* 100
+						/ COUNT(DISTINCT upa.problem_id)
+					)::int
+				END AS overall_score
+			FROM user_problem_assignments upa
+			LEFT JOIN submissions s
+				ON s.user_id = upa.user_id
+				AND s.problem_id = upa.problem_id
+			GROUP BY upa.user_id
+		) score_data ON u.id = score_data.user_id
 		LEFT JOIN submissions s ON u.id = s.user_id
 		LEFT JOIN problems p ON s.problem_id = p.id
 		WHERE u.role IN ('candidate', 'admin')
@@ -57,8 +70,8 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 
 	for rows.Next() {
 		var id, username, role, createdAt, subID, pTitle, subStatus string
-		var overallScore, codeStyleScore, passed, total, runTimeMs int
-		if err := rows.Scan(&id, &username, &role, &createdAt, &overallScore, &subID, &pTitle, &subStatus, &codeStyleScore, &passed, &total, &runTimeMs); err != nil {
+		var warningCount, overallScore, codeStyleScore, passed, total, runTimeMs int
+		if err := rows.Scan(&id, &username, &role, &createdAt, &warningCount, &overallScore, &subID, &pTitle, &subStatus, &codeStyleScore, &passed, &total, &runTimeMs); err != nil {
 			_ = err
 			continue
 		}
@@ -73,7 +86,7 @@ func (h *InterviewerHandler) GetCandidates(w http.ResponseWriter, r *http.Reques
 				"id":           id,
 				"username":     displayName,
 				"createdAt":    createdAt,
-				"warningCount": 0,
+				"warningCount": warningCount,
 				"overallScore": overallScore,
 				"submissions":  []map[string]interface{}{},
 			}
