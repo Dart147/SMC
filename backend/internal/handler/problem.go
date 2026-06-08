@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/Dart147/SMC/backend/internal/domain"
 	"github.com/Dart147/SMC/backend/internal/middleware"
@@ -61,6 +62,29 @@ func (h *ProblemHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]string{"message": "deleted"})
+}
+
+func (h *ProblemHandler) Update(w http.ResponseWriter, r *http.Request) {
+	setHeaders(w)
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+	var prob domain.Problem
+	if err := json.NewDecoder(r.Body).Decode(&prob); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := h.svc.Update(id, &prob); err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "updated"})
 }
 
 // ListMyProblems 考生專用：只回傳被指派給自己的題目 (需要 JWT Auth)
