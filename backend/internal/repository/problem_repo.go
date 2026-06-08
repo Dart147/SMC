@@ -185,6 +185,52 @@ func (r *ProblemRepo) Delete(id string) error {
 	return nil
 }
 
+// Update replaces a problem's metadata and all its test cases atomically.
+func (r *ProblemRepo) Update(id string, prob *domain.Problem) error {
+	ctx := context.Background()
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	res, err := tx.ExecContext(ctx,
+		`UPDATE problems SET title = $1, difficulty = $2, description = $3 WHERE id = $4`,
+		prob.Title, prob.Difficulty, prob.Description, id,
+	)
+	if err != nil {
+		return fmt.Errorf("update problem: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("problem %s not found", id)
+	}
+
+	if _, err = tx.ExecContext(ctx, `DELETE FROM test_cases WHERE problem_id = $1`, id); err != nil {
+		return fmt.Errorf("clear test cases: %w", err)
+	}
+
+	for _, tc := range prob.TestCases {
+		nTC, err := rand.Int(rand.Reader, big.NewInt(90000000))
+		if err != nil {
+			return fmt.Errorf("generate test case id: %w", err)
+		}
+		newTCID := fmt.Sprintf("%d", nTC.Int64()+10000000)
+		_, err = tx.ExecContext(ctx,
+			`INSERT INTO test_cases (id, problem_id, input, expected_output, is_hidden) VALUES ($1, $2, $3, $4, $5)`,
+			newTCID, id, tc.Input, tc.ExpectedOutput, false,
+		)
+		if err != nil {
+			return fmt.Errorf("insert test case: %w", err)
+		}
+	}
+
+	return tx.Commit()
+}
+
 // Assign 將一道題目指派給某位考生
 func (r *ProblemRepo) Assign(userID, problemID string) error {
 	_, err := r.db.Exec(
