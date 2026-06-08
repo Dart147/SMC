@@ -27,6 +27,18 @@ export const deleteProblem = async (problemId: string): Promise<void> => {
   await apiClient.delete(`/problems/${problemId}`);
 };
 
+interface UpdateProblemPayload {
+  title: string;
+  difficulty: string;
+  description: string;
+  testCases: { input: string; expected_output: string }[];
+}
+
+/** 面試官：更新題目 */
+export const updateProblem = async (problemId: string, data: UpdateProblemPayload): Promise<void> => {
+  await apiClient.put(`/problems/${problemId}`, data);
+};
+
 /** 面試官：取消指派 */
 export const unassignProblem = async (userId: string, problemId: string): Promise<void> => {
   await apiClient.delete("/admin/assign-problem", { data: { userId, problemId } });
