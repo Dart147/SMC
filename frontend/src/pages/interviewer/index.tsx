@@ -5,6 +5,7 @@ import {
   unassignProblem,
   fetchCandidateAssignments,
   deleteProblem,
+  updateProblem,
 } from "../../features/problems/api";
 import { useNavigate } from "react-router-dom";
 import { Select } from "../../components/Common/Select";
@@ -55,6 +56,12 @@ const InterviewerDashboard: React.FC = () => {
   const [assignedProblemIds, setAssignedProblemIds] = useState<Set<string>>(new Set());
   const [assignLoading, setAssignLoading] = useState(false);
   const [allProblemsForAssign, setAllProblemsForAssign] = useState<Problem[]>([]);
+
+  const [editingProblem, setEditingProblem] = useState<Problem | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDifficulty, setEditDifficulty] = useState("Medium");
+  const [editDescription, setEditDescription] = useState("");
+  const [editTestCases, setEditTestCases] = useState<{ input: string; output: string }[]>([]);
 
   const generateCredentials = async () => {
     const randomVals = new Uint32Array(1);
@@ -183,6 +190,58 @@ const InterviewerDashboard: React.FC = () => {
       setAllProblemsForAssign((prev) => prev.filter((p) => String(p.id) !== String(problemId)));
     } catch {
       alert("Failed to delete problem. Check permissions or server.");
+    }
+  };
+
+  const openEditProblem = (p: Problem) => {
+    setEditingProblem(p);
+    setEditTitle(p.title);
+    setEditDifficulty(p.difficulty);
+    setEditDescription(p.description);
+    const tcs = (p as any).testCases || (p as any).test_cases || [];
+    setEditTestCases(
+      tcs.map((tc: any) => ({
+        input: tc.input || "",
+        output: tc.expected_output || tc.output || "",
+      })),
+    );
+  };
+
+  const handleEditTestCaseChange = (index: number, field: "input" | "output", value: string) => {
+    const next = [...editTestCases];
+    next[index][field] = value;
+    setEditTestCases(next);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProblem) return;
+    try {
+      await updateProblem(String(editingProblem.id), {
+        title: editTitle,
+        difficulty: editDifficulty,
+        description: editDescription,
+        testCases: editTestCases.map((tc) => ({ input: tc.input, expected_output: tc.output })),
+      });
+      setProblems((prev) =>
+        prev.map((p) =>
+          String(p.id) === String(editingProblem.id)
+            ? {
+                ...p,
+                title: editTitle,
+                difficulty: editDifficulty,
+                description: editDescription,
+                testCases: editTestCases.map((tc) => ({
+                  input: tc.input,
+                  expected_output: tc.output,
+                })),
+              }
+            : p,
+        ),
+      );
+      setEditingProblem(null);
+    } catch {
+      alert("Failed to save changes. Check server or permissions.");
     }
   };
 
@@ -570,6 +629,25 @@ const InterviewerDashboard: React.FC = () => {
                           View Details
                         </button>
                         <button
+                          onClick={() => openEditProblem(p)}
+                          title="Edit problem"
+                          className="p-1.5 rounded-lg text-gray-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors cursor-pointer"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                            />
+                          </svg>
+                        </button>
+                        <button
                           onClick={() => handleDeleteProblem(String(p.id), p.title)}
                           title="Delete problem"
                           className="p-1.5 rounded-lg text-gray-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
@@ -597,6 +675,176 @@ const InterviewerDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit problem modal */}
+      {editingProblem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl shadow-gray-300/40 dark:shadow-black/60 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50">Edit Problem</h2>
+              <button
+                onClick={() => setEditingProblem(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="p-6 overflow-y-auto space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    required
+                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
+                    Difficulty
+                  </label>
+                  <Select
+                    value={editDifficulty}
+                    onChange={setEditDifficulty}
+                    options={[
+                      {
+                        value: "Easy",
+                        label: "Easy",
+                        meta: (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40">
+                            E
+                          </span>
+                        ),
+                      },
+                      {
+                        value: "Medium",
+                        label: "Medium",
+                        meta: (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40">
+                            M
+                          </span>
+                        ),
+                      },
+                      {
+                        value: "Hard",
+                        label: "Hard",
+                        meta: (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/40">
+                            H
+                          </span>
+                        ),
+                      },
+                    ]}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
+                  Description (Markdown)
+                </label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  required
+                  className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 h-48 text-gray-900 dark:text-slate-100 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-slate-500"
+                />
+              </div>
+
+              <div className="border-t border-gray-200 dark:border-slate-800 pt-5">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+                    Test Cases
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setEditTestCases([...editTestCases, { input: "", output: "" }])}
+                    className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/40 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+                  >
+                    + Add Test Case
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {editTestCases.map((tc, index) => (
+                    <div
+                      key={`edit-tc-${index}`}
+                      className="grid grid-cols-2 gap-3 bg-gray-50 dark:bg-slate-800/50 p-3 rounded-lg border border-gray-200 dark:border-slate-700/50"
+                    >
+                      <input
+                        placeholder="Input"
+                        value={tc.input}
+                        onChange={(e) => handleEditTestCaseChange(index, "input", e.target.value)}
+                        className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-gray-700 dark:text-slate-300 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                      />
+                      <div className="flex gap-2">
+                        <input
+                          placeholder="Expected Output"
+                          value={tc.output}
+                          onChange={(e) =>
+                            handleEditTestCaseChange(index, "output", e.target.value)
+                          }
+                          className="flex-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-gray-700 dark:text-slate-300 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                        />
+                        {editTestCases.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditTestCases(editTestCases.filter((_, i) => i !== index))
+                            }
+                            className="p-2 text-gray-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer flex-shrink-0"
+                          >
+                            <svg
+                              className="w-3.5 h-3.5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingProblem(null)}
+                  className="bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 font-semibold py-2 px-6 rounded-lg text-sm transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-6 rounded-lg text-sm transition-all shadow-lg shadow-indigo-900/20 cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Problem detail modal */}
       {selectedProblem && (
