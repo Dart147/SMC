@@ -115,45 +115,29 @@ Output:
 ('4', 'Valid Parentheses', 'Easy', E'Given a string containing only `(`, `)`, `{`, `}`, `[`, and `]`, determine if it is **valid**.\n\nA string is valid if:\n1. Every open bracket is closed by the **same type** of bracket.\n2. Open brackets are closed in the **correct order**.\n3. Every close bracket has a corresponding open bracket.\n\n### Input Format\n- A single line containing the bracket string\n\n### Output Format\n- Print `true` if valid, `false` otherwise\n\n### Constraints\n- 1 ≤ s.length ≤ 10,000\n- `s` consists only of `(`, `)`, `{`, `}`, `[`, `]`\n\n### Examples\n\n**Example 1**\n```\nInput:\n()[]{}\n\nOutput:\ntrue\n```\n\n**Example 2**\n```\nInput:\n([)]\n\nOutput:\nfalse\n```\n*`(` is not closed before `[` is closed*\n\n**Example 3**\n```\nInput:\n{[]}\n\nOutput:\ntrue\n```'),
 ('5', 'Maximum Depth of Binary Tree', 'Easy', E'Given the root of a binary tree, return its **maximum depth** — the number of nodes along the longest path from the root down to the farthest leaf.\n\n### Input Format\n- A single line of **space-separated values** in BFS (level-order) traversal order\n- Use the keyword `null` for a missing child node\n- Trailing `null` values may be omitted\n\n### Output Format\n- A single integer — the maximum depth of the tree\n\n### Constraints\n- 0 ≤ number of nodes ≤ 10,000\n- −100 ≤ Node.val ≤ 100\n- An empty tree (no input / single `null`) has depth 0\n\n### Examples\n\n**Example 1**\n```\nInput:\n3 9 20 null null 15 7\n\nOutput:\n3\n```\n*Tree structure: root 3, children 9 and 20, 20 has children 15 and 7. Depth = 3*\n\n**Example 2**\n```\nInput:\n1 null 2\n\nOutput:\n2\n```\n*Root 1 has no left child; right child is 2. Depth = 2*\n\n**Example 3**\n```\nInput:\n1 2 null 3\n\nOutput:\n3\n```\n*Root 1 → left child 2 → left child 3. Depth = 3*');
 
+-- 25 seed test cases: 5 per problem (first case visible, rest hidden)
 INSERT INTO test_cases (id, problem_id, input, expected_output, is_hidden)
 VALUES
--- Problem 1: Two Sum (5 cases)
 ('tc_001', '1', '2 7 11 15\n9\n',    '0 1\n', false), -- NOSONAR
 ('tc_002', '1', '3 2 4\n6\n',        '1 2\n', true),
 ('tc_003', '1', '3 3\n6\n',          '0 1\n', true),
 ('tc_004', '1', '1 2 3 4 5\n9\n',    '3 4\n', true),
 ('tc_005', '1', '-3 3 1 -1\n0\n',    '0 1\n', true),
-
--- Problem 2: Add Two Numbers (5 cases)
--- Input: two lines of space-separated digits in reverse order (ones digit first)
--- Output: space-separated digits of sum in reverse order
 ('tc_006', '2', '2 4 3\n5 6 4\n',              '7 0 8\n',          false),
 ('tc_007', '2', '0\n0\n',                       '0\n',              false),
 ('tc_008', '2', '9 9 9 9 9 9 9\n9 9 9 9\n',    '8 9 9 9 0 0 0 1\n', true),
 ('tc_009', '2', '1 0 0\n9 9 9\n',              '0 0 0 1\n',        true),
 ('tc_010', '2', '5\n5\n',                       '0 1\n',            true),
-
--- Problem 3: Longest Substring Without Repeating Characters (5 cases)
--- Input: one line containing the string s
--- Output: one integer (length of longest substring without repeating characters)
 ('tc_011', '3', 'abcabcbb\n', '3\n', false),
 ('tc_012', '3', 'bbbbb\n',    '1\n', false),
 ('tc_013', '3', 'pwwkew\n',   '3\n', true),
 ('tc_014', '3', 'a\n',        '1\n', true),
 ('tc_015', '3', 'dvdf\n',     '3\n', true),
-
--- Problem 4: Valid Parentheses (5 cases)
--- Input: one line containing the bracket string
--- Output: true or false
 ('tc_016', '4', '()[]{}\n', 'true\n',  false), -- NOSONAR
 ('tc_017', '4', '()\n',     'true\n',  false),
 ('tc_018', '4', '(]\n',     'false\n', true),
 ('tc_019', '4', '([)]\n',   'false\n', true),
 ('tc_020', '4', '{[]}\n',   'true\n',  true),
-
--- Problem 5: Maximum Depth of Binary Tree (5 cases)
--- Input: space-separated BFS-order node values; use "null" for missing nodes
--- Output: one integer (maximum depth)
 ('tc_021', '5', '3 9 20 null null 15 7\n', '3\n', false),
 ('tc_022', '5', '1 null 2\n',              '2\n', false),
 ('tc_023', '5', '1\n',                     '1\n', true),
