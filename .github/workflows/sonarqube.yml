@@ -27,10 +27,10 @@ jobs:
         with:
           go-version: '1.21' # 請更換為你後端實際使用的 Go 版本
 
-      # - name: Run Go Tests with coverage
-      #   run: |
-      #     cd backend
-      #     go test ./... -coverprofile=coverage.out
+      - name: Run Go Tests with coverage
+        run: |
+          cd backend
+          go test ./... -coverprofile=coverage.out
 
       # ==========================================
       # 步驟二：前端 Node.js 環境設定與測試 (Vitest)
