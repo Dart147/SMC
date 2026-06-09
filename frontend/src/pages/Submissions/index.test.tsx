@@ -160,13 +160,14 @@ describe("SubmissionsPage", () => {
       pollUntilTerminal: mockPollUntilTerminal,
     });
 
-    const { container } = render(<SubmissionsPage />);
+    // 1. 先精準找到文字為 "Highlight" 的那個元素
+    const highlightTitle = screen.getByText("Highlight");
 
-    // 我們可以透過尋找特定 class 來確認高亮邏輯是否生效
-    // "bg-slate-900 border-indigo-700/40 shadow-lg" 是高亮的 CSS
-    const highlightRow = container.querySelector('[class*="border-indigo"]');
+    // 2. 往上層 DOM 找，確認它的外層容器（整行 row）有沒有被加上 border-indigo 的高亮 class
+    const highlightRow = highlightTitle.closest('[class*="border-indigo"]');
+
+    // 3. 驗證這個高亮外框確實存在
     expect(highlightRow).toBeInTheDocument();
-    expect(highlightRow).toHaveTextContent("Highlight");
   });
 
   it("opens and closes the ReportModal when action button is clicked", () => {
