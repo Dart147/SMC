@@ -1,19 +1,29 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
 	"github.com/Dart147/SMC/backend/internal/domain"
+	"github.com/Dart147/SMC/backend/internal/judge"
 	"github.com/Dart147/SMC/backend/internal/middleware"
-	"github.com/Dart147/SMC/backend/internal/service"
 )
 
-type SubmissionHandler struct {
-	svc *service.SubmissionService
+type SubmissionServicer interface {
+	Create(problemID, code, language, userID string) (domain.Submission, error)
+	GetByID(id string) (domain.Submission, bool)
+	ListByUserID(userID string) []domain.Submission
+	GetLatestByProblem(problemID string) (domain.Submission, bool)
+	RunSample(ctx context.Context, problemID, code, language string) (judge.Result, error)
+	GetReportByID(id string) (interface{}, error)
 }
 
-func NewSubmissionHandler(svc *service.SubmissionService) *SubmissionHandler {
+type SubmissionHandler struct {
+	svc SubmissionServicer
+}
+
+func NewSubmissionHandler(svc SubmissionServicer) *SubmissionHandler {
 	return &SubmissionHandler{svc: svc}
 }
 

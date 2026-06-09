@@ -3,15 +3,19 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/Dart147/SMC/backend/internal/service"
 	"net/http"
 )
 
-type AuthHandler struct {
-	svc *service.AuthService
+type AuthServicer interface {
+	Login(username, password string) (string, error)
+	CreateCandidate(username, password string) error
 }
 
-func NewAuthHandler(svc *service.AuthService) *AuthHandler {
+type AuthHandler struct {
+	svc AuthServicer
+}
+
+func NewAuthHandler(svc AuthServicer) *AuthHandler {
 	return &AuthHandler{svc: svc}
 }
 

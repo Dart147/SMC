@@ -7,12 +7,23 @@ import (
 
 	"github.com/Dart147/SMC/backend/internal/domain"
 	"github.com/Dart147/SMC/backend/internal/middleware"
-	"github.com/Dart147/SMC/backend/internal/service"
 )
 
-type ProblemHandler struct{ svc *service.ProblemService }
+type ProblemServicer interface {
+	Create(prob *domain.Problem) error
+	List() []domain.Problem
+	GetByID(id string) (domain.Problem, bool)
+	Delete(id string) error
+	Update(id string, prob *domain.Problem) error
+	ListAssigned(userID string) []domain.Problem
+	AssignProblem(userID, problemID string) error
+	UnassignProblem(userID, problemID string) error
+	GetAssignedProblemIDs(userID string) []string
+}
 
-func NewProblemHandler(svc *service.ProblemService) *ProblemHandler { return &ProblemHandler{svc: svc} }
+type ProblemHandler struct{ svc ProblemServicer }
+
+func NewProblemHandler(svc ProblemServicer) *ProblemHandler { return &ProblemHandler{svc: svc} }
 
 func (h *ProblemHandler) Create(w http.ResponseWriter, r *http.Request) {
 	setHeaders(w)
