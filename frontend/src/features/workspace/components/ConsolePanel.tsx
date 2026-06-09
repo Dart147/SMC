@@ -144,14 +144,16 @@ export function ConsolePanel({ theme, sampleTestCase, onRun, isRunSample }: Cons
                 onClick={onRun}
                 disabled={isRunSample}
                 style={{
-                  background: isRunSample ? "#374151" : "#2d2d2d",
-                  color: isRunSample ? "#9ca3af" : "#d1d5db",
+                  background: colors.secondaryBg,
+                  color: isRunSample ? "#9ca3af" : colors.text,
                   padding: "6px 16px",
                   borderRadius: "4px",
-                  border: "1px solid #444",
+                  border: `1px solid ${colors.border}`,
                   cursor: isRunSample ? "not-allowed" : "pointer",
                   fontSize: "12px",
                   fontWeight: 600,
+                  opacity: isRunSample ? 0.5 : 1,
+                  transition: "opacity 0.15s",
                 }}
               >
                 {isRunSample ? "Running..." : "▶ Run sample"}
@@ -161,7 +163,7 @@ export function ConsolePanel({ theme, sampleTestCase, onRun, isRunSample }: Cons
         )}
 
         {activeTab === "result" && !result && (
-          <div style={{ color: "#888", fontSize: "13px" }}>Submit your code to see results.</div>
+          <div style={{ color: "#888", fontSize: "13px" }}>Run your code to see results.</div>
         )}
 
         {activeTab === "result" && result && (

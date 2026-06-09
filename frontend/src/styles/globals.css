@@ -3,21 +3,16 @@
 @tailwind utilities;
 
 @layer base {
-  /* 設定全域深色背景與字體顏色 */
   html,
   body,
   #root {
-    @apply h-full m-0 p-0 bg-[#1e1e1e] text-[#ddd] font-sans;
+    @apply h-full m-0 p-0 font-sans bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100;
   }
 
-  /* 保留你原本的按鈕與下拉選單預設樣式 */
+  /* Remove hardcoded dark defaults — each component owns its own bg/border/text.
+     Workspace editor elements (EditorToolbar, ConsolePanel) use inline styles and are unaffected. */
   button,
   select {
-    @apply bg-[#2d2d2d] text-[#ddd] border border-[#444] rounded px-2.5 py-1 cursor-pointer transition-colors;
-  }
-
-  button:hover,
-  select:hover {
-    @apply bg-[#3a3a3a];
+    @apply cursor-pointer transition-colors;
   }
 }

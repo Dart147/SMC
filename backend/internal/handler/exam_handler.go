@@ -1,28 +1,27 @@
 package handler
 
 import (
-	"encoding/json"
-	"net/http"
-
-	"github.com/Dart147/SMC/backend/internal/middleware"
-	"github.com/Dart147/SMC/backend/internal/service"
-)
-
-// POST /api/exams/startpackage repository
-
-import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"net/http"
 	"time"
 
 	sqlcdb "github.com/Dart147/SMC/backend/internal/db"
+	"github.com/Dart147/SMC/backend/internal/middleware"
 )
 
-type ExamHandler struct {
-	svc *service.ExamService
+type ExamServicer interface {
+	StartExam(userID string) (int64, error)
+	ReportWarning(userID string) (int, error)
+	EndExam(userID string) (time.Time, error)
 }
 
-func NewExamHandler(svc *service.ExamService) *ExamHandler {
+type ExamHandler struct {
+	svc ExamServicer
+}
+
+func NewExamHandler(svc ExamServicer) *ExamHandler {
 	return &ExamHandler{svc: svc}
 }
 

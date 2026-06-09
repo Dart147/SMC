@@ -3,14 +3,18 @@ package handler
 import (
 	"net/http"
 
-	"github.com/Dart147/SMC/backend/internal/service"
+	"github.com/Dart147/SMC/backend/internal/domain"
 )
 
-type ReportHandler struct {
-	svc *service.ReportService
+type ReportServicer interface {
+	GetCandidateScores() ([]domain.CandidateScore, error)
 }
 
-func NewReportHandler(svc *service.ReportService) *ReportHandler {
+type ReportHandler struct {
+	svc ReportServicer
+}
+
+func NewReportHandler(svc ReportServicer) *ReportHandler {
 	return &ReportHandler{svc: svc}
 }
 

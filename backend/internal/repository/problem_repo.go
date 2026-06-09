@@ -82,7 +82,7 @@ func (r *ProblemRepo) Create(prob *domain.Problem) error {
 }
 
 func (r *ProblemRepo) List() []domain.Problem {
-	rows, err := r.db.Query(`SELECT id, title, difficulty, description FROM problems ORDER BY id DESC`)
+	rows, err := r.db.Query(`SELECT id, title, difficulty, description FROM problems ORDER BY id ASC`)
 	if err != nil {
 		return []domain.Problem{}
 	}
@@ -117,7 +117,7 @@ func (r *ProblemRepo) GetByID(id string) (domain.Problem, bool) {
 }
 
 func (r *ProblemRepo) getTestCasesByProblemID(pID int) []domain.TestCase {
-	query := `SELECT input, expected_output, COALESCE(is_hidden, false) FROM test_cases WHERE problem_id = $1`
+	query := `SELECT input, expected_output, COALESCE(is_hidden, false) FROM test_cases WHERE problem_id = $1 ORDER BY id ASC`
 	rows, err := r.db.Query(query, pID)
 	if err != nil {
 		return []domain.TestCase{}
@@ -167,6 +167,68 @@ func (r *ProblemRepo) ListAssigned(userID string) []domain.Problem {
 		return []domain.Problem{}
 	}
 	return problems
+}
+
+// Delete removes a problem and all related data (test cases, assignments, submissions cascade via FK)
+func (r *ProblemRepo) Delete(id string) error {
+	res, err := r.db.Exec(`DELETE FROM problems WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("problem %s not found", id)
+	}
+	return nil
+}
+
+// Update replaces a problem's metadata and all its test cases atomically.
+func (r *ProblemRepo) Update(id string, prob *domain.Problem) error {
+	ctx := context.Background()
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	res, err := tx.ExecContext(ctx,
+		`UPDATE problems SET title = $1, difficulty = $2, description = $3 WHERE id = $4`,
+		prob.Title, prob.Difficulty, prob.Description, id,
+	)
+	if err != nil {
+		return fmt.Errorf("update problem: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("problem %s not found", id)
+	}
+
+	if _, err = tx.ExecContext(ctx, `DELETE FROM test_cases WHERE problem_id = $1`, id); err != nil {
+		return fmt.Errorf("clear test cases: %w", err)
+	}
+
+	for _, tc := range prob.TestCases {
+		nTC, err := rand.Int(rand.Reader, big.NewInt(90000000))
+		if err != nil {
+			return fmt.Errorf("generate test case id: %w", err)
+		}
+		newTCID := fmt.Sprintf("%d", nTC.Int64()+10000000)
+		_, err = tx.ExecContext(ctx,
+			`INSERT INTO test_cases (id, problem_id, input, expected_output, is_hidden) VALUES ($1, $2, $3, $4, $5)`,
+			newTCID, id, tc.Input, tc.ExpectedOutput, sql.NullBool{Bool: tc.IsHidden, Valid: true},
+		)
+		if err != nil {
+			return fmt.Errorf("insert test case: %w", err)
+		}
+	}
+
+	return tx.Commit()
 }
 
 // Assign 將一道題目指派給某位考生

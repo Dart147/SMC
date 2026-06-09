@@ -22,6 +22,32 @@ export const assignProblem = async (userId: string, problemId: string): Promise<
   await apiClient.post("/admin/assign-problem", { userId, problemId });
 };
 
+/** 面試官：刪除題目 */
+export const deleteProblem = async (problemId: string): Promise<void> => {
+  await apiClient.delete(`/problems/${problemId}`);
+};
+
+interface UpdateProblemPayload {
+  title: string;
+  difficulty: string;
+  description: string;
+  testCases: { input: string; expected_output: string; isHidden?: boolean }[];
+}
+
+/** 面試官：取得完整題目資料（含隱藏測資） */
+export const fetchAdminProblemById = async (id: string): Promise<any> => {
+  const res = await apiClient.get(`/admin/problems/${id}`);
+  return res.data;
+};
+
+/** 面試官：更新題目 */
+export const updateProblem = async (
+  problemId: string,
+  data: UpdateProblemPayload,
+): Promise<void> => {
+  await apiClient.put(`/problems/${problemId}`, data);
+};
+
 /** 面試官：取消指派 */
 export const unassignProblem = async (userId: string, problemId: string): Promise<void> => {
   await apiClient.delete("/admin/assign-problem", { data: { userId, problemId } });

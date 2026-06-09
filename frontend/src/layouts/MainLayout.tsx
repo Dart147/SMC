@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/hooks/useAuth";
+import { useTheme } from "../contexts/ThemeContext";
+import { SunIcon, MoonIcon } from "../components/Common/ThemeIcons";
 
 export const MainLayout: React.FC = () => {
   const { user, examExpiresAt, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -45,7 +48,6 @@ export const MainLayout: React.FC = () => {
       navigate("/");
       return;
     }
-
     if (window.confirm("確定要登出嗎？登出後計時仍會繼續執行！")) {
       logout();
       navigate("/");
@@ -64,9 +66,11 @@ export const MainLayout: React.FC = () => {
           { to: "/results", label: "Results" },
         ];
 
+  const isDark = theme === "dark";
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
-      <nav className="bg-slate-950 border-b border-slate-800 px-6 h-14 flex items-center gap-1 flex-shrink-0">
+    <div className="min-h-screen flex flex-col font-sans bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100 transition-colors duration-200">
+      <nav className="bg-white dark:bg-slate-950 border-b border-gray-200 dark:border-slate-800 px-4 sm:px-6 h-14 flex items-center gap-1 flex-shrink-0 overflow-x-auto transition-colors duration-200">
         {/* Logo */}
         <Link to={user ? "/problems" : "/"} className="flex items-center gap-2 mr-4 group">
           <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center group-hover:bg-indigo-500 transition-colors">
@@ -84,7 +88,9 @@ export const MainLayout: React.FC = () => {
               />
             </svg>
           </div>
-          <span className="font-bold text-slate-50 text-sm tracking-tight">SMC Judge</span>
+          <span className="font-bold text-gray-900 dark:text-slate-50 text-sm tracking-tight">
+            SMC Judge
+          </span>
         </Link>
 
         {/* Nav links */}
@@ -98,8 +104,8 @@ export const MainLayout: React.FC = () => {
                 to={link.to}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                   isActive
-                    ? "bg-slate-800 text-slate-50"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                    ? "bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-slate-50"
+                    : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800/60"
                 }`}
               >
                 {link.label}
@@ -108,12 +114,12 @@ export const MainLayout: React.FC = () => {
           })}
 
         {/* Right side */}
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-2">
           {/* Countdown timer */}
           {user && user.role !== "admin" && timeLeft && (
-            <div className="flex items-center gap-2 bg-red-950/40 border border-red-800/40 px-3 py-1.5 rounded-lg">
+            <div className="flex items-center gap-2 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/40 px-3 py-1.5 rounded-lg">
               <svg
-                className="w-3.5 h-3.5 text-red-400 flex-shrink-0"
+                className="w-3.5 h-3.5 text-red-500 dark:text-red-400 flex-shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -125,7 +131,9 @@ export const MainLayout: React.FC = () => {
                   d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span className="text-red-400 font-mono text-sm font-semibold">{timeLeft}</span>
+              <span className="text-red-600 dark:text-red-400 font-mono text-sm font-semibold">
+                {timeLeft}
+              </span>
             </div>
           )}
 
@@ -133,27 +141,37 @@ export const MainLayout: React.FC = () => {
           {user?.role === "admin" && (
             <Link
               to="/interviewer"
-              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all whitespace-nowrap ${
                 location.pathname === "/interviewer"
-                  ? "bg-amber-950/40 border-amber-700/50 text-amber-400"
-                  : "border-amber-700/30 text-amber-500 hover:bg-amber-950/30"
+                  ? "bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700/50 text-amber-700 dark:text-amber-400"
+                  : "border-amber-300/60 dark:border-amber-700/30 text-amber-600 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30"
               }`}
             >
-              Control Panel
+              <span className="hidden sm:inline">Control Panel</span>
+              <span className="sm:hidden">Panel</span>
             </Link>
           )}
+
+          {/* Theme toggle */}
+          <button
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            className="p-1.5 rounded-md text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+          >
+            {isDark ? <SunIcon /> : <MoonIcon />}
+          </button>
 
           {/* User info + logout */}
           {user && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 font-mono hidden sm:block">
+              <span className="text-xs text-gray-400 dark:text-slate-500 font-mono hidden sm:block">
                 {user.username}
               </span>
               <button
                 onClick={handleLogout}
-                className="text-xs font-medium text-slate-400 hover:text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg transition-all"
+                className="text-xs font-medium text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 px-3 py-1.5 rounded-lg transition-all"
               >
-                登出
+                Logout
               </button>
             </div>
           )}

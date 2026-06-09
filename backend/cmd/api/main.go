@@ -123,6 +123,9 @@ func main() {
 	mux.HandleFunc("GET /api/problems", problemH.List)
 	mux.HandleFunc("GET /api/problems/{id}", problemH.GetByID)
 	mux.Handle("POST /api/problems", adminOnly(http.HandlerFunc(problemH.Create)))
+	mux.Handle("DELETE /api/problems/{id}", adminOnly(http.HandlerFunc(problemH.Delete)))
+	mux.Handle("PUT /api/problems/{id}", adminOnly(http.HandlerFunc(problemH.Update)))
+	mux.Handle("GET /api/admin/problems/{id}", adminOnly(http.HandlerFunc(problemH.GetByIDAdmin)))
 
 	// 考生專用：取得自己被指派的題目 (需登入)
 	mux.Handle("GET /api/my-problems", authMiddleware(http.HandlerFunc(problemH.ListMyProblems)))

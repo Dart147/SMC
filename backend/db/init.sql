@@ -72,80 +72,74 @@ CREATE TABLE user_problem_assignments (
 CREATE INDEX idx_assignments_user_id ON user_problem_assignments(user_id);
 -- Seed problems (admin user is seeded by the backend on first startup)
 INSERT INTO problems (id, title, difficulty, description) VALUES
-('1', 'Two Sum', 'Easy', 'Given a list of integers and a target, print the two indices (0-based, in ascending order) that add up to the target. Each input has exactly one solution.
+('1', 'Two Sum', 'Easy', 'Given an integer array and a target value, return the **two indices** (0-based, in ascending order) of the two numbers that add up to the target. Each input has exactly one valid solution.
 
-**Input format:**
+### Input Format
 - Line 1: space-separated integers (the array)
-- Line 2: target integer
+- Line 2: the target integer
 
-**Output format:**
-- Two space-separated indices
+### Output Format
+- A single line with two space-separated 0-based indices in ascending order
 
-**Example:**
+### Constraints
+- 2 ≤ n ≤ 10,000
+- −10⁹ ≤ nums[i] ≤ 10⁹
+- −10⁹ ≤ target ≤ 10⁹
+- Exactly one valid answer exists
 
+### Examples
+
+**Example 1**
 ```
-
 Input:
 2 7 11 15
 9
+
 Output:
 0 1
-
-```'),
-('2', 'Add Two Numbers', 'Medium', 'You are given two non-empty linked lists representing two non-negative integers. The digits are stored in reverse order, and each of their nodes contains a single digit. Add the two numbers and return the sum as a linked list.
-
-**Example:**
-
 ```
+*nums[0] + nums[1] = 2 + 7 = 9*
 
-Input: l1 = [2,4,3], l2 = [5,6,4]
-Output: [7,0,8]
-Explanation: 342 + 465 = 807.
-
-```'),
-('3', 'Longest Substring Without Repeating Characters', 'Medium', 'Given a string `s`, find the length of the longest substring without repeating characters.
-
-**Example:**
-
+**Example 2**
 ```
+Input:
+3 2 4
+6
 
-Input: s = "abcabcbb"
-Output: 3
-Explanation: The answer is "abc", with the length of 3.
-
-```'),
-('4', 'Valid Parentheses', 'Easy', 'Given a string containing only ''('', '')'', ''{'', ''}'', ''['' and '']'', determine if it is valid.
-
-A string is valid if open brackets are closed by the same type and in the correct order.
-
-**Input format:**
-- Line 1: the bracket string
-
-**Output format:**
-- Print `true` or `false`
-
-**Example:**
-
+Output:
+1 2
 ```
+*nums[1] + nums[2] = 2 + 4 = 6*'),
+('2', 'Add Two Numbers', 'Medium', E'You are given two non-negative integers represented as linked lists. The digits are stored in **reverse order** (ones digit first). Add the two numbers and return the result as a linked list in reverse order.\n\n### Input Format\n- Line 1: space-separated digits of the first number in **reverse order** (e.g., `2 4 3` represents 342)\n- Line 2: space-separated digits of the second number in **reverse order** (e.g., `5 6 4` represents 465)\n\n### Output Format\n- Space-separated digits of the sum in **reverse order** (e.g., `7 0 8` represents 807)\n\n### Constraints\n- Each list has 1 to 100 nodes\n- 0 ≤ digit ≤ 9\n- No leading zeros except for the number 0 itself\n\n### Examples\n\n**Example 1**\n```\nInput:\n2 4 3\n5 6 4\n\nOutput:\n7 0 8\n```\n*342 + 465 = 807*\n\n**Example 2**\n```\nInput:\n9 9 9 9 9 9 9\n9 9 9 9\n\nOutput:\n8 9 9 9 0 0 0 1\n```\n*9999999 + 9999 = 10009998*'),
+('3', 'Longest Substring Without Repeating Characters', 'Medium', E'Given a string `s`, find the length of the **longest substring** that contains no repeating characters.\n\n### Input Format\n- A single line containing the string `s`\n\n### Output Format\n- A single integer — the length of the longest substring without repeating characters\n\n### Constraints\n- 0 ≤ s.length ≤ 50,000\n- `s` may contain English letters, digits, symbols, and spaces\n\n### Examples\n\n**Example 1**\n```\nInput:\nabcabcbb\n\nOutput:\n3\n```\n*The longest substring without repeating characters is `abc` (length 3)*\n\n**Example 2**\n```\nInput:\nbbbbb\n\nOutput:\n1\n```\n*Every character repeats; the best we can do is a single `b`*\n\n**Example 3**\n```\nInput:\npwwkew\n\nOutput:\n3\n```\n*`wke` is the longest such substring (not `kew` — both have length 3, either is acceptable)*'),
+('4', 'Valid Parentheses', 'Easy', E'Given a string containing only `(`, `)`, `{`, `}`, `[`, and `]`, determine if it is **valid**.\n\nA string is valid if:\n1. Every open bracket is closed by the **same type** of bracket.\n2. Open brackets are closed in the **correct order**.\n3. Every close bracket has a corresponding open bracket.\n\n### Input Format\n- A single line containing the bracket string\n\n### Output Format\n- Print `true` if valid, `false` otherwise\n\n### Constraints\n- 1 ≤ s.length ≤ 10,000\n- `s` consists only of `(`, `)`, `{`, `}`, `[`, `]`\n\n### Examples\n\n**Example 1**\n```\nInput:\n()[]{}\n\nOutput:\ntrue\n```\n\n**Example 2**\n```\nInput:\n([)]\n\nOutput:\nfalse\n```\n*`(` is not closed before `[` is closed*\n\n**Example 3**\n```\nInput:\n{[]}\n\nOutput:\ntrue\n```'),
+('5', 'Maximum Depth of Binary Tree', 'Easy', E'Given the root of a binary tree, return its **maximum depth** — the number of nodes along the longest path from the root down to the farthest leaf.\n\n### Input Format\n- A single line of **space-separated values** in BFS (level-order) traversal order\n- Use the keyword `null` for a missing child node\n- Trailing `null` values may be omitted\n\n### Output Format\n- A single integer — the maximum depth of the tree\n\n### Constraints\n- 0 ≤ number of nodes ≤ 10,000\n- −100 ≤ Node.val ≤ 100\n- An empty tree (no input / single `null`) has depth 0\n\n### Examples\n\n**Example 1**\n```\nInput:\n3 9 20 null null 15 7\n\nOutput:\n3\n```\n*Tree structure: root 3, children 9 and 20, 20 has children 15 and 7. Depth = 3*\n\n**Example 2**\n```\nInput:\n1 null 2\n\nOutput:\n2\n```\n*Root 1 has no left child; right child is 2. Depth = 2*\n\n**Example 3**\n```\nInput:\n1 2 null 3\n\nOutput:\n3\n```\n*Root 1 → left child 2 → left child 3. Depth = 3*');
 
-Input: ()[]{}
-Output: true
-
-```'),
-('5', 'Maximum Depth of Binary Tree', 'Easy', 'Given the root of a binary tree, return its maximum depth.
-
-A binary tree''s maximum depth is the number of nodes along the longest path from the root node down to the farthest leaf node.
-
-**Example:**
-
-```
-
-Input: root = [3,9,20,null,null,15,7]
-Output: 3
-
-```');
-
+-- 25 seed test cases: 5 per problem (first case visible, rest hidden)
 INSERT INTO test_cases (id, problem_id, input, expected_output, is_hidden)
 VALUES
-('tc_001', '1', '2 7 11 15\n9\n', '0 1\n', false),
-('tc_002', '1', '3 2 4\n6\n',     '1 2\n', true);
+('tc_001', '1', '2 7 11 15\n9\n',    '0 1\n', false), -- NOSONAR
+('tc_002', '1', '3 2 4\n6\n',        '1 2\n', true),
+('tc_003', '1', '3 3\n6\n',          '0 1\n', true),
+('tc_004', '1', '1 2 3 4 5\n9\n',    '3 4\n', true),
+('tc_005', '1', '-3 3 1 -1\n0\n',    '0 1\n', true),
+('tc_006', '2', '2 4 3\n5 6 4\n',              '7 0 8\n',          false),
+('tc_007', '2', '0\n0\n',                       '0\n',              false),
+('tc_008', '2', '9 9 9 9 9 9 9\n9 9 9 9\n',    '8 9 9 9 0 0 0 1\n', true),
+('tc_009', '2', '1 0 0\n9 9 9\n',              '0 0 0 1\n',        true),
+('tc_010', '2', '5\n5\n',                       '0 1\n',            true),
+('tc_011', '3', 'abcabcbb\n', '3\n', false),
+('tc_012', '3', 'bbbbb\n',    '1\n', false),
+('tc_013', '3', 'pwwkew\n',   '3\n', true),
+('tc_014', '3', 'a\n',        '1\n', true),
+('tc_015', '3', 'dvdf\n',     '3\n', true),
+('tc_016', '4', '()[]{}\n', 'true\n',  false), -- NOSONAR
+('tc_017', '4', '()\n',     'true\n',  false),
+('tc_018', '4', '(]\n',     'false\n', true),
+('tc_019', '4', '([)]\n',   'false\n', true),
+('tc_020', '4', '{[]}\n',   'true\n',  true),
+('tc_021', '5', '3 9 20 null null 15 7\n', '3\n', false),
+('tc_022', '5', '1 null 2\n',              '2\n', false),
+('tc_023', '5', '1\n',                     '1\n', true),
+('tc_024', '5', '1 2 3 4 5 6 7\n',        '3\n', true),
+('tc_025', '5', '1 2 null 3\n',            '3\n', true);
