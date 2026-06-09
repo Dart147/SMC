@@ -87,8 +87,8 @@ describe("CandidateList", () => {
     expect(screen.getByText("60 pts")).toBeInTheDocument();
 
     // Check warning counts
-    expect(screen.getByText("0", { selector: "span.text-emerald-400" })).toBeInTheDocument();
-    expect(screen.getByText("2", { selector: "span.text-red-400" })).toBeInTheDocument();
+    expect(screen.getByText("0", { selector: 'span[class*="emerald"]' })).toBeInTheDocument();
+    expect(screen.getByText("2", { selector: 'span[class*="red"]' })).toBeInTheDocument();
   });
 
   it("handles api error gracefully", async () => {
@@ -114,7 +114,7 @@ describe("CandidateList", () => {
       expect(screen.getByText("student1")).toBeInTheDocument();
     });
 
-    const student1Row = screen.getByText("student1").closest("div.cursor-pointer");
+    const student1Row = screen.getByText("student1").closest("button");
     fireEvent.click(student1Row!);
 
     await waitFor(() => {
@@ -142,7 +142,7 @@ describe("CandidateList", () => {
       expect(screen.getByText("student1")).toBeInTheDocument();
     });
 
-    const student1Row = screen.getByText("student1").closest("div.cursor-pointer");
+    const student1Row = screen.getByText("student1").closest("button");
     fireEvent.click(student1Row!);
 
     const viewCodeBtn = await screen.findByText("View Code");

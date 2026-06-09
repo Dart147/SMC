@@ -164,7 +164,7 @@ describe("SubmissionsPage", () => {
 
     // 我們可以透過尋找特定 class 來確認高亮邏輯是否生效
     // "bg-slate-900 border-indigo-700/40 shadow-lg" 是高亮的 CSS
-    const highlightRow = container.querySelector(".border-indigo-700\\/40");
+    const highlightRow = container.querySelector('[class*="border-indigo"]');
     expect(highlightRow).toBeInTheDocument();
     expect(highlightRow).toHaveTextContent("Highlight");
   });

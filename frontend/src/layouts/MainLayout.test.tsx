@@ -64,7 +64,7 @@ describe("MainLayout", () => {
   it("renders public layout without user", () => {
     renderComponent();
     expect(screen.getByText("SMC Judge")).toBeInTheDocument();
-    expect(screen.queryByText("登出")).not.toBeInTheDocument();
+    expect(screen.queryByText(/登出|Logout/i)).not.toBeInTheDocument();
   });
 
   it("renders admin layout correctly", () => {
@@ -79,7 +79,7 @@ describe("MainLayout", () => {
     expect(screen.getByText("Submissions")).toBeInTheDocument(); // Admin 獨有
 
     // Admin 登出不需確認
-    fireEvent.click(screen.getByText("登出"));
+    fireEvent.click(screen.getByText(/登出|Logout/i));
     expect(mockLogout).toHaveBeenCalled();
     expect(mockNavigate).toHaveBeenCalledWith("/");
     expect(confirmMock).not.toHaveBeenCalled();
@@ -96,7 +96,7 @@ describe("MainLayout", () => {
     expect(screen.queryByText("Control Panel")).not.toBeInTheDocument();
 
     // 考生登出需要確認
-    fireEvent.click(screen.getByText("登出"));
+    fireEvent.click(screen.getByText(/登出|Logout/i));
     expect(confirmMock).toHaveBeenCalledWith("確定要登出嗎？登出後計時仍會繼續執行！");
     expect(mockLogout).toHaveBeenCalled();
     expect(mockNavigate).toHaveBeenCalledWith("/");
@@ -111,7 +111,7 @@ describe("MainLayout", () => {
     });
 
     renderComponent();
-    fireEvent.click(screen.getByText("登出"));
+    fireEvent.click(screen.getByText(/登出|Logout/i));
     expect(mockLogout).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
   });

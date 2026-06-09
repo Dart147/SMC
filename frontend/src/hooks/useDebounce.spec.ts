@@ -20,13 +20,13 @@ describe("useDebounce Hook", () => {
     expect(result.current).toBe("hello");
     rerender({ value: "hello world" });
 
-    // 2. 🌟 使用 act() 包裝快轉時間的動作
+    // 2. 使用 act() 包裝快轉時間的動作
     act(() => {
       vi.advanceTimersByTime(300);
     });
     expect(result.current).toBe("hello"); // 還沒到 500ms，維持原值
 
-    // 3. 🌟 使用 act() 包裝第二次快轉
+    // 3. 使用 act() 包裝第二次快轉
     act(() => {
       vi.advanceTimersByTime(200);
     });
