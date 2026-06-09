@@ -2,7 +2,6 @@ import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ExamLayout } from "./ExamLayout";
 import { useAuth } from "../features/auth/hooks/useAuth";
-import { useAntiCheat } from "../hooks/useAntiCheat";
 import { BrowserRouter } from "react-router-dom";
 
 // ==========================================
