@@ -65,7 +65,7 @@ func (m *mockRunner) Run(ctx context.Context, prob domain.Problem, code, languag
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 func newSvc(subRepo submissionRepo, probRepo problemRepo, runner judge.Runner) *SubmissionService {
-	return NewSubmissionService(subRepo, probRepo, runner, zap.NewNop())
+	return NewSubmissionService(subRepo, probRepo, runner, zap.NewNop(), nil)
 }
 
 func sampleProblem() domain.Problem {
