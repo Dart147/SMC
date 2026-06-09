@@ -20,7 +20,7 @@ func TestProblemRepo_List_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT id, title, difficulty, description FROM problems`).
 		WillReturnRows(newProblemRow("100001", "Two Sum", "Easy", "desc").
@@ -41,7 +41,7 @@ func TestProblemRepo_List_QueryError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT id, title, difficulty, description FROM problems`).
 		WillReturnError(errDuplicate)
@@ -60,7 +60,7 @@ func TestProblemRepo_GetByID_Found(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT id, title, difficulty, description FROM problems WHERE id`).
 		WithArgs("100001").
@@ -87,7 +87,7 @@ func TestProblemRepo_GetByID_NotFound(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT id, title, difficulty, description FROM problems WHERE id`).
 		WithArgs("999").
@@ -107,7 +107,7 @@ func TestProblemRepo_ListAssigned_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT p.id, p.title`).
 		WithArgs("u1").
@@ -128,7 +128,7 @@ func TestProblemRepo_ListAssigned_Empty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT p.id, p.title`).
 		WithArgs("u2").
@@ -148,7 +148,7 @@ func TestProblemRepo_Delete_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectExec(`DELETE FROM problems`).
 		WithArgs("100001").
@@ -165,7 +165,7 @@ func TestProblemRepo_Delete_NotFound(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectExec(`DELETE FROM problems`).
 		WithArgs("999").
@@ -182,7 +182,7 @@ func TestProblemRepo_Delete_DBError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectExec(`DELETE FROM problems`).WillReturnError(errDuplicate)
 
@@ -199,7 +199,7 @@ func TestProblemRepo_Assign_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectExec(`INSERT INTO user_problem_assignments`).
 		WithArgs("u1", "p1").
@@ -216,7 +216,7 @@ func TestProblemRepo_Unassign_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectExec(`DELETE FROM user_problem_assignments`).
 		WithArgs("u1", "p1").
@@ -235,7 +235,7 @@ func TestProblemRepo_GetAssignedProblemIDs_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT problem_id FROM user_problem_assignments`).
 		WithArgs("u1").
@@ -253,7 +253,7 @@ func TestProblemRepo_GetAssignedProblemIDs_Empty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT problem_id FROM user_problem_assignments`).
 		WithArgs("u99").
@@ -273,7 +273,7 @@ func TestProblemRepo_Create_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(`INSERT INTO problems`).
@@ -302,7 +302,7 @@ func TestProblemRepo_Create_BeginTxError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectBegin().WillReturnError(errDuplicate)
 
@@ -317,7 +317,7 @@ func TestProblemRepo_Create_InsertProblemError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(`INSERT INTO problems`).WillReturnError(errDuplicate)
@@ -336,7 +336,7 @@ func TestProblemRepo_Update_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectBegin()
 	mock.ExpectExec(`UPDATE problems SET title`).
@@ -357,7 +357,7 @@ func TestProblemRepo_Update_NotFound(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectBegin()
 	mock.ExpectExec(`UPDATE problems SET title`).

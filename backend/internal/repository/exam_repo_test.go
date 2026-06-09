@@ -13,7 +13,7 @@ func TestExamRepo_StartExam_ValidTime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	now := time.Now()
 	rows := sqlmock.NewRows([]string{"exam_started_at"}).AddRow(now)
@@ -37,7 +37,7 @@ func TestExamRepo_StartExam_NullTime_FallsBackToNow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	rows := sqlmock.NewRows([]string{"exam_started_at"}).AddRow(sql.NullTime{Valid: false})
 	mock.ExpectQuery(`UPDATE users`).WithArgs("u1").WillReturnRows(rows)
@@ -58,7 +58,7 @@ func TestExamRepo_StartExam_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`UPDATE users`).WithArgs("u1").WillReturnError(errDuplicate)
 
@@ -74,7 +74,7 @@ func TestExamRepo_IncrementWarning_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	rows := sqlmock.NewRows([]string{"warning_count"}).AddRow(int32(3))
 	mock.ExpectQuery(`UPDATE users`).WithArgs("u1").WillReturnRows(rows)
@@ -94,7 +94,7 @@ func TestExamRepo_IncrementWarning_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`UPDATE users`).WithArgs("u1").WillReturnError(errDuplicate)
 
@@ -110,7 +110,7 @@ func TestExamRepo_EndExam_ValidTime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	now := time.Now()
 	rows := sqlmock.NewRows([]string{"exam_ended_at"}).AddRow(now)
@@ -131,7 +131,7 @@ func TestExamRepo_EndExam_NullTime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	rows := sqlmock.NewRows([]string{"exam_ended_at"}).AddRow(sql.NullTime{Valid: false})
 	mock.ExpectQuery(`UPDATE users`).WithArgs("u1").WillReturnRows(rows)
@@ -152,7 +152,7 @@ func TestExamRepo_EndExam_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`UPDATE users`).WithArgs("u1").WillReturnError(errDuplicate)
 

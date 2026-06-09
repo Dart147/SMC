@@ -12,7 +12,7 @@ func TestUserRepo_GetUserByUsername_Found(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	now := time.Now()
 	rows := sqlmock.NewRows([]string{"id", "username", "password_hash", "role", "exam_started_at", "exam_ended_at"}).
@@ -45,7 +45,7 @@ func TestUserRepo_GetUserByUsername_NotFound(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT id, username, password_hash, role`).
 		WithArgs("nobody").
@@ -66,7 +66,7 @@ func TestUserRepo_CreateUser_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectExec(`INSERT INTO users`).
 		WithArgs("u2", "bob_hash", "hash2", "candidate").
@@ -86,7 +86,7 @@ func TestUserRepo_CreateUser_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectExec(`INSERT INTO users`).
 		WillReturnError(errDuplicate)
@@ -102,7 +102,7 @@ func TestUserRepo_UpdateUserExamStartedAt_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	now := time.Now()
 	mock.ExpectExec(`UPDATE users SET exam_started_at`).
@@ -123,7 +123,7 @@ func TestUserRepo_UpdateUserExamStartedAt_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectExec(`UPDATE users SET exam_started_at`).
 		WillReturnError(errDuplicate)

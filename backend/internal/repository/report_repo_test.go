@@ -12,7 +12,7 @@ func TestReportRepo_GetCandidateScores_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	now := time.Now()
 	rows := sqlmock.NewRows([]string{"user_id", "username", "exam_started_at", "total_score", "problems_attempted", "problems_accepted"}).
@@ -47,7 +47,7 @@ func TestReportRepo_GetCandidateScores_Empty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT`).
 		WillReturnRows(sqlmock.NewRows([]string{"user_id", "username", "exam_started_at", "total_score", "problems_attempted", "problems_accepted"}))
@@ -67,7 +67,7 @@ func TestReportRepo_GetCandidateScores_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT`).WillReturnError(errDuplicate)
 

@@ -19,7 +19,7 @@ func TestInterviewerHandler_GetCandidates_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	rows := sqlmock.NewRows(candidateCols).
 		AddRow("u1", "alice_hash", "candidate", "2024-01-01", 0, 90, "s1", "Two Sum", "Accepted", 95, 3, 3, 100).
@@ -42,7 +42,7 @@ func TestInterviewerHandler_GetCandidates_DBError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT`).WillReturnError(sqlmock.ErrCancelled)
 
@@ -61,7 +61,7 @@ func TestInterviewerHandler_GetCandidates_AdminDisplayName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	rows := sqlmock.NewRows(candidateCols).
 		AddRow("admin1", "admin_hash", "admin", "2024-01-01", 0, 0, "", "未命名題目", "Ready", 0, 0, 0, 0)

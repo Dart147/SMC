@@ -34,7 +34,7 @@ func TestSubmissionRepo_Update_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectExec(`UPDATE submissions`).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -51,7 +51,7 @@ func TestSubmissionRepo_Update_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectExec(`UPDATE submissions`).WillReturnError(errDuplicate)
 
@@ -68,7 +68,7 @@ func TestSubmissionRepo_Save_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectExec(`INSERT INTO submissions`).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -85,7 +85,7 @@ func TestSubmissionRepo_Save_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectExec(`INSERT INTO submissions`).WillReturnError(errDuplicate)
 
@@ -102,7 +102,7 @@ func TestSubmissionRepo_GetByID_Found(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT.*FROM submissions`).
 		WithArgs("s1").
@@ -123,7 +123,7 @@ func TestSubmissionRepo_GetByID_NotFound(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT.*FROM submissions`).
 		WithArgs("nope").
@@ -143,7 +143,7 @@ func TestSubmissionRepo_List_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT.*FROM submissions`).
 		WillReturnRows(
@@ -166,7 +166,7 @@ func TestSubmissionRepo_List_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT.*FROM submissions`).WillReturnError(errDuplicate)
 
@@ -184,7 +184,7 @@ func TestSubmissionRepo_GetLatestByProblem_Found(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT.*FROM submissions`).
 		WillReturnRows(newSubRow("s3", "p2", "code2", "python"))
@@ -204,7 +204,7 @@ func TestSubmissionRepo_GetLatestByProblem_NotFound(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT.*FROM submissions`).
 		WillReturnRows(sqlmock.NewRows(submissionColumns))
@@ -223,7 +223,7 @@ func TestSubmissionRepo_ClaimNext_Found(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	claimCols := []string{"id", "problem_id", "user_id", "code", "language",
 		"status", "passed_test_cases", "total_test_cases",
@@ -254,7 +254,7 @@ func TestSubmissionRepo_ClaimNext_Empty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`WITH next_job`).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}))
@@ -276,7 +276,7 @@ func TestSubmissionRepo_RecoverStalled_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectExec(`UPDATE submissions SET status`).
 		WillReturnResult(sqlmock.NewResult(0, 2))
@@ -300,7 +300,7 @@ func TestSubmissionRepo_ListByUserID_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT s.id`).
 		WithArgs("u1").
@@ -324,7 +324,7 @@ func TestSubmissionRepo_ListByUserID_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectQuery(`SELECT s.id`).WillReturnError(errDuplicate)
 
