@@ -8,11 +8,13 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"time"
 
 	"go.uber.org/zap"
 
 	"github.com/Dart147/SMC/backend/internal/domain"
 	"github.com/Dart147/SMC/backend/internal/judge"
+	"github.com/Dart147/SMC/backend/internal/metrics"
 	"github.com/Dart147/SMC/backend/internal/repository"
 )
 
@@ -21,6 +23,7 @@ type SubmissionService struct {
 	problemRepo *repository.ProblemRepo
 	judge       judge.Runner
 	logger      *zap.Logger
+	metrics     *metrics.Metrics
 }
 
 func NewSubmissionService(
@@ -28,8 +31,9 @@ func NewSubmissionService(
 	problemRepo *repository.ProblemRepo,
 	j judge.Runner,
 	logger *zap.Logger,
+	m *metrics.Metrics,
 ) *SubmissionService {
-	return &SubmissionService{repo: repo, problemRepo: problemRepo, judge: j, logger: logger}
+	return &SubmissionService{repo: repo, problemRepo: problemRepo, judge: j, logger: logger, metrics: m}
 }
 
 func (s *SubmissionService) GetByID(id string) (domain.Submission, bool) {
@@ -87,7 +91,13 @@ func (s *SubmissionService) RunNext(ctx context.Context) bool {
 }
 
 func (s *SubmissionService) judgeAndUpdate(sub domain.Submission, prob domain.Problem) {
+	s.metrics.WorkerActive.Inc()
+	defer s.metrics.WorkerActive.Dec()
+
+	start := time.Now()
 	result := s.judge.Run(context.Background(), prob, sub.Code, sub.Language)
+	s.metrics.JudgeDuration.WithLabelValues(sub.Language).Observe(time.Since(start).Seconds())
+	s.metrics.Submissions.WithLabelValues(sub.Language, result.Status).Inc()
 
 	sub.Status = result.Status
 	sub.Output = result.Output

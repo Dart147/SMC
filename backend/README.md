@@ -6,8 +6,8 @@ REST API server for the **Show Me your Code** online coding interview platform. 
 
 | Concern | Choice |
 | --- | --- |
-| Language | Go 1.24 |
-| HTTP routing | `net/http` (Go 1.22 pattern-based mux) |
+| Language | Go 1.25 |
+| HTTP routing | `net/http` |
 | Logging | `go.uber.org/zap` |
 | Database | **PostgreSQL 15** (`github.com/lib/pq`) |
 | Authentication | `golang-jwt/jwt/v5` |
@@ -362,13 +362,10 @@ docker buildx build --progress=plain --target runtime -t smc-backend:local .  # 
 ### Auto-fix Golang formatting
 
 ```bash
+gofmt -w "/path_to_file" # Fix per file
 docker run --rm -v "$PWD":/app -w /app golang:1.26-alpine gofmt -w .
-
-
 ```
 
 ## CORS
 
 The server allows all origins (`Access-Control-Allow-Origin: *`) and handles `OPTIONS` preflight requests, so the Vite dev server on port 5173 can call the API without proxy configuration. All protected API routes expect the `Authorization: Bearer <token>` header.
-
-```

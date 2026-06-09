@@ -39,6 +39,7 @@ services:
         condition: service_healthy
     networks:
       - smc-internal
+      - smc-observe-ingest
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8081/api/healthz"]
       interval: 5s
@@ -69,6 +70,8 @@ networks:
   smc-internal:
     driver: bridge
   smc-traefik:
+    external: true
+  smc-observe-ingest:
     external: true
 
 volumes:

@@ -19,6 +19,7 @@ import (
 	"github.com/Dart147/SMC/backend/internal/config"
 	"github.com/Dart147/SMC/backend/internal/handler"
 	"github.com/Dart147/SMC/backend/internal/judge"
+	"github.com/Dart147/SMC/backend/internal/metrics"
 	"github.com/Dart147/SMC/backend/internal/middleware"
 	"github.com/Dart147/SMC/backend/internal/repository"
 	"github.com/Dart147/SMC/backend/internal/seed"
@@ -77,6 +78,9 @@ func main() {
 	reportRepo := repository.NewReportRepo(db)
 	examRepo := repository.NewExamRepo(db)
 
+	// Prometheus Metrics
+	appMetrics := metrics.New()
+
 	// 初始化 Services
 	authSvc := service.NewAuthService(userRepo, os.Getenv("JWT_SECRET"))
 	problemSvc := service.NewProblemService(problemRepo)
@@ -89,9 +93,9 @@ func main() {
 	} else {
 		runner = judge.NewProcessRunner(logger)
 	}
-	submissionSvc := service.NewSubmissionService(submissionRepo, problemRepo, judge.NewJudge(runner, logger), logger)
+	submissionSvc := service.NewSubmissionService(submissionRepo, problemRepo, judge.NewJudge(runner, logger), logger, appMetrics)
 
-	// 初始化 Handlers
+	// init Handlers
 	authH := handler.NewAuthHandler(authSvc)
 	problemH := handler.NewProblemHandler(problemSvc)
 	submissionH := handler.NewSubmissionHandler(submissionSvc)
@@ -101,7 +105,9 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	// 健康檢查
+	mux.Handle("GET /metrics", appMetrics.Handler())
+
+	// heathcheck
 	mux.HandleFunc("GET /api/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		_, _ = w.Write([]byte("ok\n"))
@@ -111,7 +117,7 @@ func main() {
 	mux.HandleFunc("POST /api/auth/login", authH.Login)
 	mux.HandleFunc("POST /api/users", authH.CreateCandidate)
 
-	// 🌟 考試與誠實度警告路由 (需登入)
+	// 考試與誠實度警告路由 (需登入)
 	mux.Handle("POST /api/exams/start", authMiddleware(http.HandlerFunc(examH.StartExam)))
 	mux.Handle("POST /api/exams/warn", authMiddleware(http.HandlerFunc(examH.ReportWarning))) // 前端 apiClient.post("/exams/warn") 會打到這
 	mux.Handle("POST /api/exams/end", authMiddleware(http.HandlerFunc(examH.EndExam)))
@@ -150,7 +156,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Port),
-		Handler: middleware.CORS(mux),
+		Handler: middleware.CORS(middleware.Metrics(appMetrics)(mux)),
 	}
 
 	// 啟動背景 Worker 處理評測
