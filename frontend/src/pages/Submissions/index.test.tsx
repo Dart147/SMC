@@ -144,13 +144,40 @@ describe("SubmissionsPage", () => {
   });
 
   it("highlights the latest submission row", () => {
+    // 關鍵修復 1：模擬 scrollIntoView，防止 JSDOM 崩潰白畫面
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
+
+    // 關鍵修復 2：給予更完整的 Location 模擬物件，避免內部存取其他屬性時 undefined
     mockUseLocation.mockReturnValue({
+      pathname: "/submissions",
+      search: "",
+      hash: "",
       state: { submissionId: "sub-highlight" },
     });
 
     const mockHistory = [
-      { id: "sub-normal", problemTitle: "Normal", status: "Accepted" },
-      { id: "sub-highlight", problemTitle: "Highlight", status: "Pending" },
+      {
+        id: "sub-normal",
+        problemId: 1,
+        problemTitle: "Normal",
+        language: "python",
+        status: "Accepted",
+        passedTestCases: 2,
+        totalTestCases: 2,
+        score: 100,
+        executionTimeMs: 15,
+      },
+      {
+        id: "sub-highlight",
+        problemId: 2,
+        problemTitle: "Highlight",
+        language: "cpp",
+        status: "Pending",
+        passedTestCases: 0,
+        totalTestCases: 0,
+        score: 0,
+        executionTimeMs: 0,
+      },
     ];
 
     (useSubmissionsStore as any).mockReturnValue({
@@ -159,6 +186,8 @@ describe("SubmissionsPage", () => {
       fetchHistory: mockFetchHistory,
       pollUntilTerminal: mockPollUntilTerminal,
     });
+
+    render(<SubmissionsPage />);
 
     // 1. 先精準找到文字為 "Highlight" 的那個元素
     const highlightTitle = screen.getByText("Highlight");
