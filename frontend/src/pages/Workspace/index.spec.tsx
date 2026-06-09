@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Workspace } from "./index";
+import { apiClient } from "../../services/api";
 
 vi.mock("react-router-dom", () => ({
   useParams: () => ({ problemId: "1" }),
@@ -126,6 +127,25 @@ describe("Workspace", () => {
       if (key === "smc_draft_1_python") return "print('hello')";
       return null;
     });
+    render(<Workspace />);
+    await waitFor(() => {
+      expect(screen.getByTestId("code-editor")).toBeInTheDocument();
+    });
+  });
+
+  it("loads code from latest submission api when no localStorage draft", async () => {
+    (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: { code: "func main() {}", language: "go" },
+    });
+    render(<Workspace />);
+    await waitFor(() => {
+      expect(screen.getByTestId("code-editor")).toBeInTheDocument();
+    });
+    expect(apiClient.get).toHaveBeenCalledWith("/submissions/latest", expect.any(Object));
+  });
+
+  it("uses skeleton when latest submission has no code", async () => {
+    (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: {} });
     render(<Workspace />);
     await waitFor(() => {
       expect(screen.getByTestId("code-editor")).toBeInTheDocument();

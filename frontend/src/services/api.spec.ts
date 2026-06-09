@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { apiClient, login, getProblems, submitCode } from "./api";
+import {
+  apiClient,
+  login,
+  getProblems,
+  submitCode,
+  getSubmission,
+  getSubmissionsHistory,
+} from "./api";
 
 describe("API Services", () => {
   beforeEach(() => {
@@ -69,6 +76,26 @@ describe("API Services", () => {
       const result = await submitCode(payload);
 
       expect(postSpy).toHaveBeenCalledWith("/submissions", payload);
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it("getSubmission 應發送 GET 請求到 /submissions/:id", async () => {
+      const mockResponse = { data: { id: "s1", status: "Accepted" } };
+      const getSpy = vi.spyOn(apiClient, "get").mockResolvedValueOnce(mockResponse);
+
+      const result = await getSubmission("s1");
+
+      expect(getSpy).toHaveBeenCalledWith("/submissions/s1");
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it("getSubmissionsHistory 應發送 GET 請求到 /submissions", async () => {
+      const mockResponse = { data: [{ id: "s1", status: "Accepted" }] };
+      const getSpy = vi.spyOn(apiClient, "get").mockResolvedValueOnce(mockResponse);
+
+      const result = await getSubmissionsHistory();
+
+      expect(getSpy).toHaveBeenCalledWith("/submissions");
       expect(result).toEqual(mockResponse.data);
     });
   });
