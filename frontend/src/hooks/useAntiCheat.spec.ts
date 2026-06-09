@@ -21,24 +21,15 @@ describe("useAntiCheat", () => {
   it("registers event listeners on mount", () => {
     const onCheat = vi.fn();
     renderHook(() => useAntiCheat(onCheat));
-    expect(addEventListenerSpy).toHaveBeenCalledWith(
-      "visibilitychange",
-      expect.any(Function),
-    );
-    expect(addEventListenerSpy).toHaveBeenCalledWith(
-      "fullscreenchange",
-      expect.any(Function),
-    );
+    expect(addEventListenerSpy).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
+    expect(addEventListenerSpy).toHaveBeenCalledWith("fullscreenchange", expect.any(Function));
   });
 
   it("removes event listeners on unmount", () => {
     const onCheat = vi.fn();
     const { unmount } = renderHook(() => useAntiCheat(onCheat));
     unmount();
-    expect(removeEventListenerSpy).toHaveBeenCalledWith(
-      "visibilitychange",
-      expect.any(Function),
-    );
+    expect(removeEventListenerSpy).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
   });
 
   it("calls onCheatDetected when tab is hidden", () => {

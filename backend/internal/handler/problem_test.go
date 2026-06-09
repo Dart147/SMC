@@ -34,7 +34,7 @@ func (m *mockProblemService) Delete(id string) error { return m.deleteErr }
 func (m *mockProblemService) Update(id string, prob *domain.Problem) error {
 	return m.updateErr
 }
-func (m *mockProblemService) ListAssigned(userID string) []domain.Problem { return m.listResult }
+func (m *mockProblemService) ListAssigned(userID string) []domain.Problem  { return m.listResult }
 func (m *mockProblemService) AssignProblem(userID, problemID string) error { return m.assignErr }
 func (m *mockProblemService) UnassignProblem(userID, problemID string) error {
 	return m.assignErr

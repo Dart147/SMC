@@ -68,17 +68,13 @@ describe("SubmissionsPage", () => {
   });
 
   it("renders Accepted status correctly", () => {
-    mockStore.history = [
-      { id: "s1", status: "Accepted", score: 100, problemTitle: "Two Sum" },
-    ];
+    mockStore.history = [{ id: "s1", status: "Accepted", score: 100, problemTitle: "Two Sum" }];
     render(<SubmissionsPage />);
     expect(screen.getByText("Accepted")).toBeInTheDocument();
   });
 
   it("renders non-standard status with fallback style", () => {
-    mockStore.history = [
-      { id: "s1", status: "Runtime Error", score: 0, problemTitle: "P1" },
-    ];
+    mockStore.history = [{ id: "s1", status: "Runtime Error", score: 0, problemTitle: "P1" }];
     render(<SubmissionsPage />);
     expect(screen.getByText("Runtime Error")).toBeInTheDocument();
   });

@@ -21,9 +21,7 @@ describe("Home page", () => {
   });
 
   it("redirects to /interviewer for admin user", () => {
-    mockUseAuth.mockImplementation((sel: any) =>
-      sel({ token: "tok", user: { role: "admin" } }),
-    );
+    mockUseAuth.mockImplementation((sel: any) => sel({ token: "tok", user: { role: "admin" } }));
     const { getByTestId } = render(<Home />);
     expect(getByTestId("navigate--interviewer")).toBeInTheDocument();
   });

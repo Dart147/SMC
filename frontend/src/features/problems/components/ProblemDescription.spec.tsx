@@ -41,9 +41,7 @@ describe("ProblemDescription", () => {
 
   it("renders inline code via markdown", () => {
     render(
-      <ProblemDescription
-        problem={{ ...baseProblem, description: "Use `nums[i]` to access." }}
-      />,
+      <ProblemDescription problem={{ ...baseProblem, description: "Use `nums[i]` to access." }} />,
     );
     expect(screen.getByText(/nums\[i\]/)).toBeInTheDocument();
   });
@@ -59,19 +57,13 @@ describe("ProblemDescription", () => {
 
   it("renders unordered list via markdown", () => {
     render(
-      <ProblemDescription
-        problem={{ ...baseProblem, description: "- item one\n- item two" }}
-      />,
+      <ProblemDescription problem={{ ...baseProblem, description: "- item one\n- item two" }} />,
     );
     expect(screen.getByText("item one")).toBeInTheDocument();
   });
 
   it("renders ordered list via markdown", () => {
-    render(
-      <ProblemDescription
-        problem={{ ...baseProblem, description: "1. first\n2. second" }}
-      />,
-    );
+    render(<ProblemDescription problem={{ ...baseProblem, description: "1. first\n2. second" }} />);
     expect(screen.getByText("first")).toBeInTheDocument();
   });
 

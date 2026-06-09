@@ -98,9 +98,7 @@ describe("InterviewerDashboard", () => {
 
   it("displays problems in list tab", async () => {
     (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValue({
-      data: [
-        { id: "1", title: "Two Sum", difficulty: "Easy", description: "desc", testCases: [] },
-      ],
+      data: [{ id: "1", title: "Two Sum", difficulty: "Easy", description: "desc", testCases: [] }],
     });
     render(<InterviewerDashboard />);
     fireEvent.click(screen.getByText(/Problem Bank/i));
@@ -205,7 +203,15 @@ describe("InterviewerDashboard", () => {
 
   it("opens view details modal", async () => {
     (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValue({
-      data: [{ id: "1", title: "Two Sum", difficulty: "Easy", description: "Given an array", testCases: [{ input: "1", expected_output: "0 1", isHidden: false }] }],
+      data: [
+        {
+          id: "1",
+          title: "Two Sum",
+          difficulty: "Easy",
+          description: "Given an array",
+          testCases: [{ input: "1", expected_output: "0 1", isHidden: false }],
+        },
+      ],
     });
     render(<InterviewerDashboard />);
     fireEvent.click(screen.getByText(/Problem Bank/i));
@@ -218,7 +224,9 @@ describe("InterviewerDashboard", () => {
 
   it("closes view details modal", async () => {
     (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValue({
-      data: [{ id: "1", title: "Two Sum", difficulty: "Easy", description: "Desc text", testCases: [] }],
+      data: [
+        { id: "1", title: "Two Sum", difficulty: "Easy", description: "Desc text", testCases: [] },
+      ],
     });
     render(<InterviewerDashboard />);
     fireEvent.click(screen.getByText(/Problem Bank/i));

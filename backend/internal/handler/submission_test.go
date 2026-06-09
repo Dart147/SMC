@@ -14,14 +14,14 @@ import (
 )
 
 type mockSubmissionService struct {
-	submission    domain.Submission
-	found         bool
-	submissions   []domain.Submission
-	sampleResult  judge.Result
-	sampleErr     error
-	createErr     error
-	report        interface{}
-	reportErr     error
+	submission   domain.Submission
+	found        bool
+	submissions  []domain.Submission
+	sampleResult judge.Result
+	sampleErr    error
+	createErr    error
+	report       interface{}
+	reportErr    error
 }
 
 func (m *mockSubmissionService) Create(problemID, code, language, userID string) (domain.Submission, error) {
