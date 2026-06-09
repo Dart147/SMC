@@ -2,14 +2,13 @@ package service
 
 import (
 	"github.com/Dart147/SMC/backend/internal/domain"
-	"github.com/Dart147/SMC/backend/internal/repository"
 )
 
 type ProblemService struct {
-	repo *repository.ProblemRepo
+	repo problemRepo
 }
 
-func NewProblemService(repo *repository.ProblemRepo) *ProblemService {
+func NewProblemService(repo problemRepo) *ProblemService {
 	return &ProblemService{repo: repo}
 }
 

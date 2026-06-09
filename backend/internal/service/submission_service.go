@@ -15,20 +15,19 @@ import (
 	"github.com/Dart147/SMC/backend/internal/domain"
 	"github.com/Dart147/SMC/backend/internal/judge"
 	"github.com/Dart147/SMC/backend/internal/metrics"
-	"github.com/Dart147/SMC/backend/internal/repository"
 )
 
 type SubmissionService struct {
-	repo        *repository.SubmissionRepo
-	problemRepo *repository.ProblemRepo
+	repo        submissionRepo
+	problemRepo problemRepo
 	judge       judge.Runner
 	logger      *zap.Logger
 	metrics     *metrics.Metrics
 }
 
 func NewSubmissionService(
-	repo *repository.SubmissionRepo,
-	problemRepo *repository.ProblemRepo,
+	repo submissionRepo,
+	problemRepo problemRepo,
 	j judge.Runner,
 	logger *zap.Logger,
 	m *metrics.Metrics,
