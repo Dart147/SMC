@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useAntiCheat } from "./useAntiCheat";
 
 describe("useAntiCheat hook", () => {
-  let onCheatDetectedMock: ReturnType<typeof vi.fn>;
+  let onCheatDetectedMock: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
