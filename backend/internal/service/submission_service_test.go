@@ -10,6 +10,7 @@ import (
 	sqlcdb "github.com/Dart147/SMC/backend/internal/db"
 	"github.com/Dart147/SMC/backend/internal/domain"
 	"github.com/Dart147/SMC/backend/internal/judge"
+	"github.com/Dart147/SMC/backend/internal/metrics"
 )
 
 // ── mock submission repo ─────────────────────────────────────────────────────
@@ -65,7 +66,7 @@ func (m *mockRunner) Run(ctx context.Context, prob domain.Problem, code, languag
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 func newSvc(subRepo submissionRepo, probRepo problemRepo, runner judge.Runner) *SubmissionService {
-	return NewSubmissionService(subRepo, probRepo, runner, zap.NewNop(), nil)
+	return NewSubmissionService(subRepo, probRepo, runner, zap.NewNop(), metrics.New())
 }
 
 func sampleProblem() domain.Problem {
