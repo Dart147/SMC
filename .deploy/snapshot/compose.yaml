@@ -4,12 +4,10 @@ name: smc-pr-${PR_NUMBER}
 # served at pr-${PR_NUMBER}.${DOMAIN} through the shared smc-traefik edge.
 #
 # Only the frontend gets a Traefik router; nginx (frontend/nginx.conf)
-# proxies /api/* to backend:8081 over the per-PR smc-internal network, so
-# no Traefik /api router is needed. backend + postgres stay internal-only.
+# proxies /api/* to backend:8081 over the per-PR smc-internal network. backend + postgres stay internal-only.
 #
-# No container_name anywhere: Compose derives unique names from the
-# smc-pr-${PR_NUMBER} project, so multiple PRs coexist on one host. The
-# frontend still reaches the backend by its Compose service name `backend`.
+# Compose derives unique names from the
+# smc-pr-${PR_NUMBER} project. The frontend still reaches the backend by its Compose service name `backend`.
 
 services:
   postgres:

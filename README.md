@@ -71,21 +71,12 @@ The `make deploy*` targets pull prebuilt images from Docker Hub and run them via
 
 ### PR previews (snapshot deploys)
 
-Every pull request to `main` gets an isolated preview at
-`https://pr-<N>.showmeyourcode.online` — its own `postgres + backend +
-frontend` stack (Compose project `smc-pr-<N>`), separate from the shared
-`dev` stack. The `frontend-snapshot.yaml` / `backend-snapshot.yaml`
-workflows build the `:pr-<N>` images and POST a deploy webhook to SMC-CD,
-which runs `.deploy/snapshot/deploy.sh` on the host and registers the
-`pr-<N>` Cloudflare DNS record. `close.yaml` fires on PR close and tears
-the stack down (`.deploy/snapshot/cleanup.sh`, `docker compose down -v`)
-and removes the DNS record. Preview data is ephemeral — wiped on close.
+Every pull request to `main` gets an isolated preview at `https://pr-<N>.showmeyourcode.online` — its own `postgres + backend +
+frontend` stack (Compose project `smc-pr-<N>`), separate from the shared `dev` stack.
 
-Requires the **`SMC_HOST_IP`** repo secret (the host's public IP, written
-into the new DNS record) alongside the existing `SMC_WEBHOOK_URL` /
-`SMC_DEPLOY_TOKEN`. The `dev` deploy needs no IP — it reuses the
-permanent `showmeyourcode.online` record — only ephemeral `pr-<N>`
-hostnames need one created on the fly.
+The `frontend-snapshot.yaml` / `backend-snapshot.yaml` workflows build the `:pr-<N>` images and POST a deploy webhook to SMC-CD, which runs `.deploy/snapshot/deploy.sh` on the host and registers the `pr-<N>` Cloudflare DNS record.
+
+`close.yaml` fires on PR close and tears the stack down (`.deploy/snapshot/cleanup.sh`, `docker compose down -v`) and removes the DNS record.
 
 ## Repository layout
 
@@ -111,32 +102,27 @@ SMC/
 | `smc-backend` | `8081` | `8081` | root `docker-compose.yaml` |
 | `smc-frontend` | `80` | `8080` | root `docker-compose.yaml` |
 | Vite dev server (local only) | `5173` | `5173` | `npm run dev` |
-| Temporal server (gRPC) | `7233` | `7233` | `infra/deploy/docker-compose.temporal.yaml` |
-| Temporal UI | `7080` | `7080` | `infra/deploy/docker-compose.temporal.yaml` |
-| Temporal Postgres | `5432` | (unpublished) | `infra/deploy/docker-compose.temporal.yaml` |
-| Elasticsearch (Temporal visibility) | `9200` | (unpublished) | `infra/deploy/docker-compose.temporal.yaml` |
-| CD-service API | `7082` | `7082` | `infra/deploy/docker-compose.yaml` |
-| CD-service Worker | — | — | `infra/deploy/docker-compose.yaml` |
+| Temporal server (gRPC) | `7233` | `7233` |  |
+| Temporal UI | `7080` | `7080` |  |
+| Temporal Postgres | `5432` | (unpublished) |  |
+| Elasticsearch (Temporal visibility) | `9200` | (unpublished) |  |
+| CD-service API | `7082` | `7082` |  |
 
-**Quick host-port reference:**
-
-- `5173` — Vite dev server (frontend, local dev only)
-- `5432` — PostgreSQL (SMC app database)
-- `7080` — Temporal UI (`http://localhost:7080`)
-- `7082` — CD-service webhook API
-- `7233` — Temporal gRPC
-- `8080` — SMC frontend (`http://localhost:8080`)
-- `8081` — SMC backend API (`http://localhost:8081/api`)
 
 ## Frontend
 
-A single-page **Vite + React 18 + TypeScript** app built around `@monaco-editor/react`. Supports Python, JavaScript, and Go; dark / light theme toggle; per-language Monaco models so each language keeps its own buffer and undo stack. Connects to the backend API to submit code and display judge results. Served by `nginx:1.27-alpine` from a multi-stage Docker build on port `8080`. For fast local iteration run `npm run dev` (Vite dev server on `http://localhost:5173`).
+A single-page **Vite + React 18 + TypeScript** app built around `@monaco-editor/react`. 
+* Supports C, C++, Python, JavaScript, and Go
+* per-language Monaco models so each language keeps its own buffer and undo stack.
+* dark / light theme toggle
+
+Connects to the backend API to submit code and display judge results. Served by `nginx:1.27-alpine` from a multi-stage Docker build on port `8080`. For fast local iteration run `npm run dev` (Vite dev server on `http://localhost:5173`).
 
 See **[`frontend/README.md`](frontend/README.md)** for setup, dev commands, and file layout.
 
 ## Backend
 
-A Go 1.24 REST API (`backend/`) that serves problems and judges code submissions against PostgreSQL-backed test cases. The judge uses a pluggable `Runner` interface with two backends:
+Go 1.25 REST API (`backend/`) that serves problems and judges code submissions against PostgreSQL-backed test cases. The judge uses a pluggable `Runner` interface with two backends:
 
 - **`ProcessRunner`** — direct subprocess per language (dev only, no isolation)
 - **`DockerRunner`** — one isolated container per test case (`--network none`, `--memory 256m`, `--read-only`); selected via `JUDGE_BACKEND=docker`
