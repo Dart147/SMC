@@ -5,17 +5,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Dart147/SMC/backend/internal/repository"
 	"github.com/Dart147/SMC/backend/internal/utils"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type AuthService struct {
-	repo      *repository.UserRepository
+	repo      userRepo
 	jwtSecret []byte
 }
 
-func NewAuthService(repo *repository.UserRepository, secret string) *AuthService {
+func NewAuthService(repo userRepo, secret string) *AuthService {
 	return &AuthService{repo: repo, jwtSecret: []byte(secret)}
 }
 

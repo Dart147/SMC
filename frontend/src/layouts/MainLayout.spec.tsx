@@ -1,12 +1,13 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MainLayout } from "./MainLayout";
 
+const mockNavigate = vi.fn();
 vi.mock("react-router-dom", () => ({
   Outlet: () => <div data-testid="outlet" />,
   Link: ({ to, children }: any) => <a href={to}>{children}</a>,
   useLocation: () => ({ pathname: "/problems" }),
-  useNavigate: () => vi.fn(),
+  useNavigate: () => mockNavigate,
 }));
 
 vi.mock("../components/Common/ThemeIcons", () => ({
@@ -14,8 +15,9 @@ vi.mock("../components/Common/ThemeIcons", () => ({
   MoonIcon: () => <svg data-testid="moon-icon" />,
 }));
 
+const mockSetTheme = vi.fn();
 vi.mock("../contexts/ThemeContext", () => ({
-  useTheme: () => ({ theme: "light", setTheme: vi.fn() }),
+  useTheme: () => ({ theme: "light", setTheme: mockSetTheme }),
 }));
 
 const mockLogout = vi.fn();
@@ -27,6 +29,8 @@ vi.mock("../features/auth/hooks/useAuth", () => ({
 describe("MainLayout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal("alert", vi.fn());
+    vi.stubGlobal("confirm", vi.fn().mockReturnValue(true));
     mockUseAuth.mockReturnValue({
       user: { username: "alice", role: "candidate" },
       examExpiresAt: null,
@@ -81,5 +85,37 @@ describe("MainLayout", () => {
     mockUseAuth.mockReturnValue({ user: null, examExpiresAt: null, logout: mockLogout });
     render(<MainLayout />);
     expect(screen.getByTestId("outlet")).toBeInTheDocument();
+  });
+
+  it("starts countdown timer when candidate has examExpiresAt", async () => {
+    mockUseAuth.mockReturnValue({
+      user: { username: "alice", role: "candidate" },
+      examExpiresAt: Math.floor(Date.now() / 1000) + 3600,
+      logout: mockLogout,
+    });
+    render(<MainLayout />);
+    await waitFor(() => {
+      expect(screen.getByText(/\d{2}:\d{2}:\d{2}/)).toBeInTheDocument();
+    });
+  });
+
+  it("calls logout and navigate when candidate confirms logout", () => {
+    render(<MainLayout />);
+    fireEvent.click(screen.getByText("Logout"));
+    expect(mockLogout).toHaveBeenCalled();
+    expect(mockNavigate).toHaveBeenCalledWith("/");
+  });
+
+  it("does not logout when candidate cancels confirm dialog", () => {
+    vi.stubGlobal("confirm", vi.fn().mockReturnValue(false));
+    render(<MainLayout />);
+    fireEvent.click(screen.getByText("Logout"));
+    expect(mockLogout).not.toHaveBeenCalled();
+  });
+
+  it("calls setTheme when theme toggle is clicked", () => {
+    render(<MainLayout />);
+    fireEvent.click(screen.getByTitle("Switch to dark mode"));
+    expect(mockSetTheme).toHaveBeenCalledWith("dark");
   });
 });

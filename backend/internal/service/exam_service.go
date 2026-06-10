@@ -4,15 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
-	"github.com/Dart147/SMC/backend/internal/repository" // 根據你的實際路徑調整
 )
 
 type ExamService struct {
-	repo *repository.ExamRepo
+	repo examRepo
 }
 
-func NewExamService(repo *repository.ExamRepo) *ExamService {
+func NewExamService(repo examRepo) *ExamService {
 	return &ExamService{repo: repo}
 }
 
