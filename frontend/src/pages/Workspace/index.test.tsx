@@ -164,7 +164,7 @@ describe("Workspace Page", () => {
     expect(screen.getByText("Two Sum")).toBeInTheDocument();
     // Default language is python, should set skeleton for python
     expect(useWorkspaceStore.getState().language).toBe("python");
-    expect(useWorkspaceStore.getState().code).toContain("def ");
+    expect(useWorkspaceStore.getState().code).toContain("print(");
   });
 
   it("loads draft from localStorage if available", async () => {
