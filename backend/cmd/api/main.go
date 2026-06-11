@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -35,14 +34,10 @@ var (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: .env file not found")
-	}
-
-	utils.UsernameSecretKey = os.Getenv("USERNAME_HMAC_SECRET")
-	if utils.UsernameSecretKey == "" {
-		log.Fatal("❌ Missing USERNAME_HMAC_SECRET")
-	}
+	// Load .env first so process env is populated before anything reads it.
+	// The logger isn't built yet (it needs cfg.LogLevel), so defer reporting
+	// the result until after it exists — keeps every log line JSON for Vector.
+	dotenvErr := godotenv.Load()
 
 	cfg, err := config.Load("configs/config.yaml")
 	if err != nil {
@@ -59,6 +54,15 @@ func main() {
 		zap.String("commit_hash", CommitHash),
 		zap.String("env", getEnv("ENV", "prod")),
 	)
+
+	if dotenvErr != nil {
+		logger.Warn("no .env file found, relying on process environment")
+	}
+
+	utils.UsernameSecretKey = os.Getenv("USERNAME_HMAC_SECRET")
+	if utils.UsernameSecretKey == "" {
+		logger.Fatal("missing required env var", zap.String("var", "USERNAME_HMAC_SECRET"))
+	}
 
 	// An empty OTEL_COLLECTOR_URL disables trace exporting (for local or CI)
 	shutdownTracing, err := tracing.InitTracing(
@@ -89,7 +93,7 @@ func main() {
 		return authMiddleware(middleware.RequireRole("admin")(h))
 	}
 
-	seed.AdminUser(db)
+	seed.AdminUser(db, logger)
 
 	// 初始化 Repositories
 	userRepo := repository.NewUserRepository(db)
