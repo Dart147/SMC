@@ -70,7 +70,7 @@ func NewDockerRunner(logger *zap.Logger) *DockerRunner {
 	return r
 }
 
-const dockerBin = "/usr/bin/docker"
+var dockerBin = "/usr/bin/docker"
 
 func (r *DockerRunner) pullImages() {
 	for lang, cfg := range dockerLangConfigs {

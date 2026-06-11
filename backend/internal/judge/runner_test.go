@@ -2,7 +2,9 @@ package judge
 
 import (
 	"context"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -227,7 +229,119 @@ func TestProcessRunner_WrongAnswer(t *testing.T) {
 	}
 }
 
-// ── DockerRunner ─────────────────────────────────────────────────────────────
+// ── DockerRunner (unit tests via fake docker binary) ─────────────────────────
+
+// fakeDockerBin writes a shell script to a temp dir and returns its path.
+// The script ignores all arguments and runs the provided snippet.
+func fakeDockerBin(t *testing.T, script string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "docker")
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+script+"\n"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+// setDockerBin overrides the package-level dockerBin for the duration of a test.
+func setDockerBin(t *testing.T, bin string) {
+	t.Helper()
+	orig := dockerBin
+	dockerBin = bin
+	t.Cleanup(func() { dockerBin = orig })
+}
+
+func TestDockerRunner_Run_UnsupportedLanguage(t *testing.T) {
+	logger, _ := zap.NewDevelopment()
+	r := &DockerRunner{logger: logger}
+	res := r.Run(context.Background(), domain.Problem{TestCases: []domain.TestCase{{}}}, "", "brainfuck")
+	if res.Status != domain.StatusRuntimeError {
+		t.Errorf("want RuntimeError, got %q", res.Status)
+	}
+}
+
+func TestDockerRunner_Run_NoTestCases(t *testing.T) {
+	logger, _ := zap.NewDevelopment()
+	r := &DockerRunner{logger: logger}
+	res := r.Run(context.Background(), domain.Problem{}, "", "python")
+	if res.Status != domain.StatusAccepted {
+		t.Errorf("want Accepted, got %q", res.Status)
+	}
+}
+
+func TestDockerRunner_pullImages_Success(t *testing.T) {
+	setDockerBin(t, fakeDockerBin(t, "exit 0"))
+	logger, _ := zap.NewDevelopment()
+	_ = NewDockerRunner(logger) // triggers pullImages; fake docker exits 0 → success path
+}
+
+func TestDockerRunner_runTestCase_Accepted(t *testing.T) {
+	setDockerBin(t, fakeDockerBin(t, "echo 3"))
+	logger, _ := zap.NewDevelopment()
+	r := &DockerRunner{logger: logger}
+	prob := domain.Problem{
+		TestCases: []domain.TestCase{{Input: "1 2", ExpectedOutput: "3"}},
+	}
+	res := r.Run(context.Background(), prob, "code", "python")
+	if res.Status != domain.StatusAccepted {
+		t.Errorf("want Accepted, got %q (error: %s)", res.Status, res.Error)
+	}
+}
+
+func TestDockerRunner_runTestCase_WrongAnswer(t *testing.T) {
+	setDockerBin(t, fakeDockerBin(t, "echo 999"))
+	logger, _ := zap.NewDevelopment()
+	r := &DockerRunner{logger: logger}
+	prob := domain.Problem{
+		TestCases: []domain.TestCase{{Input: "1 2", ExpectedOutput: "3"}},
+	}
+	res := r.Run(context.Background(), prob, "code", "python")
+	if res.Status != domain.StatusWrongAnswer {
+		t.Errorf("want WrongAnswer, got %q", res.Status)
+	}
+}
+
+func TestDockerRunner_runTestCase_RuntimeError(t *testing.T) {
+	setDockerBin(t, fakeDockerBin(t, "exit 1"))
+	logger, _ := zap.NewDevelopment()
+	r := &DockerRunner{logger: logger}
+	prob := domain.Problem{
+		TestCases: []domain.TestCase{{Input: "", ExpectedOutput: "anything"}},
+	}
+	res := r.Run(context.Background(), prob, "code", "python")
+	if res.Status != domain.StatusRuntimeError {
+		t.Errorf("want RuntimeError, got %q", res.Status)
+	}
+}
+
+func TestDockerRunner_runTestCase_TimeLimitExceeded(t *testing.T) {
+	setDockerBin(t, fakeDockerBin(t, "sleep 60"))
+	logger, _ := zap.NewDevelopment()
+	r := &DockerRunner{logger: logger}
+	prob := domain.Problem{
+		TimeLimitMs: 100,
+		TestCases:   []domain.TestCase{{Input: "", ExpectedOutput: ""}},
+	}
+	res := r.Run(context.Background(), prob, "code", "python")
+	if res.Status != domain.StatusTimeLimitExceeded {
+		t.Errorf("want TimeLimitExceeded, got %q", res.Status)
+	}
+}
+
+func TestDockerRunner_compileCheck_Failure(t *testing.T) {
+	setDockerBin(t, fakeDockerBin(t, "exit 1"))
+	logger, _ := zap.NewDevelopment()
+	r := &DockerRunner{logger: logger}
+	prob := domain.Problem{
+		TestCases: []domain.TestCase{{Input: "", ExpectedOutput: ""}},
+	}
+	// "c" has compiled=true, so compileCheck runs first and returns CompileError
+	res := r.Run(context.Background(), prob, "bad code", "c")
+	if res.Status != domain.StatusCompileError {
+		t.Errorf("want CompileError, got %q", res.Status)
+	}
+}
+
+// ── DockerRunner (integration tests, skipped without real Docker) ─────────────
 
 func dockerImagePresent(image string) bool {
 	out, err := exec.Command("docker", "image", "inspect", image).CombinedOutput()
