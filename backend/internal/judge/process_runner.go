@@ -213,13 +213,7 @@ func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, execBin
 	elapsedMs := int(time.Since(start).Milliseconds())
 
 	if execCtx.Err() == context.DeadlineExceeded {
-		return Result{
-			Status:          domain.StatusTimeLimitExceeded,
-			Error:           fmt.Sprintf("test case %d timed out", p.idx+1),
-			PassedTestCases: p.passed,
-			TotalTestCases:  p.total,
-			ExecutionTimeMs: elapsedMs,
-		}, false
+		return tlResult(p, elapsedMs), false
 	}
 
 	if isMemoryLimitExceeded(cmd, runErr) {
@@ -233,29 +227,13 @@ func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, execBin
 	}
 
 	if runErr != nil {
-		return Result{
-			Status:          domain.StatusRuntimeError,
-			Output:          stdout.String(),
-			Error:           strings.TrimSpace(stderr.String()),
-			PassedTestCases: p.passed,
-			TotalTestCases:  p.total,
-			ExecutionTimeMs: elapsedMs,
-		}, false
+		return reResult(stdout.String(), strings.TrimSpace(stderr.String()), p, elapsedMs), false
 	}
 
 	actual := strings.TrimRight(stdout.String(), "\n\r ")
 	expected := strings.TrimRight(tc.ExpectedOutput, "\n\r ")
 	if actual != expected {
-		return Result{
-			Status:               domain.StatusWrongAnswer,
-			Output:               stdout.String(),
-			ExpectedOutput:       tc.ExpectedOutput,
-			ExpectedOutputHidden: tc.IsHidden,
-			Error:                fmt.Sprintf("test case %d failed", p.idx+1),
-			PassedTestCases:      p.passed,
-			TotalTestCases:       p.total,
-			ExecutionTimeMs:      elapsedMs,
-		}, false
+		return waResult(tc, stdout.String(), p, elapsedMs), false
 	}
 
 	return Result{Output: stdout.String(), ExecutionTimeMs: elapsedMs}, true

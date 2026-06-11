@@ -2,6 +2,7 @@ package judge
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -59,4 +60,38 @@ func (j *Judge) Run(ctx context.Context, prob domain.Problem, code, language str
 	j.sem <- struct{}{}
 	defer func() { <-j.sem }()
 	return j.runner.Run(ctx, prob, code, language)
+}
+
+func tlResult(p tcProgress, elapsedMs int) Result {
+	return Result{
+		Status:          domain.StatusTimeLimitExceeded,
+		Error:           fmt.Sprintf("test case %d timed out", p.idx+1),
+		PassedTestCases: p.passed,
+		TotalTestCases:  p.total,
+		ExecutionTimeMs: elapsedMs,
+	}
+}
+
+func reResult(output, errMsg string, p tcProgress, elapsedMs int) Result {
+	return Result{
+		Status:          domain.StatusRuntimeError,
+		Output:          output,
+		Error:           errMsg,
+		PassedTestCases: p.passed,
+		TotalTestCases:  p.total,
+		ExecutionTimeMs: elapsedMs,
+	}
+}
+
+func waResult(tc domain.TestCase, output string, p tcProgress, elapsedMs int) Result {
+	return Result{
+		Status:               domain.StatusWrongAnswer,
+		Output:               output,
+		ExpectedOutput:       tc.ExpectedOutput,
+		ExpectedOutputHidden: tc.IsHidden,
+		Error:                fmt.Sprintf("test case %d failed", p.idx+1),
+		PassedTestCases:      p.passed,
+		TotalTestCases:       p.total,
+		ExecutionTimeMs:      elapsedMs,
+	}
 }

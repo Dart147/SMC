@@ -4,6 +4,7 @@ import (
 	"context"
 	"os/exec"
 	"testing"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -153,6 +154,76 @@ func TestProcessRunner_RespectsTimeLimitMs(t *testing.T) {
 	res := r.Run(context.Background(), slowProblem, infiniteLoop, "python")
 	if res.Status != domain.StatusTimeLimitExceeded {
 		t.Errorf("want TimeLimitExceeded, got %q (error: %s)", res.Status, res.Error)
+	}
+}
+
+// ── executionTimeout ─────────────────────────────────────────────────────────
+
+func TestExecutionTimeout_ZeroUsesDefault(t *testing.T) {
+	if got := executionTimeout(0); got != ExecutionTimeout {
+		t.Errorf("want %v, got %v", ExecutionTimeout, got)
+	}
+}
+
+func TestExecutionTimeout_NegativeUsesDefault(t *testing.T) {
+	if got := executionTimeout(-1); got != ExecutionTimeout {
+		t.Errorf("want %v, got %v", ExecutionTimeout, got)
+	}
+}
+
+func TestExecutionTimeout_PositiveConvertsMs(t *testing.T) {
+	if got := executionTimeout(2000); got != 2*time.Second {
+		t.Errorf("want 2s, got %v", got)
+	}
+}
+
+// ── Judge semaphore wrapper ───────────────────────────────────────────────────
+
+type stubRunner struct{ result Result }
+
+func (s stubRunner) Run(_ context.Context, _ domain.Problem, _, _ string) Result { return s.result }
+
+func TestJudge_RunDelegatesAndReleaseSemaphore(t *testing.T) {
+	logger, _ := zap.NewDevelopment()
+	want := Result{Status: domain.StatusAccepted, PassedTestCases: 1, TotalTestCases: 1}
+	j := NewJudge(stubRunner{result: want}, logger)
+
+	got := j.Run(context.Background(), domain.Problem{}, "", "python")
+	if got.Status != want.Status {
+		t.Errorf("want %q, got %q", want.Status, got.Status)
+	}
+	// Semaphore must be released — a second call should not block.
+	done := make(chan struct{})
+	go func() {
+		j.Run(context.Background(), domain.Problem{}, "", "python")
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Error("semaphore not released after first Run")
+	}
+}
+
+// ── ProcessRunner — Wrong Answer path ────────────────────────────────────────
+
+func TestProcessRunner_WrongAnswer(t *testing.T) {
+	if _, err := exec.LookPath("python3"); err != nil {
+		t.Skip("python3 not found on PATH")
+	}
+	logger, _ := zap.NewDevelopment()
+	r := NewProcessRunner(logger)
+
+	prob := domain.Problem{
+		ID:    10,
+		Title: "wrong",
+		TestCases: []domain.TestCase{
+			{Input: "1 2", ExpectedOutput: "999"},
+		},
+	}
+	res := r.Run(context.Background(), prob, "a, b = map(int, input().split())\nprint(a + b)\n", "python")
+	if res.Status != domain.StatusWrongAnswer {
+		t.Errorf("want WrongAnswer, got %q", res.Status)
 	}
 }
 
