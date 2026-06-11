@@ -32,11 +32,14 @@ services:
     environment:
       - DB_HOST=postgres
       - JUDGE_BACKEND=docker
+      - ENV=prod
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       postgres:
         condition: service_healthy
+    labels:
+      - "vector.enable=true"
     networks:
       - smc-internal
       - smc-observe-ingest

@@ -28,6 +28,11 @@ import (
 	"github.com/Dart147/SMC/backend/internal/worker"
 )
 
+var (
+	Version    = "dev"
+	CommitHash = "dev"
+)
+
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Printf("Warning: .env file not found")
@@ -46,6 +51,13 @@ func main() {
 
 	logger, _ := buildLogger(cfg.LogLevel)
 	defer func() { _ = logger.Sync() }()
+
+	logger = logger.With(
+		zap.String("app_name", "smc-backend"),
+		zap.String("version", Version),
+		zap.String("commit_hash", CommitHash),
+		zap.String("env", getEnv("ENV", "prod")),
+	)
 
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		getEnv("DB_HOST", "127.0.0.1"), getEnv("DB_PORT", "5432"),
