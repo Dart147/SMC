@@ -10,6 +10,9 @@ import (
 	"go/token"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/Dart147/SMC/backend/internal/domain"
@@ -23,6 +26,7 @@ type SubmissionService struct {
 	judge       judge.Runner
 	logger      *zap.Logger
 	metrics     *metrics.Metrics
+	tracer      oteltrace.Tracer
 }
 
 func NewSubmissionService(
@@ -32,7 +36,14 @@ func NewSubmissionService(
 	logger *zap.Logger,
 	m *metrics.Metrics,
 ) *SubmissionService {
-	return &SubmissionService{repo: repo, problemRepo: problemRepo, judge: j, logger: logger, metrics: m}
+	return &SubmissionService{
+		repo:        repo,
+		problemRepo: problemRepo,
+		judge:       j,
+		logger:      logger,
+		metrics:     m,
+		tracer:      otel.Tracer("smc-backend/service"),
+	}
 }
 
 func (s *SubmissionService) GetByID(id string) (domain.Submission, bool) {
@@ -93,8 +104,18 @@ func (s *SubmissionService) judgeAndUpdate(sub domain.Submission, prob domain.Pr
 	s.metrics.WorkerActive.Inc()
 	defer s.metrics.WorkerActive.Dec()
 
+	// HTTP span ended at enqueue time, so the async
+	// judge run is its own trace, connected by submission_id
+	ctx, span := s.tracer.Start(context.Background(), "judge.submission",
+		oteltrace.WithAttributes(
+			attribute.String("submission_id", sub.ID),
+			attribute.String("problem_id", sub.ProblemID),
+			attribute.String("language", sub.Language),
+		))
+	defer span.End()
+
 	start := time.Now()
-	result := s.judge.Run(context.Background(), prob, sub.Code, sub.Language)
+	result := s.judge.Run(ctx, prob, sub.Code, sub.Language)
 	s.metrics.JudgeDuration.WithLabelValues(sub.Language).Observe(time.Since(start).Seconds())
 	s.metrics.Submissions.WithLabelValues(sub.Language, result.Status).Inc()
 
@@ -121,6 +142,7 @@ func (s *SubmissionService) judgeAndUpdate(sub domain.Submission, prob domain.Pr
 	}
 
 	if err := s.repo.Update(sub); err != nil {
+		span.RecordError(err)
 		s.logger.Error("Failed to update submission", zap.Error(err))
 	}
 }
@@ -169,13 +191,25 @@ func randomID() (string, error) {
 
 // RunSample judges code against the first sample test case only. No DB write.
 func (s *SubmissionService) RunSample(ctx context.Context, problemID, code, language string) (judge.Result, error) {
+	// Child of the HTTP request span: shows how much of /api/run was the sandbox.
+	ctx, span := s.tracer.Start(ctx, "SubmissionService.RunSample",
+		oteltrace.WithAttributes(
+			attribute.String("problem_id", problemID),
+			attribute.String("language", language),
+		))
+	defer span.End()
+
 	prob, ok := s.problemRepo.GetByID(problemID)
 	if !ok {
-		return judge.Result{}, fmt.Errorf("problem %q not found", problemID)
+		err := fmt.Errorf("problem %q not found", problemID)
+		span.RecordError(err)
+		return judge.Result{}, err
 	}
 	sample, ok := prob.FirstSample()
 	if !ok {
-		return judge.Result{}, fmt.Errorf("problem %q has no sample test cases", problemID)
+		err := fmt.Errorf("problem %q has no sample test cases", problemID)
+		span.RecordError(err)
+		return judge.Result{}, err
 	}
 	// Run against a synthetic problem containing only the sample case.
 	sampleProb := domain.Problem{

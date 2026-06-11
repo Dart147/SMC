@@ -24,8 +24,14 @@ import (
 	"github.com/Dart147/SMC/backend/internal/repository"
 	"github.com/Dart147/SMC/backend/internal/seed"
 	"github.com/Dart147/SMC/backend/internal/service"
+	"github.com/Dart147/SMC/backend/internal/tracing"
 	"github.com/Dart147/SMC/backend/internal/utils"
 	"github.com/Dart147/SMC/backend/internal/worker"
+)
+
+var (
+	Version    = "dev"
+	CommitHash = "dev"
 )
 
 func main() {
@@ -46,6 +52,20 @@ func main() {
 
 	logger, _ := buildLogger(cfg.LogLevel)
 	defer func() { _ = logger.Sync() }()
+
+	logger = logger.With(
+		zap.String("app_name", "smc-backend"),
+		zap.String("version", Version),
+		zap.String("commit_hash", CommitHash),
+		zap.String("env", getEnv("ENV", "prod")),
+	)
+
+	// An empty OTEL_COLLECTOR_URL disables trace exporting (for local or CI)
+	shutdownTracing, err := tracing.InitTracing(
+		os.Getenv("OTEL_COLLECTOR_URL"), Version, CommitHash, getEnv("ENV", "prod"))
+	if err != nil {
+		logger.Fatal("failed to init tracing", zap.Error(err))
+	}
 
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		getEnv("DB_HOST", "127.0.0.1"), getEnv("DB_PORT", "5432"),
@@ -155,8 +175,11 @@ func main() {
 	mux.Handle("GET /api/interviewer/candidates", adminOnly(http.HandlerFunc(interviewerH.GetCandidates)))
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.Port),
-		Handler: middleware.CORS(middleware.Metrics(appMetrics)(mux)),
+		Addr: fmt.Sprintf(":%d", cfg.Port),
+		Handler: middleware.CORS(
+			tracing.Middleware(logger)(
+				tracing.RecoverMiddleware(logger)(
+					middleware.Metrics(appMetrics)(mux)))),
 	}
 
 	// 啟動背景 Worker 處理評測
@@ -191,6 +214,9 @@ func main() {
 	defer cancel()
 	if err := srv.Shutdown(shutCtx); err != nil {
 		logger.Error("shutdown error", zap.Error(err))
+	}
+	if err := shutdownTracing(shutCtx); err != nil {
+		logger.Error("tracing shutdown error", zap.Error(err))
 	}
 }
 
