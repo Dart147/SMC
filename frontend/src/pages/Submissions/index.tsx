@@ -178,7 +178,6 @@ export function SubmissionsPage() {
                               : "—"}
                           </span>
                         </div>
-
                       </div>
                     </div>
                   );
@@ -188,7 +187,6 @@ export function SubmissionsPage() {
           </>
         )}
       </div>
-
     </div>
   );
 }
