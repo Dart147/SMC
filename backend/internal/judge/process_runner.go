@@ -124,7 +124,7 @@ func (r *ProcessRunner) Run(ctx context.Context, prob domain.Problem, code, lang
 	var lastOutput string
 	totalMs := 0
 	for i, tc := range prob.TestCases {
-		result, ok := r.runTestCase(ctx, cfg, execBin, execArgs, tc, timeout, i, passed, total)
+		result, ok := r.runTestCase(ctx, cfg, execBin, execArgs, tc, timeout, tcProgress{idx: i, passed: passed, total: total})
 		totalMs += result.ExecutionTimeMs
 		if !ok {
 			result.ExecutionTimeMs = totalMs
@@ -191,7 +191,7 @@ func (r *ProcessRunner) compileCheck(ctx context.Context, cfg langConfig, file s
 	return Result{}, false
 }
 
-func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, execBin string, execArgs []string, tc domain.TestCase, timeout time.Duration, idx, passed, total int) (Result, bool) {
+func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, execBin string, execArgs []string, tc domain.TestCase, timeout time.Duration, p tcProgress) (Result, bool) {
 	execCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -215,9 +215,9 @@ func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, execBin
 	if execCtx.Err() == context.DeadlineExceeded {
 		return Result{
 			Status:          domain.StatusTimeLimitExceeded,
-			Error:           fmt.Sprintf("test case %d timed out", idx+1),
-			PassedTestCases: passed,
-			TotalTestCases:  total,
+			Error:           fmt.Sprintf("test case %d timed out", p.idx+1),
+			PassedTestCases: p.passed,
+			TotalTestCases:  p.total,
 			ExecutionTimeMs: elapsedMs,
 		}, false
 	}
@@ -225,9 +225,9 @@ func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, execBin
 	if isMemoryLimitExceeded(cmd, runErr) {
 		return Result{
 			Status:          domain.StatusMemoryLimitExceeded,
-			Error:           fmt.Sprintf("test case %d exceeded memory limit", idx+1),
-			PassedTestCases: passed,
-			TotalTestCases:  total,
+			Error:           fmt.Sprintf("test case %d exceeded memory limit", p.idx+1),
+			PassedTestCases: p.passed,
+			TotalTestCases:  p.total,
 			ExecutionTimeMs: elapsedMs,
 		}, false
 	}
@@ -237,8 +237,8 @@ func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, execBin
 			Status:          domain.StatusRuntimeError,
 			Output:          stdout.String(),
 			Error:           strings.TrimSpace(stderr.String()),
-			PassedTestCases: passed,
-			TotalTestCases:  total,
+			PassedTestCases: p.passed,
+			TotalTestCases:  p.total,
 			ExecutionTimeMs: elapsedMs,
 		}, false
 	}
@@ -251,9 +251,9 @@ func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, execBin
 			Output:               stdout.String(),
 			ExpectedOutput:       tc.ExpectedOutput,
 			ExpectedOutputHidden: tc.IsHidden,
-			Error:                fmt.Sprintf("test case %d failed", idx+1),
-			PassedTestCases:      passed,
-			TotalTestCases:       total,
+			Error:                fmt.Sprintf("test case %d failed", p.idx+1),
+			PassedTestCases:      p.passed,
+			TotalTestCases:       p.total,
 			ExecutionTimeMs:      elapsedMs,
 		}, false
 	}

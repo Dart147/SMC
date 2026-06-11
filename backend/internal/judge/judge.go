@@ -15,6 +15,13 @@ const (
 	MemoryLimitBytes = 256 * 1024 * 1024 // 256 MB
 )
 
+// tcProgress carries the loop counters for runTestCase, keeping parameter lists short.
+type tcProgress struct {
+	idx    int
+	passed int
+	total  int
+}
+
 func executionTimeout(ms int) time.Duration {
 	if ms <= 0 {
 		return ExecutionTimeout
