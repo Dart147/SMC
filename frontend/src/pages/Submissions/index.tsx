@@ -106,7 +106,7 @@ export function SubmissionsPage() {
             {/* Table with horizontal scroll on narrow viewports */}
             <div className="overflow-x-auto -mx-1 px-1">
               {/* Column headers */}
-              <div className="grid grid-cols-[1fr_140px_100px_90px_100px_120px] gap-4 px-5 mb-2 min-w-[640px]">
+              <div className="grid grid-cols-[1fr_160px_100px_90px_100px_120px] gap-4 px-5 mb-2 min-w-[640px]">
                 <span className="text-[10px] uppercase tracking-wider text-gray-300 dark:text-slate-600 font-bold">
                   Problem
                 </span>
@@ -140,7 +140,7 @@ export function SubmissionsPage() {
                           : "bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800"
                       }`}
                     >
-                      <div className="grid grid-cols-[1fr_140px_100px_90px_100px_120px] gap-4 items-center p-4 px-5">
+                      <div className="grid grid-cols-[1fr_160px_100px_90px_100px_120px] gap-4 items-center p-4 px-5">
                         {/* Problem */}
                         <div className="min-w-0">
                           <span className="font-semibold text-gray-800 dark:text-slate-100 text-sm truncate block">
@@ -154,7 +154,7 @@ export function SubmissionsPage() {
                         {/* Status */}
                         <div className="flex justify-center">
                           <span
-                            className={`text-xs font-bold px-2.5 py-1 rounded-md border ${bg} ${color}`}
+                            className={`text-xs font-bold px-2.5 py-1 rounded-md border whitespace-nowrap ${bg} ${color}`}
                           >
                             {sub.status}
                           </span>
