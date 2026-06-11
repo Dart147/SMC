@@ -175,7 +175,7 @@ func main() {
 	mux.Handle("GET /api/interviewer/candidates", adminOnly(http.HandlerFunc(interviewerH.GetCandidates)))
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.Port),
+		Addr: fmt.Sprintf(":%d", cfg.Port),
 		Handler: middleware.CORS(
 			tracing.Middleware(logger)(
 				tracing.RecoverMiddleware(logger)(
