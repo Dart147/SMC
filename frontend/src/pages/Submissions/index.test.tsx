@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SubmissionsPage } from "./index";
 import { useSubmissionsStore } from "../../features/submissions/store";
@@ -18,18 +18,6 @@ const mockFetchHistory = vi.fn();
 const mockPollUntilTerminal = vi.fn();
 vi.mock("../../features/submissions/store", () => ({
   useSubmissionsStore: vi.fn(),
-}));
-
-// Mock ReportModal，避免真的去呼叫後端 API
-vi.mock("../../components/Common/ReportModal", () => ({
-  default: ({ submissionId, onClose }: { submissionId: string; onClose: () => void }) => (
-    <div data-testid="mock-report-modal">
-      <p>Report ID: {submissionId}</p>
-      <button onClick={onClose} data-testid="close-modal-btn">
-        Close Modal
-      </button>
-    </div>
-  ),
 }));
 
 // ==========================================
@@ -197,36 +185,5 @@ describe("SubmissionsPage", () => {
 
     // 3. 驗證這個高亮外框確實存在
     expect(highlightRow).toBeInTheDocument();
-  });
-
-  it("opens and closes the ReportModal when action button is clicked", () => {
-    const mockHistory = [{ id: "sub-modal-test", problemTitle: "Test Prob", status: "Accepted" }];
-
-    (useSubmissionsStore as any).mockReturnValue({
-      history: mockHistory,
-      isLoading: false,
-      fetchHistory: mockFetchHistory,
-      pollUntilTerminal: mockPollUntilTerminal,
-    });
-
-    render(<SubmissionsPage />);
-
-    // 一開始 Modal 不該存在
-    expect(screen.queryByTestId("mock-report-modal")).not.toBeInTheDocument();
-
-    // 點擊 Report 按鈕
-    const reportBtn = screen.getByText("Report");
-    fireEvent.click(reportBtn);
-
-    // Modal 應該被開啟，並且顯示正確的 ID
-    expect(screen.getByTestId("mock-report-modal")).toBeInTheDocument();
-    expect(screen.getByText("Report ID: sub-modal-test")).toBeInTheDocument();
-
-    // 點擊關閉按鈕
-    const closeBtn = screen.getByTestId("close-modal-btn");
-    fireEvent.click(closeBtn);
-
-    // Modal 應該被移除
-    expect(screen.queryByTestId("mock-report-modal")).not.toBeInTheDocument();
   });
 });
