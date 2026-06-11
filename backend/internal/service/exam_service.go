@@ -2,16 +2,18 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type ExamService struct {
-	repo examRepo
+	repo   examRepo
+	logger *zap.Logger
 }
 
-func NewExamService(repo examRepo) *ExamService {
-	return &ExamService{repo: repo}
+func NewExamService(repo examRepo, logger *zap.Logger) *ExamService {
+	return &ExamService{repo: repo, logger: logger}
 }
 
 // StartExam 正式啟動考試並計算截止時間
@@ -41,10 +43,10 @@ func (s *ExamService) ReportWarning(userID string) (int, error) {
 		// 直接呼叫你之前寫好的 EndExam 來寫入結束時間
 		_, err := s.repo.EndExam(userID)
 		if err != nil {
-			// 如果寫入失敗，可以在後端印出 Log，但不影響前端收到次數
-			fmt.Printf("[防弊系統] 帳號 %s 強制交卷失敗: %v\n", userID, err)
+			// 寫入失敗只記錄 Log，不影響前端收到次數
+			s.logger.Error("anti-cheat force-submit failed", zap.String("user_id", userID), zap.Error(err))
 		} else {
-			fmt.Printf("🚨 [防弊系統] 帳號 %s 違規滿 3 次，已自動強制交卷並鎖定。\n", userID)
+			s.logger.Warn("anti-cheat auto-submitted exam after 3 violations", zap.String("user_id", userID))
 		}
 	}
 

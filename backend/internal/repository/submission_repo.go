@@ -7,17 +7,20 @@ import (
 
 	sqlcdb "github.com/Dart147/SMC/backend/internal/db"
 	"github.com/Dart147/SMC/backend/internal/domain"
+	"go.uber.org/zap"
 )
 
 type SubmissionRepo struct {
 	queries *sqlcdb.Queries
 	db      *sql.DB
+	logger  *zap.Logger
 }
 
-func NewSubmissionRepo(db *sql.DB) *SubmissionRepo {
+func NewSubmissionRepo(db *sql.DB, logger *zap.Logger) *SubmissionRepo {
 	return &SubmissionRepo{
 		queries: sqlcdb.New(db),
 		db:      db,
+		logger:  logger,
 	}
 }
 
@@ -95,7 +98,7 @@ func (r *SubmissionRepo) List() []domain.Submission {
 	ctx := context.Background()
 	rows, err := r.queries.ListSubmissions(ctx)
 	if err != nil {
-		fmt.Printf("failed to query submissions: %v\n", err)
+		r.logger.Error("failed to list submissions", zap.Error(err))
 		return []domain.Submission{}
 	}
 	var submissions []domain.Submission
@@ -182,7 +185,7 @@ func (r *SubmissionRepo) ListByUserID(userID string) []domain.Submission {
 
 	rows, err := r.db.QueryContext(context.Background(), query, userID)
 	if err != nil {
-		fmt.Printf("failed to query submissions by user: %v\n", err)
+		r.logger.Error("failed to list submissions by user", zap.Error(err))
 		return []domain.Submission{}
 	}
 	defer func() { _ = rows.Close() }()
@@ -196,7 +199,7 @@ func (r *SubmissionRepo) ListByUserID(userID string) []domain.Submission {
 			&s.PassedTestCases, &s.TotalTestCases, &s.Score,
 			&s.ExecutionTimeMs, &s.Output, &s.ExpectedOutput, &s.Error,
 		); err != nil {
-			fmt.Printf("failed to scan submission row: %v\n", err)
+			r.logger.Error("failed to scan submission row", zap.Error(err))
 			continue
 		}
 		submissions = append(submissions, s)

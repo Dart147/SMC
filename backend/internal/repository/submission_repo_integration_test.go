@@ -14,6 +14,7 @@ import (
 
 	"github.com/Dart147/SMC/backend/internal/domain"
 	"github.com/Dart147/SMC/backend/internal/repository"
+	"go.uber.org/zap"
 )
 
 // testDB is shared across all tests in this package.
@@ -90,7 +91,7 @@ func saveOrFail(t *testing.T, repo *repository.SubmissionRepo, id string) {
 
 func TestClaimNext_EmptyQueueReturnsNil(t *testing.T) {
 	truncateSubmissions(t)
-	repo := repository.NewSubmissionRepo(testDB)
+	repo := repository.NewSubmissionRepo(testDB, zap.NewNop())
 
 	sub, err := repo.ClaimNext(context.Background())
 
@@ -104,7 +105,7 @@ func TestClaimNext_EmptyQueueReturnsNil(t *testing.T) {
 
 func TestClaimNext_ClaimsPendingAndSetsJudging(t *testing.T) {
 	truncateSubmissions(t)
-	repo := repository.NewSubmissionRepo(testDB)
+	repo := repository.NewSubmissionRepo(testDB, zap.NewNop())
 	saveOrFail(t, repo, "sub-1")
 
 	sub, err := repo.ClaimNext(context.Background())
@@ -136,7 +137,7 @@ func TestClaimNext_ClaimsPendingAndSetsJudging(t *testing.T) {
 // each get a distinct row — the core SKIP LOCKED guarantee.
 func TestClaimNext_TwoWorkersDifferentRows(t *testing.T) {
 	truncateSubmissions(t)
-	repo := repository.NewSubmissionRepo(testDB)
+	repo := repository.NewSubmissionRepo(testDB, zap.NewNop())
 	saveOrFail(t, repo, "sub-a")
 	saveOrFail(t, repo, "sub-b")
 
@@ -179,7 +180,7 @@ func TestClaimNext_TwoWorkersDifferentRows(t *testing.T) {
 
 func TestRecoverStalled_ResetsJudgingToPending(t *testing.T) {
 	truncateSubmissions(t)
-	repo := repository.NewSubmissionRepo(testDB)
+	repo := repository.NewSubmissionRepo(testDB, zap.NewNop())
 	saveOrFail(t, repo, "sub-stalled")
 
 	// Simulate a crash: claim the submission (sets Judging) but never finish it.
@@ -204,7 +205,7 @@ func TestRecoverStalled_ResetsJudgingToPending(t *testing.T) {
 
 func TestRecoverStalled_IgnoresFinalStatuses(t *testing.T) {
 	truncateSubmissions(t)
-	repo := repository.NewSubmissionRepo(testDB)
+	repo := repository.NewSubmissionRepo(testDB, zap.NewNop())
 
 	finals := []string{
 		domain.StatusAccepted,
