@@ -46,6 +46,8 @@ interface ProblemFormFieldsProps {
   readonly descriptionId: string;
   readonly descriptionValue: string;
   readonly onDescriptionChange: (v: string) => void;
+  readonly timeLimitMs: number;
+  readonly onTimeLimitMsChange: (v: number) => void;
   readonly testCases: FormTestCase[];
   readonly onTestCaseChange: (index: number, field: "input" | "output", value: string) => void;
   readonly onAddTestCase: () => void;
@@ -99,6 +101,8 @@ function ProblemFormFields({
   descriptionId,
   descriptionValue,
   onDescriptionChange,
+  timeLimitMs,
+  onTimeLimitMsChange,
   testCases,
   onTestCaseChange,
   onAddTestCase,
@@ -151,6 +155,23 @@ function ProblemFormFields({
           required
           className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 h-48 text-gray-900 dark:text-slate-100 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-slate-500"
           placeholder="Describe the problem in Markdown..."
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="time-limit-ms"
+          className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wider"
+        >
+          Time Limit (ms)
+        </label>
+        <input
+          id="time-limit-ms"
+          type="number"
+          min={100}
+          value={timeLimitMs}
+          onChange={(e) => onTimeLimitMsChange(Number(e.target.value))}
+          className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
         />
       </div>
 
@@ -248,6 +269,7 @@ const InterviewerDashboard: React.FC = () => {
   const [title, setTitle] = useState("");
   const [difficulty, setDifficulty] = useState("Medium");
   const [description, setDescription] = useState("");
+  const [timeLimitMs, setTimeLimitMs] = useState<number>(5000);
   const [testCases, setTestCases] = useState<FormTestCase[]>([
     { input: "", output: "", uid: uid() },
   ]);
@@ -263,6 +285,7 @@ const InterviewerDashboard: React.FC = () => {
   const [editTitle, setEditTitle] = useState("");
   const [editDifficulty, setEditDifficulty] = useState("Medium");
   const [editDescription, setEditDescription] = useState("");
+  const [editTimeLimitMs, setEditTimeLimitMs] = useState<number>(5000);
   const [editTestCases, setEditTestCases] = useState<FormTestCase[]>([]);
 
   const generateCredentials = async () => {
@@ -361,6 +384,7 @@ const InterviewerDashboard: React.FC = () => {
       title,
       difficulty,
       description,
+      timeLimitMs,
       testCases: testCases.map((tc) => ({
         input: tc.input,
         expected_output: tc.output,
@@ -372,6 +396,7 @@ const InterviewerDashboard: React.FC = () => {
       alert("Problem saved successfully.");
       setTitle("");
       setDescription("");
+      setTimeLimitMs(5000);
       setTestCases([{ input: "", output: "", uid: uid() }]);
       fetchProblems();
     } catch {
@@ -401,6 +426,7 @@ const InterviewerDashboard: React.FC = () => {
       setEditTitle(full.title);
       setEditDifficulty(full.difficulty);
       setEditDescription(full.description);
+      setEditTimeLimitMs(full.timeLimitMs ?? 5000);
       setEditTestCases(
         (full.testCases || []).map((tc: any) => ({
           input: tc.input || "",
@@ -435,6 +461,7 @@ const InterviewerDashboard: React.FC = () => {
         title: editTitle,
         difficulty: editDifficulty,
         description: editDescription,
+        timeLimitMs: editTimeLimitMs,
         testCases: editTestCases.map((tc) => ({
           input: tc.input,
           expected_output: tc.output,
@@ -718,6 +745,8 @@ const InterviewerDashboard: React.FC = () => {
                   descriptionId="create-description"
                   descriptionValue={description}
                   onDescriptionChange={setDescription}
+                  timeLimitMs={timeLimitMs}
+                  onTimeLimitMsChange={setTimeLimitMs}
                   testCases={testCases}
                   onTestCaseChange={handleTestCaseChange}
                   onAddTestCase={addTestCase}
@@ -835,6 +864,8 @@ const InterviewerDashboard: React.FC = () => {
                 descriptionId="edit-description"
                 descriptionValue={editDescription}
                 onDescriptionChange={setEditDescription}
+                timeLimitMs={editTimeLimitMs}
+                onTimeLimitMsChange={setEditTimeLimitMs}
                 testCases={editTestCases}
                 onTestCaseChange={handleEditTestCaseChange}
                 onAddTestCase={() =>

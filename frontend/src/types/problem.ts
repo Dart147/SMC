@@ -11,4 +11,5 @@ export interface Problem {
   difficulty: Difficulty;
   description: string;
   testCases?: TestCase[];
+  timeLimitMs?: number;
 }
