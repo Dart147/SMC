@@ -21,6 +21,7 @@ interface Problem {
   title: string;
   difficulty: string;
   description: string;
+  timeLimitMs?: number;
   testCases?: TestCase[];
   test_cases?: TestCase[];
 }
@@ -476,6 +477,7 @@ const InterviewerDashboard: React.FC = () => {
               title: editTitle,
               difficulty: editDifficulty,
               description: editDescription,
+              timeLimitMs: editTimeLimitMs,
               testCases: editTestCases.map((tc) => ({
                 input: tc.input,
                 expected_output: tc.output,
