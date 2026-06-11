@@ -7,10 +7,10 @@ import (
 	"github.com/Dart147/SMC/backend/internal/domain"
 )
 
-var problemCols = []string{"id", "title", "difficulty", "description"}
+var problemCols = []string{"id", "title", "difficulty", "description", "time_limit_ms"}
 
 func newProblemRow(id, title, diff, desc string) *sqlmock.Rows {
-	return sqlmock.NewRows(problemCols).AddRow(id, title, diff, desc)
+	return sqlmock.NewRows(problemCols).AddRow(id, title, diff, desc, 5000)
 }
 
 // --- List ---
@@ -22,9 +22,9 @@ func TestProblemRepo_List_Success(t *testing.T) {
 	}
 	defer func() { _ = db.Close() }()
 
-	mock.ExpectQuery(`SELECT id, title, difficulty, description FROM problems`).
+	mock.ExpectQuery(`SELECT id, title, difficulty, description, time_limit_ms FROM problems`).
 		WillReturnRows(newProblemRow("100001", "Two Sum", "Easy", "desc").
-			AddRow("100002", "LRU Cache", "Medium", "desc2"))
+			AddRow("100002", "LRU Cache", "Medium", "desc2", 5000))
 	// each problem also calls getTestCasesByProblemID
 	mock.ExpectQuery(`SELECT input, expected_output`).WillReturnRows(sqlmock.NewRows([]string{"input", "expected_output", "is_hidden"}))
 	mock.ExpectQuery(`SELECT input, expected_output`).WillReturnRows(sqlmock.NewRows([]string{"input", "expected_output", "is_hidden"}))
@@ -43,7 +43,7 @@ func TestProblemRepo_List_QueryError(t *testing.T) {
 	}
 	defer func() { _ = db.Close() }()
 
-	mock.ExpectQuery(`SELECT id, title, difficulty, description FROM problems`).
+	mock.ExpectQuery(`SELECT id, title, difficulty, description, time_limit_ms FROM problems`).
 		WillReturnError(errDuplicate)
 
 	repo := NewProblemRepo(db)
@@ -62,7 +62,7 @@ func TestProblemRepo_GetByID_Found(t *testing.T) {
 	}
 	defer func() { _ = db.Close() }()
 
-	mock.ExpectQuery(`SELECT id, title, difficulty, description FROM problems WHERE id`).
+	mock.ExpectQuery(`SELECT id, title, difficulty, description, time_limit_ms FROM problems WHERE id`).
 		WithArgs("100001").
 		WillReturnRows(newProblemRow("100001", "Two Sum", "Easy", "find two numbers"))
 	mock.ExpectQuery(`SELECT input, expected_output`).
@@ -89,7 +89,7 @@ func TestProblemRepo_GetByID_NotFound(t *testing.T) {
 	}
 	defer func() { _ = db.Close() }()
 
-	mock.ExpectQuery(`SELECT id, title, difficulty, description FROM problems WHERE id`).
+	mock.ExpectQuery(`SELECT id, title, difficulty, description, time_limit_ms FROM problems WHERE id`).
 		WithArgs("999").
 		WillReturnRows(sqlmock.NewRows(problemCols))
 
@@ -111,8 +111,8 @@ func TestProblemRepo_ListAssigned_Success(t *testing.T) {
 
 	mock.ExpectQuery(`SELECT p.id, p.title`).
 		WithArgs("u1").
-		WillReturnRows(sqlmock.NewRows([]string{"id", "title", "difficulty", "description"}).
-			AddRow("100001", "Two Sum", "Easy", "desc"))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "title", "difficulty", "description", "time_limit_ms"}).
+			AddRow("100001", "Two Sum", "Easy", "desc", 5000))
 	mock.ExpectQuery(`SELECT input, expected_output`).
 		WillReturnRows(sqlmock.NewRows([]string{"input", "expected_output", "is_hidden"}))
 
@@ -132,7 +132,7 @@ func TestProblemRepo_ListAssigned_Empty(t *testing.T) {
 
 	mock.ExpectQuery(`SELECT p.id, p.title`).
 		WithArgs("u2").
-		WillReturnRows(sqlmock.NewRows([]string{"id", "title", "difficulty", "description"}))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "title", "difficulty", "description", "time_limit_ms"}))
 
 	repo := NewProblemRepo(db)
 	probs := repo.ListAssigned("u2")
@@ -367,5 +367,92 @@ func TestProblemRepo_Update_NotFound(t *testing.T) {
 	repo := NewProblemRepo(db)
 	if err := repo.Update("999", &domain.Problem{Title: "T"}); err == nil {
 		t.Error("expected error for not-found update")
+	}
+}
+
+// --- TimeLimitMs ---
+
+func TestProblemRepo_Create_CustomTimeLimitMs(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(`INSERT INTO problems`).
+		WithArgs(
+			sqlmock.AnyArg(),
+			"Slow Problem",
+			sqlmock.AnyArg(),
+			"desc",
+			int32(3000),
+			int32(262144),
+		).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("111111"))
+	mock.ExpectCommit()
+
+	repo := NewProblemRepo(db)
+	p := &domain.Problem{Title: "Slow Problem", Description: "desc", TimeLimitMs: 3000}
+	if err := repo.Create(p); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("unfulfilled mock expectations: %v", err)
+	}
+}
+
+func TestProblemRepo_Create_DefaultTimeLimitMs(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(`INSERT INTO problems`).
+		WithArgs(
+			sqlmock.AnyArg(),
+			"Default TL",
+			sqlmock.AnyArg(),
+			"desc",
+			int32(5000),
+			int32(262144),
+		).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("222222"))
+	mock.ExpectCommit()
+
+	repo := NewProblemRepo(db)
+	p := &domain.Problem{Title: "Default TL", Description: "desc", TimeLimitMs: 0}
+	if err := repo.Create(p); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("unfulfilled mock expectations: %v", err)
+	}
+}
+
+func TestProblemRepo_GetByID_ReturnsTimeLimitMs(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	mock.ExpectQuery(`SELECT id, title, difficulty, description, time_limit_ms FROM problems WHERE id`).
+		WithArgs("100001").
+		WillReturnRows(
+			sqlmock.NewRows(problemCols).AddRow("100001", "Hard Problem", "Hard", "desc", 7000),
+		)
+	mock.ExpectQuery(`SELECT input, expected_output`).
+		WillReturnRows(sqlmock.NewRows([]string{"input", "expected_output", "is_hidden"}))
+
+	repo := NewProblemRepo(db)
+	p, ok := repo.GetByID("100001")
+	if !ok {
+		t.Fatal("expected found")
+	}
+	if p.TimeLimitMs != 7000 {
+		t.Errorf("TimeLimitMs: got %d, want 7000", p.TimeLimitMs)
 	}
 }

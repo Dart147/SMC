@@ -31,6 +31,7 @@ interface UpdateProblemPayload {
   title: string;
   difficulty: string;
   description: string;
+  timeLimitMs?: number;
   testCases: { input: string; expected_output: string; isHidden?: boolean }[];
 }
 

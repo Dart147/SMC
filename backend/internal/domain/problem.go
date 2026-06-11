@@ -3,7 +3,7 @@ package domain
 type TestCase struct {
 	Input          string `json:"input"`
 	ExpectedOutput string `json:"expected_output"`
-	IsHidden       bool   `json:"-"` // internal only — never serialized to clients
+	IsHidden       bool   `json:"-"`
 }
 
 type Problem struct {
@@ -12,10 +12,9 @@ type Problem struct {
 	Difficulty  string     `json:"difficulty"`
 	Description string     `json:"description"`
 	TestCases   []TestCase `json:"testCases"`
+	TimeLimitMs int        `json:"timeLimitMs"`
 }
 
-// ForDisplay returns a copy of the problem with hidden test cases stripped.
-// Use this before encoding a problem in any candidate-facing API response.
 func (p Problem) ForDisplay() Problem {
 	out := p
 	out.TestCases = nil
@@ -27,7 +26,6 @@ func (p Problem) ForDisplay() Problem {
 	return out
 }
 
-// FirstSample returns the first non-hidden test case and whether one exists.
 func (p Problem) FirstSample() (TestCase, bool) {
 	for _, tc := range p.TestCases {
 		if !tc.IsHidden {

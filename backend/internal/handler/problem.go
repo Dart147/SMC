@@ -86,6 +86,7 @@ func (h *ProblemHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Title       string `json:"title"`
 		Difficulty  string `json:"difficulty"`
 		Description string `json:"description"`
+		TimeLimitMs int    `json:"timeLimitMs"`
 		TestCases   []struct {
 			Input          string `json:"input"`
 			ExpectedOutput string `json:"expected_output"`
@@ -96,7 +97,7 @@ func (h *ProblemHandler) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	prob := domain.Problem{Title: req.Title, Difficulty: req.Difficulty, Description: req.Description}
+	prob := domain.Problem{Title: req.Title, Difficulty: req.Difficulty, Description: req.Description, TimeLimitMs: req.TimeLimitMs}
 	for _, tc := range req.TestCases {
 		prob.TestCases = append(prob.TestCases, domain.TestCase{
 			Input: tc.Input, ExpectedOutput: tc.ExpectedOutput, IsHidden: tc.IsHidden,
@@ -131,6 +132,7 @@ func (h *ProblemHandler) GetByIDAdmin(w http.ResponseWriter, r *http.Request) {
 		Title       string    `json:"title"`
 		Difficulty  string    `json:"difficulty"`
 		Description string    `json:"description"`
+		TimeLimitMs int       `json:"timeLimitMs"`
 		TestCases   []adminTC `json:"testCases"`
 	}
 	tcs := make([]adminTC, len(p.TestCases))
@@ -139,7 +141,7 @@ func (h *ProblemHandler) GetByIDAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.NewEncoder(w).Encode(adminProb{
 		ID: p.ID, Title: p.Title, Difficulty: p.Difficulty,
-		Description: p.Description, TestCases: tcs,
+		Description: p.Description, TimeLimitMs: p.TimeLimitMs, TestCases: tcs,
 	})
 }
 

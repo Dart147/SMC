@@ -424,3 +424,71 @@ func TestProblemHandler_GetCandidateAssignments_MissingUserID(t *testing.T) {
 		t.Errorf("GetCandidateAssignments missing userId: got %d, want 400", w.Code)
 	}
 }
+
+// --- TimeLimitMs wiring ---
+
+type capturingProblemService struct {
+	mockProblemService
+	lastCreated *domain.Problem
+	lastUpdated *domain.Problem
+}
+
+func (s *capturingProblemService) Create(prob *domain.Problem) error {
+	s.lastCreated = prob
+	return s.createErr
+}
+
+func (s *capturingProblemService) Update(id string, prob *domain.Problem) error {
+	s.lastUpdated = prob
+	return s.updateErr
+}
+
+func TestProblemHandler_Create_WithTimeLimitMs(t *testing.T) {
+	svc := &capturingProblemService{}
+	h := NewProblemHandler(svc)
+
+	body, _ := json.Marshal(map[string]interface{}{
+		"title":       "Fast Problem",
+		"difficulty":  "Easy",
+		"description": "desc",
+		"timeLimitMs": 3000,
+		"testCases":   []interface{}{},
+	})
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodPost, "/api/problems", bytes.NewReader(body))
+	h.Create(w, r)
+
+	if w.Code != http.StatusCreated {
+		t.Errorf("Create: got %d, want 201", w.Code)
+	}
+	if svc.lastCreated == nil || svc.lastCreated.TimeLimitMs != 3000 {
+		t.Errorf("Create: TimeLimitMs = %d, want 3000", svc.lastCreated.TimeLimitMs)
+	}
+}
+
+func TestProblemHandler_Update_WithTimeLimitMs(t *testing.T) {
+	svc := &capturingProblemService{}
+	h := NewProblemHandler(svc)
+
+	body, _ := json.Marshal(map[string]interface{}{
+		"title":       "Updated",
+		"difficulty":  "Hard",
+		"description": "new",
+		"timeLimitMs": 2000,
+		"testCases":   []interface{}{},
+	})
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("PUT /api/problems/{id}", h.Update)
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodPut, "/api/problems/1", bytes.NewReader(body))
+	mux.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Update: got %d, want 200", w.Code)
+	}
+	if svc.lastUpdated == nil || svc.lastUpdated.TimeLimitMs != 2000 {
+		t.Errorf("Update: TimeLimitMs = %d, want 2000", svc.lastUpdated.TimeLimitMs)
+	}
+}

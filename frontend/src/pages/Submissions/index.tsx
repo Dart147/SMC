@@ -1,10 +1,8 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import ReportModal from "../../components/Common/ReportModal";
 import { useSubmissionsStore } from "../../features/submissions/store";
 
 export function SubmissionsPage() {
-  const [reportId, setReportId] = useState<string | null>(null);
   const location = useLocation();
   const {
     history: submissions,
@@ -106,7 +104,7 @@ export function SubmissionsPage() {
             {/* Table with horizontal scroll on narrow viewports */}
             <div className="overflow-x-auto -mx-1 px-1">
               {/* Column headers */}
-              <div className="grid grid-cols-[1fr_140px_100px_90px_100px_120px] gap-4 px-5 mb-2 min-w-[640px]">
+              <div className="grid grid-cols-[1fr_160px_100px_90px_100px] gap-4 px-5 mb-2 min-w-[560px]">
                 <span className="text-[10px] uppercase tracking-wider text-gray-300 dark:text-slate-600 font-bold">
                   Problem
                 </span>
@@ -121,9 +119,6 @@ export function SubmissionsPage() {
                 </span>
                 <span className="text-[10px] uppercase tracking-wider text-gray-300 dark:text-slate-600 font-bold text-center">
                   Run Time
-                </span>
-                <span className="text-[10px] uppercase tracking-wider text-gray-300 dark:text-slate-600 font-bold text-right">
-                  Action
                 </span>
               </div>
 
@@ -140,7 +135,7 @@ export function SubmissionsPage() {
                           : "bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800"
                       }`}
                     >
-                      <div className="grid grid-cols-[1fr_140px_100px_90px_100px_120px] gap-4 items-center p-4 px-5">
+                      <div className="grid grid-cols-[1fr_160px_100px_90px_100px] gap-4 items-center p-4 px-5">
                         {/* Problem */}
                         <div className="min-w-0">
                           <span className="font-semibold text-gray-800 dark:text-slate-100 text-sm truncate block">
@@ -154,7 +149,7 @@ export function SubmissionsPage() {
                         {/* Status */}
                         <div className="flex justify-center">
                           <span
-                            className={`text-xs font-bold px-2.5 py-1 rounded-md border ${bg} ${color}`}
+                            className={`text-xs font-bold px-2.5 py-1 rounded-md border whitespace-nowrap ${bg} ${color}`}
                           >
                             {sub.status}
                           </span>
@@ -183,19 +178,6 @@ export function SubmissionsPage() {
                               : "—"}
                           </span>
                         </div>
-
-                        {/* Action */}
-                        <div className="flex justify-end">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setReportId(sub.id);
-                            }}
-                            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-gray-400 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 border border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700/50 transition-all duration-150 cursor-pointer"
-                          >
-                            Report
-                          </button>
-                        </div>
                       </div>
                     </div>
                   );
@@ -205,8 +187,6 @@ export function SubmissionsPage() {
           </>
         )}
       </div>
-
-      {reportId && <ReportModal submissionId={reportId} onClose={() => setReportId(null)} />}
     </div>
   );
 }

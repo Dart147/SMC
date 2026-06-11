@@ -119,11 +119,12 @@ func (r *ProcessRunner) Run(ctx context.Context, prob domain.Problem, code, lang
 		}
 	}
 
+	timeout := executionTimeout(prob.TimeLimitMs)
 	passed := 0
 	var lastOutput string
 	totalMs := 0
 	for i, tc := range prob.TestCases {
-		result, ok := r.runTestCase(ctx, cfg, execBin, execArgs, tc, i, passed, total)
+		result, ok := r.runTestCase(ctx, cfg, execBin, execArgs, tc, timeout, tcProgress{idx: i, passed: passed, total: total})
 		totalMs += result.ExecutionTimeMs
 		if !ok {
 			result.ExecutionTimeMs = totalMs
@@ -190,8 +191,8 @@ func (r *ProcessRunner) compileCheck(ctx context.Context, cfg langConfig, file s
 	return Result{}, false
 }
 
-func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, execBin string, execArgs []string, tc domain.TestCase, idx, passed, total int) (Result, bool) {
-	execCtx, cancel := context.WithTimeout(ctx, ExecutionTimeout)
+func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, execBin string, execArgs []string, tc domain.TestCase, timeout time.Duration, p tcProgress) (Result, bool) {
+	execCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(execCtx, execBin, execArgs...)
@@ -212,49 +213,27 @@ func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, execBin
 	elapsedMs := int(time.Since(start).Milliseconds())
 
 	if execCtx.Err() == context.DeadlineExceeded {
-		return Result{
-			Status:          domain.StatusTimeLimitExceeded,
-			Error:           fmt.Sprintf("test case %d timed out", idx+1),
-			PassedTestCases: passed,
-			TotalTestCases:  total,
-			ExecutionTimeMs: elapsedMs,
-		}, false
+		return tlResult(p, elapsedMs), false
 	}
 
 	if isMemoryLimitExceeded(cmd, runErr) {
 		return Result{
 			Status:          domain.StatusMemoryLimitExceeded,
-			Error:           fmt.Sprintf("test case %d exceeded memory limit", idx+1),
-			PassedTestCases: passed,
-			TotalTestCases:  total,
+			Error:           fmt.Sprintf("test case %d exceeded memory limit", p.idx+1),
+			PassedTestCases: p.passed,
+			TotalTestCases:  p.total,
 			ExecutionTimeMs: elapsedMs,
 		}, false
 	}
 
 	if runErr != nil {
-		return Result{
-			Status:          domain.StatusRuntimeError,
-			Output:          stdout.String(),
-			Error:           strings.TrimSpace(stderr.String()),
-			PassedTestCases: passed,
-			TotalTestCases:  total,
-			ExecutionTimeMs: elapsedMs,
-		}, false
+		return reResult(stdout.String(), strings.TrimSpace(stderr.String()), p, elapsedMs), false
 	}
 
 	actual := strings.TrimRight(stdout.String(), "\n\r ")
 	expected := strings.TrimRight(tc.ExpectedOutput, "\n\r ")
 	if actual != expected {
-		return Result{
-			Status:               domain.StatusWrongAnswer,
-			Output:               stdout.String(),
-			ExpectedOutput:       tc.ExpectedOutput,
-			ExpectedOutputHidden: tc.IsHidden,
-			Error:                fmt.Sprintf("test case %d failed", idx+1),
-			PassedTestCases:      passed,
-			TotalTestCases:       total,
-			ExecutionTimeMs:      elapsedMs,
-		}, false
+		return waResult(tc, stdout.String(), p, elapsedMs), false
 	}
 
 	return Result{Output: stdout.String(), ExecutionTimeMs: elapsedMs}, true
