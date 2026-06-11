@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type mockExamRepo struct {
@@ -29,7 +31,7 @@ func (m *mockExamRepo) EndExam(userID string) (time.Time, error) {
 
 func TestExamService_StartExam_Success(t *testing.T) {
 	now := time.Now()
-	svc := NewExamService(&mockExamRepo{startTime: now})
+	svc := NewExamService(&mockExamRepo{startTime: now}, zap.NewNop())
 	exp, err := svc.StartExam("u1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -41,7 +43,7 @@ func TestExamService_StartExam_Success(t *testing.T) {
 }
 
 func TestExamService_StartExam_RepoError(t *testing.T) {
-	svc := NewExamService(&mockExamRepo{startErr: errors.New("db error")})
+	svc := NewExamService(&mockExamRepo{startErr: errors.New("db error")}, zap.NewNop())
 	_, err := svc.StartExam("u1")
 	if err == nil {
 		t.Fatal("expected error")
@@ -50,7 +52,7 @@ func TestExamService_StartExam_RepoError(t *testing.T) {
 
 func TestExamService_ReportWarning_BelowThreshold(t *testing.T) {
 	repo := &mockExamRepo{warnCount: 2}
-	svc := NewExamService(repo)
+	svc := NewExamService(repo, zap.NewNop())
 	count, err := svc.ReportWarning("u1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -65,7 +67,7 @@ func TestExamService_ReportWarning_BelowThreshold(t *testing.T) {
 
 func TestExamService_ReportWarning_AtThreshold_CallsEndExam(t *testing.T) {
 	repo := &mockExamRepo{warnCount: 3, endTime: time.Now()}
-	svc := NewExamService(repo)
+	svc := NewExamService(repo, zap.NewNop())
 	count, err := svc.ReportWarning("u1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -80,7 +82,7 @@ func TestExamService_ReportWarning_AtThreshold_CallsEndExam(t *testing.T) {
 
 func TestExamService_ReportWarning_AboveThreshold_CallsEndExam(t *testing.T) {
 	repo := &mockExamRepo{warnCount: 5, endTime: time.Now()}
-	svc := NewExamService(repo)
+	svc := NewExamService(repo, zap.NewNop())
 	_, err := svc.ReportWarning("u1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -91,7 +93,7 @@ func TestExamService_ReportWarning_AboveThreshold_CallsEndExam(t *testing.T) {
 }
 
 func TestExamService_ReportWarning_IncrementError(t *testing.T) {
-	svc := NewExamService(&mockExamRepo{warnErr: errors.New("db error")})
+	svc := NewExamService(&mockExamRepo{warnErr: errors.New("db error")}, zap.NewNop())
 	_, err := svc.ReportWarning("u1")
 	if err == nil {
 		t.Fatal("expected error from IncrementWarning")
@@ -101,7 +103,7 @@ func TestExamService_ReportWarning_IncrementError(t *testing.T) {
 func TestExamService_ReportWarning_EndExamError_StillReturnsCount(t *testing.T) {
 	// EndExam error should be logged but not surfaced to caller
 	repo := &mockExamRepo{warnCount: 3, endErr: errors.New("end failed")}
-	svc := NewExamService(repo)
+	svc := NewExamService(repo, zap.NewNop())
 	count, err := svc.ReportWarning("u1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -113,7 +115,7 @@ func TestExamService_ReportWarning_EndExamError_StillReturnsCount(t *testing.T) 
 
 func TestExamService_EndExam_Success(t *testing.T) {
 	expected := time.Now()
-	svc := NewExamService(&mockExamRepo{endTime: expected})
+	svc := NewExamService(&mockExamRepo{endTime: expected}, zap.NewNop())
 	got, err := svc.EndExam("u1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -124,7 +126,7 @@ func TestExamService_EndExam_Success(t *testing.T) {
 }
 
 func TestExamService_EndExam_RepoError(t *testing.T) {
-	svc := NewExamService(&mockExamRepo{endErr: errors.New("db error")})
+	svc := NewExamService(&mockExamRepo{endErr: errors.New("db error")}, zap.NewNop())
 	_, err := svc.EndExam("u1")
 	if err == nil {
 		t.Fatal("expected error")

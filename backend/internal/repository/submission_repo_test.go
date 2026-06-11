@@ -7,6 +7,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/Dart147/SMC/backend/internal/domain"
+	"go.uber.org/zap"
 )
 
 var submissionColumns = []string{
@@ -39,7 +40,7 @@ func TestSubmissionRepo_Update_Success(t *testing.T) {
 	mock.ExpectExec(`UPDATE submissions`).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	repo := NewSubmissionRepo(db)
+	repo := NewSubmissionRepo(db, zap.NewNop())
 	s := domain.Submission{ID: "s1", Status: "Accepted"}
 	if err := repo.Update(s); err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -55,7 +56,7 @@ func TestSubmissionRepo_Update_Error(t *testing.T) {
 
 	mock.ExpectExec(`UPDATE submissions`).WillReturnError(errDuplicate)
 
-	repo := NewSubmissionRepo(db)
+	repo := NewSubmissionRepo(db, zap.NewNop())
 	if err := repo.Update(domain.Submission{ID: "s1"}); err == nil {
 		t.Error("expected error")
 	}
@@ -73,7 +74,7 @@ func TestSubmissionRepo_Save_Success(t *testing.T) {
 	mock.ExpectExec(`INSERT INTO submissions`).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	repo := NewSubmissionRepo(db)
+	repo := NewSubmissionRepo(db, zap.NewNop())
 	s := domain.Submission{ID: "s2", ProblemID: "p1", UserID: "u1", Code: "code", Language: "go", Status: "Pending"}
 	if err := repo.Save(s); err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -89,7 +90,7 @@ func TestSubmissionRepo_Save_Error(t *testing.T) {
 
 	mock.ExpectExec(`INSERT INTO submissions`).WillReturnError(errDuplicate)
 
-	repo := NewSubmissionRepo(db)
+	repo := NewSubmissionRepo(db, zap.NewNop())
 	if err := repo.Save(domain.Submission{ID: "s2"}); err == nil {
 		t.Error("expected error")
 	}
@@ -108,7 +109,7 @@ func TestSubmissionRepo_GetByID_Found(t *testing.T) {
 		WithArgs("s1").
 		WillReturnRows(newSubRow("s1", "p1", "func main(){}", "go"))
 
-	repo := NewSubmissionRepo(db)
+	repo := NewSubmissionRepo(db, zap.NewNop())
 	sub, ok := repo.GetByID("s1")
 	if !ok {
 		t.Fatal("expected found")
@@ -129,7 +130,7 @@ func TestSubmissionRepo_GetByID_NotFound(t *testing.T) {
 		WithArgs("nope").
 		WillReturnRows(sqlmock.NewRows(submissionColumns))
 
-	repo := NewSubmissionRepo(db)
+	repo := NewSubmissionRepo(db, zap.NewNop())
 	_, ok := repo.GetByID("nope")
 	if ok {
 		t.Error("expected not found")
@@ -154,7 +155,7 @@ func TestSubmissionRepo_List_Success(t *testing.T) {
 					int32(100), "ok", "ok", ""),
 		)
 
-	repo := NewSubmissionRepo(db)
+	repo := NewSubmissionRepo(db, zap.NewNop())
 	subs := repo.List()
 	if len(subs) != 1 {
 		t.Errorf("got %d, want 1", len(subs))
@@ -170,7 +171,7 @@ func TestSubmissionRepo_List_Error(t *testing.T) {
 
 	mock.ExpectQuery(`SELECT.*FROM submissions`).WillReturnError(errDuplicate)
 
-	repo := NewSubmissionRepo(db)
+	repo := NewSubmissionRepo(db, zap.NewNop())
 	subs := repo.List()
 	if len(subs) != 0 {
 		t.Errorf("expected empty on error, got %d", len(subs))
@@ -189,7 +190,7 @@ func TestSubmissionRepo_GetLatestByProblem_Found(t *testing.T) {
 	mock.ExpectQuery(`SELECT.*FROM submissions`).
 		WillReturnRows(newSubRow("s3", "p2", "code2", "python"))
 
-	repo := NewSubmissionRepo(db)
+	repo := NewSubmissionRepo(db, zap.NewNop())
 	sub, ok := repo.GetLatestByProblem("p2")
 	if !ok {
 		t.Fatal("expected found")
@@ -209,7 +210,7 @@ func TestSubmissionRepo_GetLatestByProblem_NotFound(t *testing.T) {
 	mock.ExpectQuery(`SELECT.*FROM submissions`).
 		WillReturnRows(sqlmock.NewRows(submissionColumns))
 
-	repo := NewSubmissionRepo(db)
+	repo := NewSubmissionRepo(db, zap.NewNop())
 	_, ok := repo.GetLatestByProblem("p99")
 	if ok {
 		t.Error("expected not found")
@@ -236,7 +237,7 @@ func TestSubmissionRepo_ClaimNext_Found(t *testing.T) {
 					sql.NullInt32{}, sql.NullInt32{}, int32(0), "", "", ""),
 		)
 
-	repo := NewSubmissionRepo(db)
+	repo := NewSubmissionRepo(db, zap.NewNop())
 	sub, err := repo.ClaimNext(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -259,7 +260,7 @@ func TestSubmissionRepo_ClaimNext_Empty(t *testing.T) {
 	mock.ExpectQuery(`WITH next_job`).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
-	repo := NewSubmissionRepo(db)
+	repo := NewSubmissionRepo(db, zap.NewNop())
 	sub, err := repo.ClaimNext(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -281,7 +282,7 @@ func TestSubmissionRepo_RecoverStalled_Success(t *testing.T) {
 	mock.ExpectExec(`UPDATE submissions SET status`).
 		WillReturnResult(sqlmock.NewResult(0, 2))
 
-	repo := NewSubmissionRepo(db)
+	repo := NewSubmissionRepo(db, zap.NewNop())
 	if err := repo.RecoverStalled(context.Background()); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -309,7 +310,7 @@ func TestSubmissionRepo_ListByUserID_Success(t *testing.T) {
 				AddRow("s1", "Two Sum", "p1", "go", "Accepted", 3, 3, 95, 100, "", "", ""),
 		)
 
-	repo := NewSubmissionRepo(db)
+	repo := NewSubmissionRepo(db, zap.NewNop())
 	subs := repo.ListByUserID("u1")
 	if len(subs) != 1 {
 		t.Errorf("got %d, want 1", len(subs))
@@ -328,7 +329,7 @@ func TestSubmissionRepo_ListByUserID_Error(t *testing.T) {
 
 	mock.ExpectQuery(`SELECT s.id`).WillReturnError(errDuplicate)
 
-	repo := NewSubmissionRepo(db)
+	repo := NewSubmissionRepo(db, zap.NewNop())
 	subs := repo.ListByUserID("u1")
 	if len(subs) != 0 {
 		t.Errorf("expected empty on error, got %d", len(subs))

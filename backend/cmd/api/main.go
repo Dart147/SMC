@@ -98,7 +98,7 @@ func main() {
 	// 初始化 Repositories
 	userRepo := repository.NewUserRepository(db)
 	problemRepo := repository.NewProblemRepo(db)
-	submissionRepo := repository.NewSubmissionRepo(db)
+	submissionRepo := repository.NewSubmissionRepo(db, logger)
 	reportRepo := repository.NewReportRepo(db)
 	examRepo := repository.NewExamRepo(db)
 
@@ -109,7 +109,7 @@ func main() {
 	authSvc := service.NewAuthService(userRepo, os.Getenv("JWT_SECRET"))
 	problemSvc := service.NewProblemService(problemRepo)
 	reportSvc := service.NewReportService(reportRepo)
-	examSvc := service.NewExamService(examRepo)
+	examSvc := service.NewExamService(examRepo, logger)
 
 	var runner judge.Runner
 	if os.Getenv("JUDGE_BACKEND") == "docker" {
