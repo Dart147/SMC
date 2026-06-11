@@ -42,12 +42,16 @@ func (r *ProblemRepo) Create(prob *domain.Problem) error {
 
 	qtx := r.queries.WithTx(tx)
 
+	timeLimitMs := prob.TimeLimitMs
+	if timeLimitMs <= 0 {
+		timeLimitMs = 5000
+	}
 	_, err = qtx.CreateProblem(ctx, sqlcdb.CreateProblemParams{
 		ID:            newProblemID,
 		Title:         prob.Title,
 		Difficulty:    sql.NullString{String: prob.Difficulty, Valid: prob.Difficulty != ""},
 		Description:   prob.Description,
-		TimeLimitMs:   5000,
+		TimeLimitMs:   int32(timeLimitMs),
 		MemoryLimitKb: 262144,
 	})
 	if err != nil {
@@ -82,7 +86,7 @@ func (r *ProblemRepo) Create(prob *domain.Problem) error {
 }
 
 func (r *ProblemRepo) List() []domain.Problem {
-	rows, err := r.db.Query(`SELECT id, title, difficulty, description FROM problems ORDER BY id ASC`)
+	rows, err := r.db.Query(`SELECT id, title, difficulty, description, time_limit_ms FROM problems ORDER BY id ASC`)
 	if err != nil {
 		return []domain.Problem{}
 	}
@@ -93,7 +97,7 @@ func (r *ProblemRepo) List() []domain.Problem {
 	for rows.Next() {
 		var p domain.Problem
 		var diff sql.NullString
-		if err := rows.Scan(&p.ID, &p.Title, &diff, &p.Description); err != nil {
+		if err := rows.Scan(&p.ID, &p.Title, &diff, &p.Description, &p.TimeLimitMs); err != nil {
 			continue
 		}
 		p.Difficulty = diff.String
@@ -106,8 +110,8 @@ func (r *ProblemRepo) List() []domain.Problem {
 func (r *ProblemRepo) GetByID(id string) (domain.Problem, bool) {
 	var p domain.Problem
 	var diff sql.NullString
-	err := r.db.QueryRow(`SELECT id, title, difficulty, description FROM problems WHERE id = $1`, id).
-		Scan(&p.ID, &p.Title, &diff, &p.Description)
+	err := r.db.QueryRow(`SELECT id, title, difficulty, description, time_limit_ms FROM problems WHERE id = $1`, id).
+		Scan(&p.ID, &p.Title, &diff, &p.Description, &p.TimeLimitMs)
 	if err != nil {
 		return domain.Problem{}, false
 	}
@@ -139,7 +143,7 @@ func (r *ProblemRepo) getTestCasesByProblemID(pID int) []domain.TestCase {
 // ListAssigned 回傳指定考生被 assign 的所有題目
 func (r *ProblemRepo) ListAssigned(userID string) []domain.Problem {
 	query := `
-		SELECT p.id, p.title, p.difficulty, p.description
+		SELECT p.id, p.title, p.difficulty, p.description, p.time_limit_ms
 		FROM problems p
 		INNER JOIN user_problem_assignments upa ON p.id = upa.problem_id
 		WHERE upa.user_id = $1
@@ -155,7 +159,7 @@ func (r *ProblemRepo) ListAssigned(userID string) []domain.Problem {
 		var p domain.Problem
 		var diff sql.NullString
 		var idStr string
-		if err := rows.Scan(&idStr, &p.Title, &diff, &p.Description); err != nil {
+		if err := rows.Scan(&idStr, &p.Title, &diff, &p.Description, &p.TimeLimitMs); err != nil {
 			continue
 		}
 		p.ID, _ = strconv.Atoi(idStr)
@@ -194,9 +198,13 @@ func (r *ProblemRepo) Update(id string, prob *domain.Problem) error {
 	}
 	defer func() { _ = tx.Rollback() }()
 
+	timeLimitMs := prob.TimeLimitMs
+	if timeLimitMs <= 0 {
+		timeLimitMs = 5000
+	}
 	res, err := tx.ExecContext(ctx,
-		`UPDATE problems SET title = $1, difficulty = $2, description = $3 WHERE id = $4`,
-		prob.Title, prob.Difficulty, prob.Description, id,
+		`UPDATE problems SET title = $1, difficulty = $2, description = $3, time_limit_ms = $4 WHERE id = $5`,
+		prob.Title, prob.Difficulty, prob.Description, timeLimitMs, id,
 	)
 	if err != nil {
 		return fmt.Errorf("update problem: %w", err)
