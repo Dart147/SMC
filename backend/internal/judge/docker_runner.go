@@ -112,11 +112,12 @@ func (r *DockerRunner) Run(ctx context.Context, prob domain.Problem, code, langu
 		}
 	}
 
+	timeout := executionTimeout(prob.TimeLimitMs)
 	passed := 0
 	var lastOutput string
 	totalMs := 0
 	for i, tc := range prob.TestCases {
-		result, ok := r.runTestCase(ctx, cfg, code, tc, i, passed, total)
+		result, ok := r.runTestCase(ctx, cfg, code, tc, timeout, i, passed, total)
 		totalMs += result.ExecutionTimeMs
 		if !ok {
 			result.ExecutionTimeMs = totalMs
@@ -153,8 +154,8 @@ func (r *DockerRunner) compileCheck(ctx context.Context, cfg dockerLangConfig, c
 	return Result{}, false
 }
 
-func (r *DockerRunner) runTestCase(ctx context.Context, cfg dockerLangConfig, code string, tc domain.TestCase, idx, passed, total int) (Result, bool) {
-	execCtx, cancel := context.WithTimeout(ctx, ExecutionTimeout)
+func (r *DockerRunner) runTestCase(ctx context.Context, cfg dockerLangConfig, code string, tc domain.TestCase, timeout time.Duration, idx, passed, total int) (Result, bool) {
+	execCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(execCtx, dockerBin, r.dockerArgs(cfg, code, cfg.runSh)...)

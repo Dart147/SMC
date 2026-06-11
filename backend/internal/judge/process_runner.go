@@ -119,11 +119,12 @@ func (r *ProcessRunner) Run(ctx context.Context, prob domain.Problem, code, lang
 		}
 	}
 
+	timeout := executionTimeout(prob.TimeLimitMs)
 	passed := 0
 	var lastOutput string
 	totalMs := 0
 	for i, tc := range prob.TestCases {
-		result, ok := r.runTestCase(ctx, cfg, execBin, execArgs, tc, i, passed, total)
+		result, ok := r.runTestCase(ctx, cfg, execBin, execArgs, tc, timeout, i, passed, total)
 		totalMs += result.ExecutionTimeMs
 		if !ok {
 			result.ExecutionTimeMs = totalMs
@@ -190,8 +191,8 @@ func (r *ProcessRunner) compileCheck(ctx context.Context, cfg langConfig, file s
 	return Result{}, false
 }
 
-func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, execBin string, execArgs []string, tc domain.TestCase, idx, passed, total int) (Result, bool) {
-	execCtx, cancel := context.WithTimeout(ctx, ExecutionTimeout)
+func (r *ProcessRunner) runTestCase(ctx context.Context, cfg langConfig, execBin string, execArgs []string, tc domain.TestCase, timeout time.Duration, idx, passed, total int) (Result, bool) {
+	execCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(execCtx, execBin, execArgs...)

@@ -15,6 +15,13 @@ const (
 	MemoryLimitBytes = 256 * 1024 * 1024 // 256 MB
 )
 
+func executionTimeout(ms int) time.Duration {
+	if ms <= 0 {
+		return ExecutionTimeout
+	}
+	return time.Duration(ms) * time.Millisecond
+}
+
 type Result struct {
 	Status               string
 	Output               string

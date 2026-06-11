@@ -133,6 +133,29 @@ func TestProcessRunner_AllLanguages(t *testing.T) {
 	}
 }
 
+func TestProcessRunner_RespectsTimeLimitMs(t *testing.T) {
+	if _, err := exec.LookPath("python3"); err != nil {
+		t.Skip("python3 not found on PATH")
+	}
+	logger, _ := zap.NewDevelopment()
+	r := NewProcessRunner(logger)
+
+	slowProblem := domain.Problem{
+		ID:          99,
+		Title:       "slow",
+		TimeLimitMs: 100, // 100 ms — the infinite loop will exceed this
+		TestCases: []domain.TestCase{
+			{Input: "", ExpectedOutput: "never"},
+		},
+	}
+	infiniteLoop := "while True: pass\n"
+
+	res := r.Run(context.Background(), slowProblem, infiniteLoop, "python")
+	if res.Status != domain.StatusTimeLimitExceeded {
+		t.Errorf("want TimeLimitExceeded, got %q (error: %s)", res.Status, res.Error)
+	}
+}
+
 // ── DockerRunner ─────────────────────────────────────────────────────────────
 
 func dockerImagePresent(image string) bool {
