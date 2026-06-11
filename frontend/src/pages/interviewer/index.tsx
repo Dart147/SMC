@@ -782,7 +782,14 @@ const InterviewerDashboard: React.FC = () => {
                       </div>
                       <div className="opacity-0 group-hover:opacity-100 flex items-center gap-2 transition-all">
                         <button
-                          onClick={() => setSelectedProblem(p)}
+                          onClick={async () => {
+                            try {
+                              const full = await fetchAdminProblemById(String(p.id));
+                              setSelectedProblem(full);
+                            } catch {
+                              setSelectedProblem(p);
+                            }
+                          }}
                           className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer"
                         >
                           View Details
